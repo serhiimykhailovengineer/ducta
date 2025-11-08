@@ -6,7 +6,7 @@
 #ifndef DUCTA_T_INPUT_REF_HPP
 #define DUCTA_T_INPUT_REF_HPP
 
-#include "ducta/io/Private/InputConcept.hpp"
+#include "ducta/io/Private/InputModelRef.hpp"
 
 namespace ducta {
 namespace IO {
@@ -20,13 +20,18 @@ public:
      * @param input The input object to wrap
      */
     template <typename TInputType>
-    InputRef(TInputType&& input);
+    InputRef(TInputType&& input)
+    : m_input(std::make_unique<Private::InputModelRef<std::decay_t<TInputType>>>(std::forward<TInputType>(input)))
+    {}
 
     /**
      * @brief Check if input has a ready value
      * @return true if value is ready, false otherwise
      */
-    bool ready() const;
+    bool ready() const
+    {
+        return m_input->is_ready();
+    }
 
 private:
     std::unique_ptr<Private::InputConcept> m_input; ///< Type-erased input implementation
@@ -34,7 +39,5 @@ private:
 
 } // namespace io
 } // namespace ducta
-
-#include "ducta/io/Private/InputRef.inl"
 
 #endif // DUCTA_T_INPUT_REF_HPP

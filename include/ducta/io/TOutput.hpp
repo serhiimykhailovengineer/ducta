@@ -1,87 +1,71 @@
 #ifndef DUCTA_T_OUTPUT_HPP
 #define DUCTA_T_OUTPUT_HPP
 
+#include "ducta/io/Private/TOutputModel.hpp"
+
 namespace ducta {
 namespace IO {
 
 template <typename T>
 class TOutput
 {
-private:
-    class Concept
-    {
-    public:
-        virtual ~Concept() = default;
-
-        virtual void set(T const& value) = 0;
-        virtual void set(T&& value) = 0;
-
-        virtual OutputRef get_ref() = 0;
-    };
-
-    template <typename OutputT>
-    class Model : public Concept
-    {
-        OutputT m_output;
-
-    public:
-        Model(OutputT output)
-            : m_output(std::move(output))
-        {
-        }
-
-        void set(T const& value) override
-        {
-            m_output.set(value);
-        }
-
-        void set(T&& value) override
-        {
-            m_output.set(std::move(value));
-        }
-
-        OutputRef get_ref() override
-        {
-            return OutputRef{m_output};
-        }
-    };
-
 public:
     template <typename TOutputType>
     TOutput(TOutputType&& output);
 
-    void set(T const& value) { m_output->set(value); }
-    void set(T&& value) { m_output->set(std::move(value)); }
+    void set(T const& value);
+    void set(T&& value);
 
-    TOutput<T>& operator=(T const& value)
-    {
-        set(value);
-        return *this;
-    }
+    TOutput<T>& operator=(T const& value);
 
-    TOutput<T>& operator=(T&& value)
-    {
-        set(std::move(value));
-        return *this;
-    }
+    TOutput<T>& operator=(T&& value);
 
-    OutputRef get_ref()
-    {
-        return m_output->get_ref();
-    }
+    OutputRef get_ref();
 
 private:
-    std::unique_ptr<Concept> m_output;
+    std::unique_ptr<Private::TOutputConcept<T>> m_output;
 };
 
 template <typename T>
 template <typename TOutputType>
 TOutput<T>::TOutput(TOutputType&& output)
-: m_output(std::make_unique<Model<std::decay_t<TOutputType>>>(std::forward<TOutputType>(output)))
+: m_output(std::make_unique<Private::TOutputModel<std::decay_t<TOutputType>, T>>(std::forward<TOutputType>(output)))
 {
 }
 
-} // namespace io
+template <typename T>
+void TOutput<T>::set(T const& value) 
+{
+    m_output->set(value);
+}
+
+template <typename T>
+void TOutput<T>::set(T&& value)
+{
+    m_output->set(std::move(value));
+}
+
+template <typename T>
+TOutput<T>& TOutput<T>::operator=(T const& value)
+{
+    set(value);
+    return *this;
+}
+
+template <typename T>
+TOutput<T>& TOutput<T>::operator=(T&& value)
+{
+    set(std::move(value));
+    return *this;
+}
+
+template <typename T>
+OutputRef TOutput<T>::get_ref()
+{
+    return m_output->get_ref();
+}
+
+} // namespace IO
 } // namespace ducta
 
 #endif // DUCTA_T_OUTPUT_HPP

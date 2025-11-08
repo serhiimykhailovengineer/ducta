@@ -11,7 +11,7 @@ public:
     virtual bool is_ready() const = 0;
 };
 } // namespace Private
-} // namespace io
+} // namespace IO
 } // namespace ducta
 
 #endif // DUCTA_INPUT_CONCEPT_HPP

@@ -4,6 +4,7 @@ project(Ducta LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(Boost REQUIRED COMPONENTS system)
 find_package(GTest REQUIRED)
 
 add_library(ducta_io INTERFACE)

@@ -15,6 +15,7 @@ target_link_libraries(${TARGET_NAME}
         GTest::Main
         GTest::gtest
         GTest::gmock
+        Boost::boost
         ducta_io
         ducta_io_mocks
 )

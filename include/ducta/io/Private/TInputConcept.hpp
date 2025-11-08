@@ -19,7 +19,7 @@ public:
     virtual ValueType const& get_value() const = 0;
     virtual void do_notify(ValueType const& value) = 0;
     virtual void set_callback(std::function<void(ValueType const&)> callback) = 0;
-    // virtual InputRef get_ref() = 0;
+    virtual InputRef get_ref() = 0;
 };
 
    

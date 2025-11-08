@@ -4,7 +4,7 @@
 #include "ducta/io/TOutput.hpp"
 
 #include "ducta/io/TOutputMock.hpp"
-#include "ducta/io/InputMock.hpp"
+#include "ducta/io/TInputMock.hpp"
 
 using namespace ducta;
 
@@ -50,22 +50,21 @@ TEST(TOutputTests, assign_operator)
     output = std::move(temp_value);
 }
 
-// TEST(TOutputTests, bind) 
-// {
-//     IO::TOutputMock<int> output_mock;
+TEST(TOutputTests, bind) 
+{
+    IO::TOutputMock<int> output_mock;
 
-//     IO::TOutput<int> output{IO::TOutputMockWrapper<int>{output_mock}};
+    IO::TOutput<int> output{IO::TOutputMockWrapper<int>{output_mock}};
 
-//     EXPECT_CALL(output_mock, bind(testing::_)).WillOnce(testing::Return(Utils::Deferred{}));
+    EXPECT_CALL(output_mock, bind(testing::_)).WillOnce(testing::Return(Utils::Deferred{}));
 
-//     auto output_ref = output.get_ref();
+    auto output_ref = output.get_ref();
 
-//     IO::TInputMock<int> input_mock;
+    IO::TInputMock<int> input_mock;
 
-//     IO::TInput<int> input{IO::TInputMockWrapper<int>{input_mock}};
+    IO::TInput<int> input{IO::TInputMockWrapper<int>{input_mock}};
 
-//     auto input_ref = input.get_ref();
+    auto input_ref = input.get_ref();
 
-//     auto deferred = bind(output_ref, input_ref);
-
-// }
+    auto deferred = bind(output_ref, input_ref);
+}

@@ -16,7 +16,7 @@ public:
     MOCK_METHOD(void, set_const_ref, (T const&), ());
     MOCK_METHOD(void, set_move, (T&&), ());
 
-    // MOCK_METHOD(Utils::Deferred, bind, (TInputMockWrapper<T>& input), ());
+    MOCK_METHOD(Utils::Deferred, bind, (TInputMockWrapper<T>& input), ());
 
 };
 
@@ -37,22 +37,22 @@ public:
     }
 };
 
-// template <typename T>
-// inline Utils::Deferred bind(TOutputMockWrapper<T>& output, TInputMockWrapper<T>& input)
-// {
-//     return output.mock.bind(input);
-// }
+template <typename T>
+inline Utils::Deferred bind(TOutputMockWrapper<T>& output, TInputMockWrapper<T>& input)
+{
+    return output.mock.bind(input);
+}
 
-// template <typename T>
-// inline Utils::Deferred bind(TOutputMockWrapper<T>& output, InputRef& input)
-// {
-//     if(auto wrapper = cast<TInputMockWrapper<T>>(input))
-//     {
-//         return bind(output, *wrapper);
-//     }
-//     throw std::runtime_error("Incompatible types for binding TOutputMockWrapper");
+template <typename T>
+inline Utils::Deferred bind(TOutputMockWrapper<T>& output, InputRef& input)
+{
+    if(auto wrapper = cast<TInputMockWrapper<T>>(input))
+    {
+        return bind(output, *wrapper);
+    }
+    throw std::runtime_error("Incompatible types for binding TOutputMockWrapper");
 
-//     return {};
-// }
+    return {};
+}
 } // namespace IO
 } // namespace ducta

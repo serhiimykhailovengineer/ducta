@@ -23,6 +23,11 @@ public:
         return m_input.ready();
     }
 
+    Utils::TypeIndex type_id() const override
+    {
+        return Utils::type_id<InputT>();
+    }
+
     ValueType const& get_value() const override
     {
         return m_input.value();
@@ -38,10 +43,10 @@ public:
         m_input.set_callback(std::move(callback));
     }
 
-    // InputRef get_ref() override
-    // {
-    //     return InputRef{m_input};
-    // }
+    InputRef get_ref() override
+    {
+        return InputRef{m_input};
+    }
 };
 
 } // namespace Private

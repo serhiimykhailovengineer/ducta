@@ -16,6 +16,11 @@ public:
     OutputModelRef(OutputT& output) 
     : m_output(output) 
     {}
+
+    Utils::Deferred do_bind(InputRef& input) override
+    {
+        return bind(m_output, input);
+    }
 };
 
 } // namespace Private

@@ -2,11 +2,17 @@
 #define DUCTA_IO_OUTPUT_REF_HPP
 
 #include "ducta/io/Private/OutputModelRef.hpp"
+#include "ducta/io/InputRef.hpp"
+#include "ducta/Utils/Deferred.hpp"
 
 #include <memory>
 
 namespace ducta {
 namespace IO {
+
+template <typename OutputType>
+Utils::Deferred bind(OutputType& output, InputRef& input);
+
 class OutputRef
 {
 public:
@@ -20,9 +26,19 @@ public:
     : m_output(std::make_unique<Private::OutputModelRef<std::decay_t<TOutputType>>>(std::forward<TOutputType>(output)))
     {}
 
+    Utils::Deferred do_bind(InputRef& input)
+    {
+        return m_output->do_bind(input);
+    }
+
 private:
     std::unique_ptr<Private::OutputConcept> m_output; ///< Type-erased output implementation
 };
+
+Utils::Deferred bind(OutputRef& output, InputRef& input)
+{
+    return output.do_bind(input);
+}
 
 } // namespace IO
 } // namespace ducta

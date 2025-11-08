@@ -23,6 +23,16 @@ public:
     {
         return m_input.ready();
     }
+
+    Utils::TypeIndex type_id() const override
+    {
+        return Utils::type_id<InputT>();
+    }
+
+    InputT& get_input()
+    {
+        return m_input;
+    }
 };
 
 } // namespace Private

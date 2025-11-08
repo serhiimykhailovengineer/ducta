@@ -2,14 +2,13 @@
 #define DUCTA_T_OUTPUT_CONCEPT_HPP
 
 #include "ducta/io/OutputRef.hpp"
-#include "ducta/io/Private/OutputConcept.hpp"
 
 namespace ducta {
 namespace IO {
 namespace Private {
 
 template <typename ValueType>
-class TOutputConcept : public OutputConcept
+class TOutputConcept
 {
 public:
     virtual ~TOutputConcept() = default;

@@ -12,9 +12,9 @@ target_include_directories(${TARGET_NAME}
 
 target_link_libraries(${TARGET_NAME}
     PUBLIC
-        gtest_main
-        gtest
-        gmock
+        GTest::Main
+        GTest::gtest
+        GTest::gmock
         ducta_io
         ducta_io_mocks
 )

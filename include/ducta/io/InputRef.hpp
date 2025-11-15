@@ -21,8 +21,8 @@ public:
      * @param input The input object to wrap
      */
     template <typename TInputType>
-    InputRef(TInputType&& input)
-    : m_concept(std::make_unique<Private::InputModelRef<std::decay_t<TInputType>>>(std::forward<TInputType>(input)))
+    explicit InputRef(TInputType&& input)
+    : m_concept(std::make_shared<Private::InputModelRef<std::decay_t<TInputType>>>(std::forward<TInputType>(input)))
     {}
 
     /**
@@ -35,14 +35,14 @@ public:
     }
 
     template <typename InputT>
-    friend InputT* cast(InputRef& input);
+    friend InputT* cast(InputRef input);
 
 private:
-    std::unique_ptr<Private::InputConcept> m_concept; ///< Type-erased input implementation
+    std::shared_ptr<Private::InputConcept> m_concept; ///< Type-erased input implementation
 };
 
 template <typename InputT>
-InputT* cast(InputRef& input)
+InputT* cast(InputRef input)
 {
     if (Utils::type_id<InputT>() == input.m_concept->type_id())
     {

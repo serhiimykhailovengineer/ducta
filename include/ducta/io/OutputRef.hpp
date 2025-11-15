@@ -22,20 +22,20 @@ public:
      * @param output The output object to wrap
      */
     template <typename TOutputType>
-    OutputRef(TOutputType&& output)
-    : m_output(std::make_unique<Private::OutputModelRef<std::decay_t<TOutputType>>>(std::forward<TOutputType>(output)))
+    explicit OutputRef(TOutputType&& output)
+    : m_output(std::make_shared<Private::OutputModelRef<std::decay_t<TOutputType>>>(std::forward<TOutputType>(output)))
     {}
 
-    Utils::Deferred do_bind(InputRef& input)
+    Utils::Deferred do_bind(InputRef input)
     {
         return m_output->do_bind(input);
     }
 
 private:
-    std::unique_ptr<Private::OutputConcept> m_output; ///< Type-erased output implementation
+    std::shared_ptr<Private::OutputConcept> m_output; ///< Type-erased output implementation
 };
 
-Utils::Deferred bind(OutputRef& output, InputRef& input)
+Utils::Deferred bind(OutputRef output, InputRef input)
 {
     return output.do_bind(input);
 }

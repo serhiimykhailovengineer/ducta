@@ -17,7 +17,7 @@ public:
     : m_output(output) 
     {}
 
-    Utils::Deferred do_bind(InputRef& input) override
+    Utils::Deferred do_bind(InputRef input) override
     {
         return bind(m_output, input);
     }

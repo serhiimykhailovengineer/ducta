@@ -13,6 +13,9 @@ public:
     template <typename TOutputType>
     TOutput(TOutputType&& output);
 
+    template <typename TOutputType, typename... Args>
+    TOutput(std::in_place_type_t<TOutputType>, Args&&... args);
+
     void set(T const& value);
     void set(T&& value);
 
@@ -30,6 +33,13 @@ template <typename T>
 template <typename TOutputType>
 TOutput<T>::TOutput(TOutputType&& output)
 : m_output(std::make_unique<Private::TOutputModel<std::decay_t<TOutputType>, T>>(std::forward<TOutputType>(output)))
+{
+}
+
+template <typename T>
+template <typename TOutputType, typename... Args>
+TOutput<T>::TOutput(std::in_place_type_t<TOutputType>, Args&&... args)
+: m_output(std::make_unique<Private::TOutputModel<std::decay_t<TOutputType>, T>>(std::in_place_t{}, std::forward<Args>(args)...))
 {
 }
 

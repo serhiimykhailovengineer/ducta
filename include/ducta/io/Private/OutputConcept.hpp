@@ -14,7 +14,7 @@ class OutputConcept
 public:
     virtual ~OutputConcept() = default;
 
-    virtual Utils::Deferred do_bind(InputRef& input) = 0;
+    virtual Utils::Deferred do_bind(InputRef input) = 0;
 };
 
 } // namespace Private

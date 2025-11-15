@@ -18,6 +18,12 @@ public:
     {
     }
 
+    template <typename... Args>
+    TOutputModel(std::in_place_t, Args&&... args)
+        : m_output(std::forward<Args>(args)...)
+    {
+    }
+
     void set(ValueType const& value) override
     {
         m_output.set(value);

@@ -3,6 +3,8 @@
 
 #include "ducta/io/Private/TInputConcept.hpp"
 
+#include <utility>
+
 namespace ducta {
 namespace IO {
 namespace Private {
@@ -15,6 +17,12 @@ class TInputModel : public TInputConcept<ValueType>
 public:
     TInputModel(InputT input)
         : m_input(std::move(input))
+    {
+    }
+
+    template <typename... Args>
+    TInputModel(std::in_place_t, Args&&... args)
+        : m_input(std::forward<Args>(args)...)
     {
     }
 

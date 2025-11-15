@@ -32,6 +32,9 @@ public:
     template <typename TInputType>
     TInput(TInputType&& input);
 
+    template <typename TInputType, typename... Args>
+    TInput(std::in_place_type_t<TInputType>, Args&&... args);
+
     /**
      * @brief Check if input has a ready value
      * @return true if value is ready, false otherwise
@@ -90,6 +93,13 @@ template <typename T>
 template <typename TInputType>
 TInput<T>::TInput(TInputType&& input)
 : m_input(std::make_unique<Private::TInputModel<std::decay_t<TInputType>, T>>(std::forward<TInputType>(input)))
+{
+}
+
+template <typename T>
+template <typename TInputType, typename... Args>
+TInput<T>::TInput(std::in_place_type_t<TInputType>, Args&&... args)
+: m_input(std::make_unique<Private::TInputModel<std::decay_t<TInputType>, T>>(std::in_place_t{}, std::forward<Args>(args)...))
 {
 }
 

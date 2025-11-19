@@ -35,6 +35,18 @@ public:
     }
 
     template <typename InputT>
+    InputT* as()
+    {
+        if (Utils::type_id<InputT>() != m_concept->type_id())
+            return nullptr;
+
+        using ModelRefT = Private::InputModelRef<InputT>;
+        auto* model = static_cast<ModelRefT*>(m_concept.get());
+        return &model->get_input();
+    }
+
+
+    template <typename InputT>
     friend InputT* cast(InputRef input);
 
 private:
@@ -44,16 +56,10 @@ private:
 template <typename InputT>
 InputT* cast(InputRef input)
 {
-    if (Utils::type_id<InputT>() == input.m_concept->type_id())
-    {
-        InputT& value = static_cast<typename Private::InputModelRef<InputT>*>(input.m_concept.get())->get_input();
-        return &value;
-    }
-
-    return nullptr;
+    return input.as<InputT>();
 }
 
-} // namespace io
+} // namespace IO
 } // namespace ducta
 
 #endif // DUCTA_T_INPUT_REF_HPP

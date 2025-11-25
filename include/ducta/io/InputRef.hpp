@@ -59,6 +59,15 @@ InputT* cast(InputRef input)
     return input.as<InputT>();
 }
 
+template <typename Node>
+struct NodeInputsTraits
+{
+    static std::map<std::string, IO::InputRef> get(Node& node)
+    {
+        return std::map<std::string, IO::InputRef>{};
+    }
+};
+
 } // namespace IO
 } // namespace ducta
 

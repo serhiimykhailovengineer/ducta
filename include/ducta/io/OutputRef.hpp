@@ -35,10 +35,19 @@ private:
     std::shared_ptr<Private::OutputConcept> m_output; ///< Type-erased output implementation
 };
 
-Utils::Deferred bind(OutputRef output, InputRef input)
+inline Utils::Deferred bind(OutputRef output, InputRef input)
 {
     return output.do_bind(input);
 }
+
+template <typename Node>
+struct NodeOutputsTraits
+{
+    static std::map<std::string, IO::OutputRef> get(Node& node)
+    {
+        return std::map<std::string, IO::OutputRef>{};
+    }
+};
 
 } // namespace IO
 } // namespace ducta

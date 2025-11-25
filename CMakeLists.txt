@@ -13,5 +13,5 @@ target_include_directories(ducta_io
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-
+add_subdirectory(src)
 add_subdirectory(tests)

@@ -1,7 +1,7 @@
 #ifndef DUCTA_UTILS_DEFERRED_HPP
 #define DUCTA_UTILS_DEFERRED_HPP
 
-#include <functional>
+#include "ducta/Utils/Function.hpp"
 
 namespace ducta {
 namespace Utils {
@@ -45,7 +45,7 @@ public:
 
 
 private:
-    std::function<void()> _func;
+    Function<void()> _func;
 };
 
 } // namespace Utils

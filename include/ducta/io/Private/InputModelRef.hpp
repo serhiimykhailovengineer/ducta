@@ -24,9 +24,29 @@ public:
         return m_input.ready();
     }
 
+    void notify(Utils::TypeIndex type, void const* value) override
+    {
+        using ValueType = typename InputT::value_type;
+        if (type != Utils::type_id<ValueType>())
+        {
+            throw std::runtime_error("Incompatible type for notification");
+        }
+
+        m_input.notify(*static_cast<ValueType const*>(value));
+    }
+
     Utils::TypeIndex type_id() const override
     {
         return Utils::type_id<InputT>();
+    }
+
+    bool areEqual(InputConcept const& other) const override
+    {
+        if (Utils::type_id<InputT>() != other.type_id())
+            return false;
+
+        auto const& other_model = static_cast<InputModelRef<InputT> const&>(other);
+        return &m_input == &other_model.m_input;
     }
 
     InputT& get_input()

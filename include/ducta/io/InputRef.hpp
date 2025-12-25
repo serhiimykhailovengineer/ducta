@@ -20,10 +20,14 @@ public:
      * @tparam TInputType The concrete input type
      * @param input The input object to wrap
      */
-    template <typename TInputType>
-    explicit InputRef(TInputType&& input)
-    : m_concept(std::make_shared<Private::InputModelRef<std::decay_t<TInputType>>>(std::forward<TInputType>(input)))
+    template <typename TInputType,
+              typename = std::enable_if_t<!std::is_same_v<std::decay_t<TInputType>, InputRef>>>
+    explicit InputRef(TInputType& input)
+        : m_concept(std::make_shared<Private::InputModelRef<std::decay_t<TInputType>>>(input))
     {}
+
+    InputRef(InputRef const&) = default;
+    InputRef& operator=(InputRef const&) = default;
 
     /**
      * @brief Check if input has a ready value
@@ -32,6 +36,12 @@ public:
     bool ready() const
     {
         return m_concept->is_ready();
+    }
+
+    template <typename T>
+    void notify(T const& value)
+    {
+        m_concept->notify(Utils::type_id<std::decay_t<T>>(), &value);
     }
 
     template <typename InputT>
@@ -48,6 +58,11 @@ public:
 
     template <typename InputT>
     friend InputT* cast(InputRef input);
+
+    friend bool operator==(InputRef const& lhs, InputRef const& rhs)
+    {
+        return lhs.m_concept->areEqual(*rhs.m_concept);
+    }
 
 private:
     std::shared_ptr<Private::InputConcept> m_concept; ///< Type-erased input implementation

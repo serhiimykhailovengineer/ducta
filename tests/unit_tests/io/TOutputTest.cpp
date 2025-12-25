@@ -3,19 +3,13 @@
 #include "ducta/io/TInput.hpp"
 #include "ducta/io/TOutput.hpp"
 
-#include "ducta/io/TOutputMock.hpp"
-#include "ducta/io/TInputMock.hpp"
+#include "ducta/io/InputRef.hpp"
 
 using namespace ducta;
 
 TEST(TOutputTests, set_const_ref) 
 {
-    IO::TOutputMock<int> output_mock;
-
-    IO::TOutput<int> output{IO::TOutputMockWrapper<int>{output_mock}};
-
-    EXPECT_CALL(output_mock, set_const_ref(testing::_)).Times(1);
-    EXPECT_CALL(output_mock, set_move(testing::_)).Times(0);
+    IO::TOutput<int> output{};
 
     int temp_value = 100;
     output.set(temp_value);
@@ -23,12 +17,7 @@ TEST(TOutputTests, set_const_ref)
 
 TEST(TOutputTests, set_move) 
 {
-    IO::TOutputMock<int> output_mock;
-
-    IO::TOutput<int> output{IO::TOutputMockWrapper<int>{output_mock}};
-
-    EXPECT_CALL(output_mock, set_const_ref(testing::_)).Times(0);
-    EXPECT_CALL(output_mock, set_move(testing::_)).Times(1);
+    IO::TOutput<int> output{};
 
     int temp_value = 200;
     output.set(std::move(temp_value));
@@ -36,12 +25,7 @@ TEST(TOutputTests, set_move)
 
 TEST(TOutputTests, assign_operator) 
 {
-    IO::TOutputMock<int> output_mock;
-
-    IO::TOutput<int> output{IO::TOutputMockWrapper<int>{output_mock}};
-
-    EXPECT_CALL(output_mock, set_const_ref(testing::_)).Times(1);
-    EXPECT_CALL(output_mock, set_move(testing::_)).Times(1);
+    IO::TOutput<int> output{};
 
     int temp_value = 300;
     output = temp_value;
@@ -52,19 +36,24 @@ TEST(TOutputTests, assign_operator)
 
 TEST(TOutputTests, bind) 
 {
-    IO::TOutputMock<int> output_mock;
+    IO::TOutput<int> output{};
 
-    IO::TOutput<int> output{IO::TOutputMockWrapper<int>{output_mock}};
+    IO::TInput<int> input{};
+    IO::InputRef input_ref{input};
 
-    EXPECT_CALL(output_mock, bind(testing::_)).WillOnce(testing::Return(Utils::Deferred{}));
+    {
+        auto deferred = output.bind(input_ref);
 
-    auto output_ref = output.get_ref();
+        EXPECT_FALSE(input.ready());
+        
+        int test_value = 500;
+        output.set(test_value);
 
-    IO::TInputMock<int> input_mock;
-
-    IO::TInput<int> input{IO::TInputMockWrapper<int>{input_mock}};
-
-    auto input_ref = input.get_ref();
-
-    auto deferred = bind(output_ref, input_ref);
+        ASSERT_TRUE(input.ready());
+        EXPECT_EQ(input.value(), 500);
+        EXPECT_FALSE(input.ready());
+    }
+    
+    output.set(400);
+    EXPECT_FALSE(input.ready());
 }

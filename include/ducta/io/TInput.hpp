@@ -6,154 +6,80 @@
 #ifndef DUCTA_T_INPUT_HPP
 #define DUCTA_T_INPUT_HPP
 
-#include "ducta/io/Private/TInputModel.hpp"
+#include <boost/optional.hpp>
 
-#include <memory>
+#include "ducta/Utils/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
 
 /**
- * @brief Type-erased wrapper for input values of type T
- * @tparam T The type of value this input handles
+ * @brief Class that represents an input of a specific type. It can be bind to output of compatible type. Read-only.
+ * @tparam T The type of value this input handles. Can be a value type or a reference type.
  * 
- * TInput provides a type-erased interface for handling input values,
- * allowing different input implementations to be used polymorphically.
+ * This class provides methods to check compatibility with types, check readiness, retrieve values, and notify new values.
  */
 template <typename T>
 class TInput
 {
 public:
-    /**
-     * @brief Construct TInput from a concrete input type
-     * @tparam TInputType The concrete input type
-     * @param input The input object to wrap
-     */
-    template <typename TInputType>
-    TInput(TInputType&& input);
+    using value_type = std::decay_t<T>;
+    using storage_type = std::conditional_t<std::is_reference<T>::value, const value_type&, value_type>;
 
-    template <typename TInputType, typename... Args>
-    TInput(std::in_place_type_t<TInputType>, Args&&... args);
+public:
+    TInput() = default;
+    explicit TInput(T const& value)
+        : _value(value)
+    {
+    }
 
-    /**
-     * @brief Check if input has a ready value
-     * @return true if value is ready, false otherwise
-     */
-    bool ready() const;
+    bool compatible(Utils::TypeIndex type) const
+    {
+        return type == Utils::type_id<T>();
+    }
 
-    /**
-     * @brief Get the current input value
-     * @return Reference to the current value
-     */
-    T const& value() const;
-    
-    /**
-     * @brief Get the input value or a default if not ready
-     * @param default_value The default value to return if not ready
-     * @return Reference to the current value or default value
-     */
-    T const& value_or(T const& default_value) const;
+    bool ready() const
+    {
+        return _value.has_value();
+    }
 
-    /**
-     * @brief Notify input with a new value
-     * @param value The value to notify
-     */
-    void notify(T const& value);
-    
-    /**
-     * @brief Set a callback to be invoked when value changes
-     * @param callback The callback function
-     */
-    void set_callback(std::function<void(T const&)> callback);
+    storage_type value()
+    {
+        if (!ready())
+        {
+            throw std::runtime_error("Input not ready");
+        }
 
-    /**
-     * @brief Get a reference to this input
-     * @return InputRef reference object
-     */
-    InputRef get_ref();
+        storage_type result_value = _value.value();
+        _value.reset();
+        return result_value;
+    }
 
-    /**
-     * @brief Implicit conversion to value type
-     * @return Reference to the current value
-     */
-    operator T const&() const;
-    
-    /**
-     * @brief Check if input is ready (boolean conversion)
-     * @return true if value is ready, false otherwise
-     */
-    operator bool() const;
+    storage_type value_or(value_type const& default_value)
+    {
+        storage_type result_value = _value.value_or(default_value);
+        _value.reset();
+        return result_value;
+    }
+
+    void notify(T const& value)
+    {
+        _value.emplace(value);
+    }
+
+    void release()
+    {
+        _value.reset();
+    }
+
+    operator bool() const
+    {
+        return ready();
+    }
 
 private:
-    std::unique_ptr<Private::TInputConcept<T>> m_input; ///< Type-erased input implementation
+    boost::optional<storage_type> _value;
 };
-
-
-template <typename T>
-template <typename TInputType>
-TInput<T>::TInput(TInputType&& input)
-: m_input(std::make_unique<Private::TInputModel<std::decay_t<TInputType>, T>>(std::forward<TInputType>(input)))
-{
-}
-
-template <typename T>
-template <typename TInputType, typename... Args>
-TInput<T>::TInput(std::in_place_type_t<TInputType>, Args&&... args)
-: m_input(std::make_unique<Private::TInputModel<std::decay_t<TInputType>, T>>(std::in_place_t{}, std::forward<Args>(args)...))
-{
-}
-
-template <typename T>
-bool TInput<T>::ready() const
-{
-    return m_input->is_ready();
-}
-
-template <typename T>
-T const& TInput<T>::value() const
-{
-    return m_input->get_value();
-}
-
-template <typename T>
-T const& TInput<T>::value_or(T const& default_value) const
-{
-    if (ready())
-    {
-        return value();
-    }
-    return default_value;
-}
-
-template <typename T>
-void TInput<T>::notify(T const& value)
-{
-    m_input->do_notify(value);
-}
-
-template <typename T>
-void TInput<T>::set_callback(std::function<void(T const&)> callback)
-{
-    m_input->set_callback(std::move(callback));
-}
-
-template <typename T>
-InputRef TInput<T>::get_ref()
-{
-    return m_input->get_ref();
-}
-
-template <typename T>
-TInput<T>::operator T const&() const
-{
-    return value();
-}
-
-template <typename T>
-TInput<T>::operator bool() const
-{
-    return ready();
-}
 
 } // namespace IO
 } // namespace ducta

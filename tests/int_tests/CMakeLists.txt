@@ -1,7 +1,7 @@
 set(TARGET_NAME IntTests)
 
 add_executable(${TARGET_NAME}
-    ValueIOTest.cpp
+    IOSizeTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

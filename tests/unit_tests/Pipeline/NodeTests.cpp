@@ -5,8 +5,6 @@
 #include "ducta/io/TInput.hpp"
 #include "ducta/io/TOutput.hpp"
 
-#include "ducta/ValueIO/ValueIOBuilder.hpp"
-
 #include "ducta/Pipeline/Node.hpp"
 
 class IterableNodeMock
@@ -177,11 +175,7 @@ struct NodeWithInputsAndOutputs
     IO::TInput<int> input2;
     IO::TOutput<int> output1;
 
-    template <typename IOBuilder>
-    NodeWithInputsAndOutputs(IOBuilder& builder)
-    : input1{builder.template make_input<int>()}
-    , input2{builder.template make_input<int>()}
-    , output1{builder.template make_output<int>()}
+    NodeWithInputsAndOutputs()
     {}
 
     void init()
@@ -200,8 +194,8 @@ struct NodeInputsTraits<NodeWithInputsAndOutputs>
     static std::map<std::string, IO::InputRef> get(Node& node)
     {
         return std::map<std::string, IO::InputRef>{
-            {"input1", node.input1.get_ref()},
-            {"input2", node.input2.get_ref()}
+            {"input1", IO::InputRef{node.input1}},
+            {"input2", IO::InputRef{node.input2}}
         };
     }
 };
@@ -213,7 +207,7 @@ struct NodeOutputsTraits<NodeWithInputsAndOutputs>
     static std::map<std::string, IO::OutputRef> get(Node& node)
     {
         return std::map<std::string, IO::OutputRef>{
-            {"output1", node.output1.get_ref()}
+            {"output1", IO::OutputRef{node.output1}}
         };
     }
 };
@@ -222,8 +216,7 @@ struct NodeOutputsTraits<NodeWithInputsAndOutputs>
 
 TEST(NodeTests, check_inputs_and_outputs) 
 {
-    IO::ValueIOBuilder io_builder;
-    Pipeline::Node node{std::in_place_type_t<NodeWithInputsAndOutputs>{}, io_builder};
+    Pipeline::Node node{std::in_place_type_t<NodeWithInputsAndOutputs>{}};
 
     auto inputs = node.get_inputs();
     ASSERT_EQ(inputs.size(), 2U);

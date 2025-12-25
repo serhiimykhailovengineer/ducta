@@ -2,7 +2,9 @@ set(TARGET_NAME IOTests)
 
 add_executable(${TARGET_NAME}
     TInputTest.cpp
+    InputRefTest.cpp
     TOutputTest.cpp
+    OutputRefTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

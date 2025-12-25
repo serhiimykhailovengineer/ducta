@@ -19,7 +19,7 @@ public:
 
     Utils::Deferred do_bind(InputRef input) override
     {
-        return bind(m_output, input);
+        return m_output.bind(input); // return bind(m_output, input);
     }
 };
 

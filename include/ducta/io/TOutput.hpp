@@ -1,7 +1,11 @@
 #ifndef DUCTA_T_OUTPUT_HPP
 #define DUCTA_T_OUTPUT_HPP
 
-#include "ducta/io/Private/TOutputModel.hpp"
+#include "ducta/io/TInput.hpp"
+#include "ducta/io/InputRef.hpp"
+
+#include "ducta/Utils/TypeIndex.hpp"
+#include "ducta/Utils/Deferred.hpp"
 
 namespace ducta {
 namespace IO {
@@ -10,69 +14,73 @@ template <typename T>
 class TOutput
 {
 public:
-    template <typename TOutputType>
-    TOutput(TOutputType&& output);
+    using value_type = T;
 
-    template <typename TOutputType, typename... Args>
-    TOutput(std::in_place_type_t<TOutputType>, Args&&... args);
+public:
+    TOutput()
+    : _value{}
+    {
+    }
 
-    void set(T const& value);
-    void set(T&& value);
+    Utils::TypeIndex type_id() const
+    {
+        return Utils::type_id<T>();
+    }
 
-    TOutput<T>& operator=(T const& value);
+    void set(T const& value) 
+    {
+        _value = value;
+        for (auto& input_ref : _inputs)
+        {
+            input_ref.notify(_value);
+        }
+    }
 
-    TOutput<T>& operator=(T&& value);
+    void set(T&& value) 
+    {
+        _value = std::move(value);
+        for (auto& input_ref : _inputs)
+        {
+            input_ref.notify(_value);
+        }
+    }
 
-    OutputRef get_ref();
+    TOutput<T>& operator=(T const& value)
+    {
+        set(value);
+        return *this;
+    }
+
+    TOutput<T>& operator=(T&& value)
+    {
+        set(std::move(value));
+        return *this;
+    }
+
+    Utils::Deferred bind(InputRef input)
+    {
+        {
+            _inputs.emplace_back(input);
+            return Utils::Deferred{[this, &input]() {
+                // Remove input from the list upon destruction
+                _inputs.erase(std::remove_if(_inputs.begin(), _inputs.end(),
+                    [&input](InputRef& ref) { return ref == input; }),
+                    _inputs.end());
+            }};
+        }
+
+        return {};
+    }
 
 private:
-    std::unique_ptr<Private::TOutputConcept<T>> m_output;
+    T _value;
+    std::vector<InputRef> _inputs;
 };
 
 template <typename T>
-template <typename TOutputType>
-TOutput<T>::TOutput(TOutputType&& output)
-: m_output(std::make_unique<Private::TOutputModel<std::decay_t<TOutputType>, T>>(std::forward<TOutputType>(output)))
+Utils::Deferred bind(TOutput<T>& output, InputRef input)
 {
-}
-
-template <typename T>
-template <typename TOutputType, typename... Args>
-TOutput<T>::TOutput(std::in_place_type_t<TOutputType>, Args&&... args)
-: m_output(std::make_unique<Private::TOutputModel<std::decay_t<TOutputType>, T>>(std::in_place_t{}, std::forward<Args>(args)...))
-{
-}
-
-template <typename T>
-void TOutput<T>::set(T const& value) 
-{
-    m_output->set(value);
-}
-
-template <typename T>
-void TOutput<T>::set(T&& value)
-{
-    m_output->set(std::move(value));
-}
-
-template <typename T>
-TOutput<T>& TOutput<T>::operator=(T const& value)
-{
-    set(value);
-    return *this;
-}
-
-template <typename T>
-TOutput<T>& TOutput<T>::operator=(T&& value)
-{
-    set(std::move(value));
-    return *this;
-}
-
-template <typename T>
-OutputRef TOutput<T>::get_ref()
-{
-    return m_output->get_ref();
+    return output.bind(input);
 }
 
 } // namespace IO

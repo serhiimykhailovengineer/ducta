@@ -24,6 +24,11 @@ public:
         return m_input.ready();
     }
 
+    bool is_compatible(Utils::TypeIndex type) const override
+    {
+        return type == Utils::type_id<typename InputT::value_type>();
+    }
+
     void notify(Utils::TypeIndex type, void const* value) override
     {
         using ValueType = typename InputT::value_type;

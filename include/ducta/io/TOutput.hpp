@@ -59,6 +59,7 @@ public:
 
     Utils::Deferred bind(InputRef input)
     {
+        if (input.compatible(Utils::type_id<T>()))
         {
             _inputs.emplace_back(input);
             return Utils::Deferred{[this, &input]() {

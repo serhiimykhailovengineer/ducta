@@ -38,6 +38,11 @@ public:
         return m_concept->is_ready();
     }
 
+    bool compatible(Utils::TypeIndex type) const
+    {
+        return m_concept->is_compatible(type);
+    }
+
     template <typename T>
     void notify(T const& value)
     {

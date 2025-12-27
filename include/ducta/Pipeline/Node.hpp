@@ -2,6 +2,8 @@
 #define DUCTA_PIPELINE_NODE_HPP
 
 #include <map>
+#include <memory>
+
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
 

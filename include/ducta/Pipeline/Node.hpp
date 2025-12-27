@@ -38,8 +38,8 @@ private:
         virtual void iterate() = 0;
         virtual void release() = 0;
 
-        virtual std::map<std::string, IO::InputRef> get_inputs() = 0;
-        virtual std::map<std::string, IO::OutputRef> get_outputs() = 0;
+        virtual std::map<std::string, IO::InputRef> const& get_inputs() = 0;
+        virtual std::map<std::string, IO::OutputRef> const& get_outputs() = 0;
     };
 
     template <typename NodeType>
@@ -70,12 +70,12 @@ private:
             m_node.release();
         }
 
-        std::map<std::string, IO::InputRef> get_inputs() override
+        std::map<std::string, IO::InputRef> const& get_inputs() override
         {
             return IO::NodeInputsTraits<NodeType>::get(m_node);
         }
 
-        std::map<std::string, IO::OutputRef> get_outputs() override
+        std::map<std::string, IO::OutputRef> const& get_outputs() override
         {
             return IO::NodeOutputsTraits<NodeType>::get(m_node);
         }
@@ -113,12 +113,12 @@ private:
             m_node.release();
         }
 
-        std::map<std::string, IO::InputRef> get_inputs() override
+        std::map<std::string, IO::InputRef> const& get_inputs() override
         {
             return IO::NodeInputsTraits<NodeType>::get(m_node);
         }
 
-        std::map<std::string, IO::OutputRef> get_outputs() override
+        std::map<std::string, IO::OutputRef> const& get_outputs() override
         {
             return IO::NodeOutputsTraits<NodeType>::get(m_node);
         }
@@ -168,8 +168,8 @@ public:
     void iterate();
     void release();
 
-    std::map<std::string, IO::InputRef> get_inputs();
-    std::map<std::string, IO::OutputRef> get_outputs();
+    std::map<std::string, IO::InputRef> const& get_inputs();
+    std::map<std::string, IO::OutputRef> const& get_outputs();
 
 private:
     std::unique_ptr<Concept> m_concept;

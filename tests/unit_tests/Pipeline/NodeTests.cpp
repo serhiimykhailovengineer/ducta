@@ -191,12 +191,13 @@ template<>
 struct NodeInputsTraits<NodeWithInputsAndOutputs>
 {
     using Node = NodeWithInputsAndOutputs;
-    static std::map<std::string, IO::InputRef> get(Node& node)
+    static std::map<std::string, IO::InputRef> const& get(Node& node)
     {
-        return std::map<std::string, IO::InputRef>{
+        static std::map<std::string, IO::InputRef> inputs{
             {"input1", IO::InputRef{node.input1}},
             {"input2", IO::InputRef{node.input2}}
         };
+        return inputs;
     }
 };
 
@@ -204,11 +205,12 @@ template<>
 struct NodeOutputsTraits<NodeWithInputsAndOutputs>
 {
     using Node = NodeWithInputsAndOutputs;
-    static std::map<std::string, IO::OutputRef> get(Node& node)
+    static std::map<std::string, IO::OutputRef> const& get(Node& node)
     {
-        return std::map<std::string, IO::OutputRef>{
+        static std::map<std::string, IO::OutputRef> outputs{
             {"output1", IO::OutputRef{node.output1}}
         };
+        return outputs;
     }
 };
 } // namespace IO

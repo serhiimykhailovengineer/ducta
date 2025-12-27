@@ -38,7 +38,7 @@ public:
     }
 };
 
-TEST(ValueIOTest, input_not_ready) 
+TEST(ValueIOTest, multiplier_process) 
 {
     IO::TOutput<int> left;
     IO::TOutput<int> right;

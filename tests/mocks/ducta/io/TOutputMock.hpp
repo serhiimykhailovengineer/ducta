@@ -26,6 +26,10 @@ class TOutputMockWrapper
 public:
     TOutputMock<T>& mock;
 
+    explicit TOutputMockWrapper(TOutputMock<T>& mock_ref)
+    : mock(mock_ref)
+    {}
+
     void set(T const& value)
     {
         mock.set_const_ref(value);

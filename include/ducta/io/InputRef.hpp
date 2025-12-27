@@ -13,7 +13,7 @@ namespace ducta {
 namespace IO {
 
 /**
- * @brief Class that represents an type-erased reference of input. Read-only.
+ * @brief Class that represents a type-erased reference of input. Read-only.
  * 
  */
 class InputRef

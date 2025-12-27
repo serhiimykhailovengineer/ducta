@@ -29,8 +29,8 @@ public:
     using storage_type = typename TInputMock<T>::storage_type;
 
 public:
-    TInputMockWrapper(TInputMock<T>& mock)
-        : mock(mock)
+    explicit TInputMockWrapper(TInputMock<T>& mock_ref)
+        : mock(mock_ref)
     {}
 
     TInputMock<T>& mock;

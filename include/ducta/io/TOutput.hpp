@@ -11,7 +11,7 @@ namespace ducta {
 namespace IO {
 
 /**
- * @brief Class that represents an output of a specific type. It can be bind inputs of compatible type. Write-only.
+ * @brief Class that represents an output of a specific type. It can bind to inputs of compatible type. Write-only.
  * @tparam T The type of value this output handles. Can be a value type.
  * 
  * This class provides methods to check compatibility with types, set values, and notify inputs of new values.
@@ -86,7 +86,7 @@ private:
 };
 
 template <typename T>
-Utils::Deferred bind(TOutput<T>& output, InputRef& input)
+Utils::Deferred bind(TOutput<T>& output, InputRef const& input)
 {
     return output.bind(input);
 }

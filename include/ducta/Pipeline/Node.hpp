@@ -151,7 +151,6 @@ private:
         return std::make_unique<Model<decayed_node_type>>(std::in_place_t{}, std::forward<Args>(args)...);
     }
     
-
 public:
     template <typename NodeType>
     Node(NodeType&& node)

@@ -1,5 +1,5 @@
 /**
- * @file TInput.hpp
+ * @file InputRef.hpp
  * @brief Type-erased input wrapper for handling input values
  */
 
@@ -30,9 +30,6 @@ public:
         : m_concept(std::make_shared<Private::InputModelRef<std::decay_t<TInputType>>>(input))
     {}
 
-    InputRef(InputRef const&) = default;
-    InputRef& operator=(InputRef const&) = default;
-
     /**
      * @brief Check if input has a ready value
      * @return true if value is ready, false otherwise
@@ -42,17 +39,32 @@ public:
         return m_concept->is_ready();
     }
 
+    /**
+     * @brief Check if the input is compatible with the given type
+     * @param type The type to check compatibility against
+     * @return true if compatible, false otherwise
+     */
     bool compatible(Utils::TypeIndex type) const
     {
         return m_concept->is_compatible(type);
     }
 
+    /**
+     * @brief Notify the input of a new value
+     * @tparam T The type of the value
+     * @param value The value to notify
+     */
     template <typename T>
     void notify(T const& value)
     {
         m_concept->notify(Utils::type_id<std::decay_t<T>>(), &value);
     }
 
+    /**
+     * @brief Attempt to cast the InputRef back to its original concrete type
+     * @tparam InputT The concrete input type to cast to
+     * @return Pointer to the concrete input type if successful, nullptr otherwise
+     */
     template <typename InputT>
     InputT* as()
     {
@@ -64,10 +76,21 @@ public:
         return &model->get_input();
     }
 
-
+    /**
+    * @brief Friend function to cast InputRef to concrete type
+    * @tparam InputT The concrete input type to cast to
+    * @param input The InputRef to cast
+    * @return Pointer to the concrete input type if successful, nullptr otherwise
+    */
     template <typename InputT>
     friend InputT* cast(InputRef input);
 
+    /**
+     * @brief Equality operator for InputRef
+     * @param lhs Left-hand side InputRef
+     * @param rhs Right-hand side InputRef
+     * @return true if both InputRefs refer to the same underlying input, false otherwise
+     */
     friend bool operator==(InputRef const& lhs, InputRef const& rhs)
     {
         return lhs.m_concept->areEqual(*rhs.m_concept);

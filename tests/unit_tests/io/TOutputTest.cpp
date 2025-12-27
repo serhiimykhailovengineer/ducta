@@ -38,8 +38,6 @@ TEST(TOutputTests, set_const_ref)
 
     int temp_value = 100;
     EXPECT_NO_THROW(output.set(temp_value));
-
-    EXPECT_EQ(output.type_id(), Utils::type_id<int>());
 }
 
 TEST(TOutputTests, set_move) 
@@ -48,8 +46,6 @@ TEST(TOutputTests, set_move)
 
     int temp_value = 200;
     EXPECT_NO_THROW(output.set(std::move(temp_value)));
-
-    EXPECT_EQ(output.type_id(), Utils::type_id<int>());
 }
 
 TEST(TOutputTests, assign_operator) 

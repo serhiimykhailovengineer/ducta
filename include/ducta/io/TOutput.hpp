@@ -1,3 +1,7 @@
+/**
+ * @file TOutput.hpp
+ * @brief Class that represents an output of a specific type.
+ */
 #ifndef DUCTA_T_OUTPUT_HPP
 #define DUCTA_T_OUTPUT_HPP
 
@@ -24,61 +28,43 @@ public:
     using storage_type = value_type;
 
 public:
-    TOutput()
-    : _value{}
-    {
-    }
+    /**
+     * @brief Construct a TOutput object
+     */
+    TOutput();
 
-    Utils::TypeIndex type_id() const
-    {
-        return Utils::type_id<T>();
-    }
+    /** 
+     * @brief Set the output value by const reference
+     * @param value The value to set
+     */
+    void set(value_type const& value);
 
-    void set(value_type const& value) 
-    {
-        _value = value;
-        for (auto& input_ref : _inputs)
-        {
-            input_ref.notify(_value);
-        }
-    }
+    /** 
+     * @brief Set the output value by move
+     * @param value The value to set
+     */
+    void set(value_type&& value);
 
-    void set(value_type&& value) 
-    {
-        _value = std::move(value);
-        for (auto& input_ref : _inputs)
-        {
-            input_ref.notify(_value);
-        }
-    }
+    /** 
+     * @brief Assignment operator to set the output value by const reference
+     * @param value The value to set
+     * @return Reference to this output
+     */
+    TOutput<T>& operator=(value_type const& value);
 
-    TOutput<T>& operator=(value_type const& value)
-    {
-        set(value);
-        return *this;
-    }
+    /** 
+     * @brief Assignment operator to set the output value by move
+     * @param value The value to set
+     * @return Reference to this output
+     */
+    TOutput<T>& operator=(value_type&& value);
 
-    TOutput<T>& operator=(value_type&& value)
-    {
-        set(std::move(value));
-        return *this;
-    }
-
-    Utils::Deferred bind(InputRef const& input)
-    {
-        if (input.compatible(Utils::type_id<T>()))
-        {
-            _inputs.emplace_back(input);
-            return Utils::Deferred{[this, input = std::move(input)]() {
-                // Remove input from the list upon destruction
-                _inputs.erase(std::remove_if(_inputs.begin(), _inputs.end(),
-                    [&input](InputRef& ref) { return ref == input; }),
-                    _inputs.end());
-            }};
-        }
-
-        return {};
-    }
+    /** 
+     * @brief Bind the output to an input
+     * @param input The input to bind to
+     * @return A Deferred object that will unbind the input upon destruction
+     */
+    Utils::Deferred bind(InputRef const& input);
 
 private:
     value_type _value;
@@ -91,7 +77,72 @@ Utils::Deferred bind(TOutput<T>& output, InputRef const& input)
     return output.bind(input);
 }
 
+// template <typename T>
+// TOutput<T>::TOutput()
+// : _value{}
+// {
+// }
+
+// template <typename T>
+// Utils::TypeIndex TOutput<T>::type_id() const
+// {
+//     return Utils::type_id<T>();
+// }
+
+// template <typename T>
+// void TOutput<T>::set(value_type const& value) 
+// {
+//     _value = value;
+//     for (auto& input_ref : _inputs)
+//     {
+//         input_ref.notify(_value);
+//     }
+// }
+
+// template <typename T>
+// void TOutput<T>::set(value_type&& value) 
+// {
+//     _value = std::move(value);
+//     for (auto& input_ref : _inputs)
+//     {
+//         input_ref.notify(_value);
+//     }
+// }
+
+// template <typename T>
+// TOutput<T>& TOutput<T>::operator=(value_type const& value)
+// {
+//     set(value);
+//     return *this;
+// }
+
+// template <typename T>
+// TOutput<T>& TOutput<T>::operator=(value_type&& value)
+// {
+//     set(std::move(value));
+//     return *this;
+// }
+
+// template <typename T>
+// Utils::Deferred TOutput<T>::bind(InputRef const& input)
+// {
+//     if (input.compatible(Utils::type_id<T>()))
+//     {
+//         _inputs.emplace_back(input);
+//         return Utils::Deferred{[this, input = std::move(input)]() {
+//             // Remove input from the list upon destruction
+//             _inputs.erase(std::remove_if(_inputs.begin(), _inputs.end(),
+//                 [&input](InputRef& ref) { return ref == input; }),
+//                 _inputs.end());
+//         }};
+//     }
+
+//     return {};
+// }
+
 } // namespace IO
 } // namespace ducta
+
+#include "ducta/IO/Private/TOutput.inl"
 
 #endif // DUCTA_T_OUTPUT_HPP

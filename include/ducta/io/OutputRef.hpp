@@ -1,3 +1,8 @@
+/**
+ * @file OutputRef.hpp
+ * @brief Type-erased output wrapper for handling output values
+ */
+
 #ifndef DUCTA_IO_OUTPUT_REF_HPP
 #define DUCTA_IO_OUTPUT_REF_HPP
 
@@ -28,14 +33,22 @@ public:
     : m_output(std::make_shared<Private::OutputModelRef<std::decay_t<TOutputType>>>(output))
     {}
 
-    OutputRef(OutputRef const&) = default;
-    OutputRef& operator=(OutputRef const&) = default;
-
+    /**
+     * @brief Bind the output to an input
+     * @param input The input to bind to
+     * @return A Deferred object that will unbind the input when destroyed
+     */
     Utils::Deferred do_bind(InputRef input)
     {
         return m_output->do_bind(input);
     }
 
+    /**
+     * @brief Equality operator for OutputRef
+     * @param lhs Left-hand side OutputRef
+     * @param rhs Right-hand side OutputRef
+     * @return true if both OutputRefs refer to the same underlying output, false otherwise
+     */
     friend bool operator==(OutputRef const& lhs, OutputRef const& rhs)
     {
         return lhs.m_output->areEqual(*rhs.m_output);

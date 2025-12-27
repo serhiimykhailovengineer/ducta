@@ -14,7 +14,7 @@ namespace ducta {
 namespace IO {
 
 /**
- * @brief Class that represents an input of a specific type. It can be bind to output of compatible type. Read-only.
+ * @brief Class that represents an input of a specific type. It can be bound to output of compatible type. Read-only.
  * @tparam T The type of value this input handles. Can be a value type or a reference type.
  * 
  * This class provides methods to check compatibility with types, check readiness, retrieve values, and notify new values.

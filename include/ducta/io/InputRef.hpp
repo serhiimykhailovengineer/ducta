@@ -20,7 +20,7 @@ class InputRef
 {
 public:
     /**
-     * @brief Construct TInput from a concrete input type
+     * @brief Construct InputRef from a concrete input type
      * @tparam TInputType The concrete input type
      * @param input The input object to wrap
      */

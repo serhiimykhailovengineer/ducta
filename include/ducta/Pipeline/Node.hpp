@@ -2,8 +2,8 @@
 #define DUCTA_PIPELINE_NODE_HPP
 
 #include <map>
-#include "ducta/io/InputRef.hpp"
-#include "ducta/io/OutputRef.hpp"
+#include "ducta/IO/InputRef.hpp"
+#include "ducta/IO/OutputRef.hpp"
 
 namespace ducta {
 namespace Pipeline {

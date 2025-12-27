@@ -2,23 +2,37 @@
 
 #include <gmock/gmock.h>
 
+#include "ducta/Utils/TypeIndex.hpp"
+
 namespace ducta {
 namespace IO {
+
 
 template <typename T>
 class TInputMock
 {
 public:
+    using value_type = std::decay_t<T>;
+    using storage_type = std::conditional_t<std::is_reference<T>::value, const value_type&, value_type>;
+
+public:
     MOCK_METHOD(bool, ready, (), (const));
-    MOCK_METHOD(T const&, value, (), (const));
-    MOCK_METHOD(void, notify, (T const& value), ());
-    MOCK_METHOD(void, set_callback, (std::function<void(T const&)>), ());
+    MOCK_METHOD(bool, compatible, (Utils::TypeIndex type), (const));
+    MOCK_METHOD(void, notify, (value_type const& value), ());
 };
 
 template <typename T>
 class TInputMockWrapper
 {
 public:
+    using value_type = typename TInputMock<T>::value_type;
+    using storage_type = typename TInputMock<T>::storage_type;
+
+public:
+    TInputMockWrapper(TInputMock<T>& mock)
+        : mock(mock)
+    {}
+
     TInputMock<T>& mock;
 
     bool ready() const
@@ -26,19 +40,14 @@ public:
         return mock.ready();
     }
 
-    T const& value() const
+    bool compatible(Utils::TypeIndex type) const
     {
-        return mock.value();
+        return mock.compatible(type);
     }
 
-    void notify(T const& value)
+    void notify(value_type const& value)
     {
         mock.notify(value);
-    }
-
-    void set_callback(std::function<void(T const&)> callback)
-    {
-        mock.set_callback(std::move(callback));
     }
 
 };

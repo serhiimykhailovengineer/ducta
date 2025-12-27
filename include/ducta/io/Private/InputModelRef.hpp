@@ -1,7 +1,7 @@
 #ifndef DUCTA_INPUT_MODEL_REF_HPP
 #define DUCTA_INPUT_MODEL_REF_HPP
 
-#include "ducta/io/Private/InputConcept.hpp"
+#include "ducta/IO/Private/InputConcept.hpp"
 
 
 namespace ducta {
@@ -26,7 +26,7 @@ public:
 
     bool is_compatible(Utils::TypeIndex type) const override
     {
-        return type == Utils::type_id<typename InputT::value_type>();
+        return m_input.compatible(type);
     }
 
     void notify(Utils::TypeIndex type, void const* value) override

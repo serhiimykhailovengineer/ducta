@@ -2,9 +2,9 @@
 
 #include <gmock/gmock.h>
 
-// #include "ducta/Utils/TypeIndex.hpp"
-#include "ducta/io/TInputMock.hpp"
-#include "ducta/io/InputRef.hpp"
+#include "ducta/Utils/Deferred.hpp"
+#include "ducta/IO/TInputMock.hpp"
+#include "ducta/IO/InputRef.hpp"
 
 namespace ducta {
 namespace IO {
@@ -16,7 +16,7 @@ public:
     MOCK_METHOD(void, set_const_ref, (T const&), ());
     MOCK_METHOD(void, set_move, (T&&), ());
 
-    MOCK_METHOD(Utils::Deferred, bind, (TInputMockWrapper<T>& input), ());
+    MOCK_METHOD(Utils::Deferred, bind, (InputRef& input), ());
 
 };
 
@@ -35,24 +35,24 @@ public:
     {
         mock.set_move(std::move(value));
     }
+
+    Utils::Deferred bind(InputRef& input)
+    {
+        return mock.bind(input);
+    }
 };
 
 template <typename T>
-inline Utils::Deferred bind(TOutputMockWrapper<T>& output, TInputMockWrapper<T>& input)
+inline Utils::Deferred bind(TOutputMock<T>& output, InputRef& input)
 {
-    return output.mock.bind(input);
+    return output.bind(input);
 }
 
 template <typename T>
 inline Utils::Deferred bind(TOutputMockWrapper<T>& output, InputRef& input)
 {
-    if(auto wrapper = cast<TInputMockWrapper<T>>(input))
-    {
-        return bind(output, *wrapper);
-    }
-    throw std::runtime_error("Incompatible types for binding TOutputMockWrapper");
-
-    return {};
+    return output.bind(input);
 }
+
 } // namespace IO
 } // namespace ducta

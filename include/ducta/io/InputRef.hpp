@@ -6,12 +6,16 @@
 #ifndef DUCTA_T_INPUT_REF_HPP
 #define DUCTA_T_INPUT_REF_HPP
 
-#include "ducta/io/Private/InputModelRef.hpp"
+#include "ducta/IO/Private/InputModelRef.hpp"
 #include "ducta/Utils/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
 
+/**
+ * @brief Class that represents an type-erased reference of input. Read-only.
+ * 
+ */
 class InputRef
 {
 public:

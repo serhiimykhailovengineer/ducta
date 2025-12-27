@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "ducta/io/TInput.hpp"
-#include "ducta/io/TOutput.hpp"
+#include "ducta/IO/TInput.hpp"
+#include "ducta/IO/TOutput.hpp"
 
 
 using namespace ducta;

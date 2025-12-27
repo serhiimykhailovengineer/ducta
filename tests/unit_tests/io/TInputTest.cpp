@@ -1,11 +1,34 @@
 #include <gtest/gtest.h>
 
-#include "ducta/io/TInput.hpp"
+#include "ducta/IO/TInput.hpp"
 
-#include "ducta/io/TInputMock.hpp"
+#include "ducta/IO/TInputMock.hpp"
 
 using namespace ducta;
 using namespace ducta::IO;
+
+TEST(TInputTests, types_check) 
+{
+    {
+        static_assert(std::is_same_v<IO::TInput<int>::value_type, int>);
+        static_assert(std::is_same_v<IO::TInput<int>::storage_type, int>);
+    }
+
+    {
+        static_assert(std::is_same_v<IO::TInput<int&>::value_type, int>);
+        static_assert(std::is_same_v<IO::TInput<int&>::storage_type, const int&>);
+    }
+
+    {
+        static_assert(std::is_same_v<IO::TInput<const float>::value_type, float>);
+        static_assert(std::is_same_v<IO::TInput<const float>::storage_type, float>);
+    }
+
+    {
+        static_assert(std::is_same_v<IO::TInput<const float&>::value_type, float>);
+        static_assert(std::is_same_v<IO::TInput<const float&>::storage_type, const float&>);
+    }
+}
 
 TEST(TInputTests, value_input) 
 {

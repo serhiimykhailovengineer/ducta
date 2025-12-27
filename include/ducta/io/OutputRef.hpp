@@ -1,8 +1,8 @@
 #ifndef DUCTA_IO_OUTPUT_REF_HPP
 #define DUCTA_IO_OUTPUT_REF_HPP
 
-#include "ducta/io/Private/OutputModelRef.hpp"
-#include "ducta/io/InputRef.hpp"
+#include "ducta/IO/Private/OutputModelRef.hpp"
+#include "ducta/IO/InputRef.hpp"
 #include "ducta/Utils/Deferred.hpp"
 
 #include <memory>
@@ -10,6 +10,10 @@
 namespace ducta {
 namespace IO {
 
+/**
+ * @brief Class that represents an type-erased reference of output.
+ * 
+ */
 class OutputRef
 {
 public:
@@ -30,6 +34,11 @@ public:
     Utils::Deferred do_bind(InputRef input)
     {
         return m_output->do_bind(input);
+    }
+
+    friend bool operator==(OutputRef const& lhs, OutputRef const& rhs)
+    {
+        return lhs.m_output->areEqual(*rhs.m_output);
     }
 
 private:

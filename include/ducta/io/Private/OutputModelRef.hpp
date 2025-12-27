@@ -1,10 +1,11 @@
 #ifndef DUCTA_IO_PRIVATE_OUTPUT_MODEL_REF_HPP
 #define DUCTA_IO_PRIVATE_OUTPUT_MODEL_REF_HPP
 
-#include "ducta/io/Private/OutputConcept.hpp"
+#include "ducta/IO/Private/OutputConcept.hpp"
 
 namespace ducta {
 namespace IO {
+
 namespace Private {
 
 template <typename OutputT>
@@ -17,9 +18,23 @@ public:
     : m_output(output) 
     {}
 
-    Utils::Deferred do_bind(InputRef input) override
+    Utils::Deferred do_bind(InputRef& input) override
     {
-        return m_output.bind(input); // return bind(m_output, input);
+        return bind(m_output, input);
+    }
+
+    Utils::TypeIndex type_id() const override
+    {
+        return Utils::type_id<OutputT>();
+    }
+
+    bool areEqual(OutputConcept const& other) const override
+    {
+        if (Utils::type_id<OutputT>() != other.type_id())
+            return false;
+
+        auto const& other_model = static_cast<OutputModelRef<OutputT> const&>(other);
+        return &m_output == &other_model.m_output;
     }
 };
 

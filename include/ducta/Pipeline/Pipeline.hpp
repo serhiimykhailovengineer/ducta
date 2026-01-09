@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "ducta/Pipeline/Clock.hpp"
 #include "ducta/Pipeline/Node.hpp"
 
 namespace ducta {
@@ -10,20 +11,33 @@ namespace Pipeline {
 
 class Pipeline
 {
-private:
-// public:
-//     PipelineEngine();
-//     ~PipelineEngine();
+public:
 
-//     template <typename T>
-//     void addElement(T& element);
+public:
+    Pipeline(Clock&& clock);
+
+    void addElement(std::string const& name, Node& element);
 
     void init();
-    void iterate();
+    bool iterate();
     void stop();
 
 private:
-    std::vector<std::reference_wrapper<Node>> m_nodes;
+    Clock m_clock;
+    std::vector<std::pair<std::string, std::reference_wrapper<Node>>> m_init_order;
+    std::vector<std::pair<std::string, std::reference_wrapper<Node>>> m_nodes;
+};
+
+class PipelineEngine
+{
+public:
+    PipelineEngine(Pipeline& pipeline);
+    ~PipelineEngine();
+
+    int run();
+
+private:
+    Pipeline& m_pipeline;
 };
 
 } // namespace Pipeline

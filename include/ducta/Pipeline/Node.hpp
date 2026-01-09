@@ -18,13 +18,13 @@ struct has_iterate : std::false_type
 };
 
 // specialization — if T has `void iterate()`
-template <typename T>
-struct has_iterate<T, std::void_t<decltype(std::declval<T&>().iterate())>> : std::true_type
+template <typename NodeType>
+struct has_iterate<NodeType, std::void_t<decltype(std::declval<NodeType&>().iterate())>> : std::true_type
 {
 };
 
-template <typename Class>
-constexpr bool has_iterate_v = has_iterate<Class>::value;
+template <typename NodeType>
+constexpr bool has_iterate_v = has_iterate<NodeType>::value;
 
 } // namespace Private
 
@@ -37,7 +37,7 @@ private:
     public:
         virtual ~Concept() = default;
         virtual void init() = 0;
-        virtual void iterate() = 0;
+        virtual bool iterate() = 0;
         virtual void release() = 0;
 
         virtual std::map<std::string, IO::InputRef> const& get_inputs() = 0;
@@ -63,8 +63,9 @@ private:
             m_node.init();
         }
 
-        void iterate() override
+        bool iterate() override
         {
+            return true;
         }
 
         void release() override
@@ -105,9 +106,10 @@ private:
             m_node.init();
         }
 
-        void iterate() override
+        bool iterate() override
         {
             m_node.iterate();
+            return true;
         }
 
         void release() override
@@ -166,7 +168,7 @@ public:
     {}
     
     void init();
-    void iterate();
+    bool iterate();
     void release();
 
     std::map<std::string, IO::InputRef> const& get_inputs();
@@ -175,6 +177,12 @@ public:
 private:
     std::unique_ptr<Concept> m_concept;
 };
+
+template <typename NodeType, typename... Args>
+Node make_node(Args&&... args)
+{
+    return Node(std::in_place_type_t<NodeType>{}, std::forward<Args>(args)...);
+}
 
 } // namespace Pipeline
 } // namespace ducta

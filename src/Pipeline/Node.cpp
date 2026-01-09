@@ -8,9 +8,9 @@ void Node::init()
     m_concept->init();
 }
 
-void Node::iterate()
+bool Node::iterate()
 {
-    m_concept->iterate();
+    return m_concept->iterate();
 }
 
 void Node::release()

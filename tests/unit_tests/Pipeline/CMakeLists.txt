@@ -2,6 +2,7 @@ set(TARGET_NAME PipelineTests)
 
 add_executable(${TARGET_NAME}
     NodeTests.cpp
+    PipelineTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

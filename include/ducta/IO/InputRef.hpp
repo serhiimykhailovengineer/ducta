@@ -109,10 +109,9 @@ InputT* cast(InputRef input)
 template <typename Node>
 struct NodeInputsTraits
 {
-    static std::map<std::string, IO::InputRef> const& get(Node& node)
+    static std::map<std::string, IO::InputRef> get(Node& node)
     {
-        static std::map<std::string, IO::InputRef> inputs{};
-        return inputs;
+        return {};
     }
 };
 

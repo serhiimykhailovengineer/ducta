@@ -66,10 +66,9 @@ inline Utils::Deferred bind(OutputRef output, InputRef input)
 template <typename Node>
 struct NodeOutputsTraits
 {
-    static std::map<std::string, IO::OutputRef> const& get(Node& node)
+    static std::map<std::string, IO::OutputRef> get(Node& node)
     {
-        static std::map<std::string, IO::OutputRef> outputs{};
-        return outputs;
+        return {};
     }
 };
 

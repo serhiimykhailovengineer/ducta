@@ -8,12 +8,34 @@ namespace Pipeline {
 Pipeline::Pipeline(Clock&& clock)
 : m_clock(std::move(clock))
 {
-
 }
 
-void Pipeline::addElement(std::string const& name, Node& element)
+void Pipeline::configure(Nodes& nodes, std::vector<std::string> order)
 {
-    m_nodes.emplace_back(name, std::ref(element));
+    m_init_order.clear();
+    m_nodes.clear();
+    for (auto const& name : order)
+    {
+        m_init_order.emplace_back(name, std::ref(nodes.at(name)));
+        m_nodes.emplace_back(name, std::ref(nodes.at(name)));
+    }
+
+    
+}
+
+void Pipeline::configure(Nodes& nodes, std::vector<std::string> init_order, std::vector<std::string> exec_order)
+{
+    m_init_order.clear();
+    for (auto const& name : init_order)
+    {
+        m_init_order.emplace_back(name, std::ref(nodes.at(name)));
+    }
+
+    m_nodes.clear();
+    for (auto const& name : exec_order)
+    {
+        m_nodes.emplace_back(name, std::ref(nodes.at(name)));
+    }
 }
 
 void Pipeline::init()
@@ -27,19 +49,16 @@ void Pipeline::init()
 
 bool Pipeline::iterate()
 {
-    auto frame_start = m_clock.now();
     for (auto& node : m_nodes)
     {
         auto const& name = node.first;
-        auto element_start = m_clock.now();
         node.second.get().iterate();
     }
-    auto frame_end = m_clock.now();
 
     return true;
 }
 
-void Pipeline::stop()
+void Pipeline::release()
 {
     for (auto& node : boost::adaptors::reverse(m_init_order))
     {
@@ -56,7 +75,7 @@ PipelineEngine::PipelineEngine(Pipeline& pipeline)
 
 PipelineEngine::~PipelineEngine()
 {
-    m_pipeline.stop();
+    m_pipeline.release();
 }
 
 int PipelineEngine::run()

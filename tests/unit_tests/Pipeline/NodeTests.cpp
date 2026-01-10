@@ -191,7 +191,7 @@ template<>
 struct NodeInputsTraits<NodeWithInputsAndOutputs>
 {
     using Node = NodeWithInputsAndOutputs;
-    static std::map<std::string, IO::InputRef> const& get(Node& node)
+    static std::map<std::string, IO::InputRef> get(Node& node)
     {
         static std::map<std::string, IO::InputRef> inputs{
             {"input1", IO::InputRef{node.input1}},
@@ -205,7 +205,7 @@ template<>
 struct NodeOutputsTraits<NodeWithInputsAndOutputs>
 {
     using Node = NodeWithInputsAndOutputs;
-    static std::map<std::string, IO::OutputRef> const& get(Node& node)
+    static std::map<std::string, IO::OutputRef> get(Node& node)
     {
         static std::map<std::string, IO::OutputRef> outputs{
             {"output1", IO::OutputRef{node.output1}}

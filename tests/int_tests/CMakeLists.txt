@@ -3,6 +3,7 @@ set(TARGET_NAME IntTests)
 add_executable(${TARGET_NAME}
     IOSizeTest.cpp
     ValueIOTest.cpp
+    PipelineTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}
@@ -17,4 +18,5 @@ target_link_libraries(${TARGET_NAME}
         GTest::gmock
         Boost::boost
         ducta_io
+        ducta_pipeline
 )

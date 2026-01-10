@@ -12,15 +12,17 @@ namespace Pipeline {
 class Pipeline
 {
 public:
+    using Nodes = std::map<std::string, Node>;
 
 public:
     Pipeline(Clock&& clock);
 
-    void addElement(std::string const& name, Node& element);
+    void configure(Nodes& nodes, std::vector<std::string> order);
+    void configure(Nodes& nodes, std::vector<std::string> init_order, std::vector<std::string> exec_order);
 
     void init();
     bool iterate();
-    void stop();
+    void release();
 
 private:
     Clock m_clock;

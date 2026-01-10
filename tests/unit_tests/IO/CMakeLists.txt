@@ -1,6 +1,7 @@
 set(TARGET_NAME IOTests)
 
 add_executable(${TARGET_NAME}
+    DefineInputsTest.cpp
     TInputTest.cpp
     InputRefTest.cpp
     TOutputTest.cpp

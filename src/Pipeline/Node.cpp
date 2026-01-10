@@ -18,12 +18,12 @@ void Node::release()
     m_concept->release();
 }
 
-std::map<std::string, IO::InputRef> const& Node::get_inputs()
+std::map<std::string, IO::InputRef> Node::get_inputs()
 {
     return m_concept->get_inputs();
 }
 
-std::map<std::string, IO::OutputRef> const& Node::get_outputs()
+std::map<std::string, IO::OutputRef> Node::get_outputs()
 {
     return m_concept->get_outputs();
 }

@@ -31,12 +31,12 @@ private:
 
         Timestamp epoch() override
         {
-            return m_clock.epoch();
+            return m_clock.get().epoch();
         }
 
         Timestamp now() override
         {
-            return m_clock.now();
+            return m_clock.get().now();
         }
     private:
         std::reference_wrapper<ClockType> m_clock;
@@ -47,6 +47,11 @@ public:
     Clock(ClockType& clock)
     : m_concept{std::make_shared<Model<ClockType>>(clock)}
     {
+    }
+
+    Timestamp epoch() 
+    {
+        return m_concept->epoch();
     }
     
     Timestamp now()

@@ -15,6 +15,7 @@ class TestClock
 {
 public:
     TestClock(std::uint64_t epoch = 0)
+    : _epoch(epoch), _now(epoch)
     {}
 
     std::uint64_t epoch()
@@ -32,7 +33,7 @@ public:
         _now = value;
     }
 
-public:
+private:
     std::uint64_t _epoch;
     std::uint64_t _now;
 };

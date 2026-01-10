@@ -42,7 +42,6 @@ void Pipeline::init()
 {
     for (auto& node : m_init_order)
     {
-        auto const& name = node.first;
         node.second.get().init();
     }
 }
@@ -51,7 +50,6 @@ bool Pipeline::iterate()
 {
     for (auto& node : m_nodes)
     {
-        auto const& name = node.first;
         node.second.get().iterate();
     }
 
@@ -62,7 +60,6 @@ void Pipeline::release()
 {
     for (auto& node : boost::adaptors::reverse(m_init_order))
     {
-        auto const& name = node.first;
         node.second.get().release();
     }
 }

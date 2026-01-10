@@ -42,7 +42,7 @@ public:
         {
             if (denom == T{})
             {
-                return; // TODO: Add errors processing to iterate
+                return; // TODO: Add error processing to iterate
             }
         }
 

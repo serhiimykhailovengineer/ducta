@@ -7,16 +7,19 @@
 #include "ducta/IO/DefineOutputs.hpp"
 
 #include "ducta/Utils/Expected.hpp"
-#include "ducta/Utils/StringView.hpp"
+#include "ducta/Utils/String.hpp"
 
 namespace ducta {
 namespace Test {
 
 struct AdderError
 {
-    StringView message;
+    String<100> message;
 
-    AdderError(StringView msg)
+    explicit AdderError()
+    {}
+
+    explicit AdderError(String<100> msg)
     : message{msg}
     {}
 };

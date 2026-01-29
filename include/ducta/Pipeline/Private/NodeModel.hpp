@@ -54,6 +54,24 @@ struct has_value_fn : std::false_type {};
 template <class R>
 struct has_value_fn<R, void_t<decltype(std::declval<R&>().value())>> : std::true_type {};
 
+template <class R, class = void>
+struct has_message : std::false_type {};
+
+template <class R>
+struct has_message<R, void_t<decltype(std::declval<R&>().message)>> : std::true_type {};
+
+template <class R, class = void>
+struct has_message_fn : std::false_type {};
+
+template <class R>
+struct has_message_fn<R, void_t<decltype(std::declval<R&>().message())>> : std::true_type {};
+
+template <class R, class = void>
+struct has_what : std::false_type {};
+
+template <class R>
+struct has_what<R, void_t<decltype(std::declval<R&>().what())>> : std::true_type {};
+
 template <class R>
 bool expected_bool_value(R& r) noexcept
 {
@@ -62,6 +80,32 @@ bool expected_bool_value(R& r) noexcept
     else
         return static_cast<bool>(r.value());
 }
+
+template <class E>
+Utils::Error convert_to_utils_error(E const& e) noexcept
+{
+    if constexpr (std::is_same_v<E, Utils::Error>)
+    {
+        return e;
+    }
+    else if constexpr (has_message<E>::value)
+    {
+        return Utils::Error{e.message};
+    }
+    else if constexpr (has_message_fn<E>::value)
+    {
+        return Utils::Error{e.message()};
+    }
+    else if constexpr (has_what<E>::value)
+    {
+        return Utils::Error{String<100>(e.what())};
+    }
+    else
+    {
+        static_assert(sizeof(E) == 0, "Cannot convert error type to Utils::Error");
+    }
+}
+
 
 template <typename NodeType>
 Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
@@ -88,7 +132,7 @@ Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
             auto r = node.iterate();
             if (!r)
             {
-                return Utils::Unexpected<Utils::Error>{};
+                return Utils::Unexpected<Utils::Error>{convert_to_utils_error(r.error())};
             }
             return true;
         }
@@ -98,7 +142,7 @@ Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
             auto r = node.iterate();
             if (!r)
             {
-                return Utils::Unexpected<Utils::Error>{};
+                return Utils::Unexpected<Utils::Error>{convert_to_utils_error(r.error())};
             }
             return expected_bool_value(r); // true=continue, false=stop
         }

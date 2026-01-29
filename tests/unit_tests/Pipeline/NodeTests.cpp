@@ -240,3 +240,137 @@ TEST(NodeTests, check_inputs_and_outputs)
         ASSERT_NE(it, outputs.end());
     }
 }
+
+TEST(NodeTests, check_result_of_iterate) 
+{
+    struct NodeWithBoolIterate
+    {
+        void init()
+        {}
+
+        bool iterate()
+        {
+            return false;
+        }
+
+        void release()
+        {}
+    };
+
+    Pipeline::Node node{std::in_place_type_t<NodeWithBoolIterate>{}};
+
+    node.init();
+    auto result = node.iterate();
+    ASSERT_TRUE(result);
+    ASSERT_FALSE(*result);
+    node.release();
+}
+
+TEST(NodeTests, check_result_of_iterate_with_expected) 
+{
+    struct NodeWithExpectedIterate
+    {
+        using value_type = bool;
+        using error_type = Utils::Error;
+
+        void init()
+        {}
+
+        Utils::Expected<bool, Utils::Error> iterate()
+        {
+            return false;
+        }
+
+        void release()
+        {}
+    };
+
+    Pipeline::Node node{std::in_place_type_t<NodeWithExpectedIterate>{}};
+
+    node.init();
+    auto result = node.iterate();
+    ASSERT_TRUE(result);
+    ASSERT_FALSE(*result);
+    node.release();
+}
+
+TEST(NodeTests, check_result_of_iterate_with_expected_error) 
+{
+    struct NodeWithExpectedIterate
+    {
+        using value_type = bool;
+        using error_type = Utils::Error;
+
+        void init()
+        {}
+
+        Utils::Expected<bool, Utils::Error> iterate()
+        {
+            return Utils::Unexpected<Utils::Error>{Utils::Error{}};
+        }
+
+        void release()
+        {}
+    };
+
+    Pipeline::Node node{std::in_place_type_t<NodeWithExpectedIterate>{}};
+
+    node.init();
+    auto result = node.iterate();
+    ASSERT_FALSE(result);
+    node.release();
+}
+
+TEST(NodeTests, check_result_of_custom_expected_like_iterate) 
+{
+    struct CustomExpectedLike
+    {
+        using value_type = bool;
+        using error_type = Utils::Error;
+
+        CustomExpectedLike(bool has_value, bool value = false)
+        : m_has_value{has_value}, m_value{value}
+        {}
+
+        explicit operator bool() const
+        {
+            return m_has_value;
+        }
+
+        bool operator*() const
+        {
+            return m_value;
+        }
+
+        Utils::Error error() const
+        {
+            return Utils::Error{};
+        }
+
+    private:
+        bool m_has_value;
+        bool m_value;
+    };
+
+    struct NodeWithCustomExpectedLikeIterate
+    {
+        void init()
+        {}
+
+        CustomExpectedLike iterate()
+        {
+            return CustomExpectedLike{true, false};
+        }
+
+        void release()
+        {}
+    };
+
+    Pipeline::Node node{std::in_place_type_t<NodeWithCustomExpectedLikeIterate>{}};
+
+    node.init();
+    auto result = node.iterate();
+    ASSERT_TRUE(result);
+    ASSERT_FALSE(*result);
+    node.release();
+}

@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(GTest REQUIRED)
+find_package(fmt REQUIRED)
 
 add_library(ducta_io INTERFACE)
 target_include_directories(ducta_io

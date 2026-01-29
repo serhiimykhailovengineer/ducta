@@ -29,27 +29,28 @@ public:
     }
 };
 
+template <class IterateResult = void>
 class IterableNodeMock
 {
 public:
     MOCK_METHOD(void, init, (), ());
-    MOCK_METHOD(void, iterate, (), ());
+    MOCK_METHOD(IterateResult, iterate, (), ());
     MOCK_METHOD(void, release, (), ());
 };
 
+template <class IterateResult = void>
 class IterableNodeMockWrapper
 {
 public:
-    std::reference_wrapper<IterableNodeMock> mock;
-
+    std::reference_wrapper<IterableNodeMock<IterateResult>> mock;
     void init() 
     {
         mock.get().init();
     }
 
-    void iterate() 
+    IterateResult iterate() 
     {
-        mock.get().iterate();
+        return mock.get().iterate();
     }
 
     void release() 

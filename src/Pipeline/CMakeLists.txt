@@ -6,4 +6,5 @@ add_library(ducta_pipeline STATIC
 target_link_libraries(ducta_pipeline
     ducta_io
     Boost::boost
+    fmt::fmt
 )

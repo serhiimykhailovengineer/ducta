@@ -9,6 +9,9 @@
 #include "ducta/IO/Private/InputModelRef.hpp"
 #include "ducta/Utils/TypeIndex.hpp"
 
+#include <map>
+#include <memory>
+
 namespace ducta {
 namespace IO {
 

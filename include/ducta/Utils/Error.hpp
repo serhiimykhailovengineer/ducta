@@ -1,6 +1,7 @@
 #ifndef DUCTA_UTILS_ERROR_HPP
 #define DUCTA_UTILS_ERROR_HPP
 
+#include <iosfwd>
 
 namespace ducta {
 namespace Utils {

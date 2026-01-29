@@ -42,21 +42,40 @@ template <class IterateResult = void>
 class IterableNodeMockWrapper
 {
 public:
-    std::reference_wrapper<IterableNodeMock<IterateResult>> mock;
+    using MockType = IterableNodeMock<IterateResult>;
+
+    explicit IterableNodeMockWrapper(MockType& m) noexcept
+        : mock(m)
+    {
+    }
+    
+    
     void init() 
     {
         mock.get().init();
     }
 
-    IterateResult iterate() 
+    template <class R = IterateResult,
+              std::enable_if_t<!std::is_void_v<R>, int> = 0>
+    R iterate()
     {
         return mock.get().iterate();
+    }
+
+    template <class R = IterateResult,
+              std::enable_if_t<std::is_void_v<R>, int> = 0>
+    void iterate()
+    {
+        mock.get().iterate();
     }
 
     void release() 
     {
         mock.get().release();
     }
+
+public:
+    std::reference_wrapper<MockType> mock;
 };
 
 

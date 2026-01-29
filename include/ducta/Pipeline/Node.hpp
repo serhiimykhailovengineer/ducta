@@ -1,7 +1,6 @@
 #ifndef DUCTA_PIPELINE_NODE_HPP
 #define DUCTA_PIPELINE_NODE_HPP
 
-#include <map>
 #include <memory>
 
 #include "ducta/Pipeline/Private/NodeModel.hpp"
@@ -56,7 +55,7 @@ public:
 
     /*
      * @brief Perform an iteration of the node
-     * @return Utils::Expected<bool, Error>: true if iteration was successful and should continue iteration, 
+     * @return Utils::Expected<bool, Utils::Error>: true if iteration was successful and should continue iteration, 
      *                                       false if iteration should stop, or an Error if iteration failed
     */
     Utils::Expected<bool, Utils::Error> iterate();

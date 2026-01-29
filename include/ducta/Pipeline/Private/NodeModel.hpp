@@ -3,6 +3,9 @@
 
 #include "ducta/Pipeline/Private/NodeConcept.hpp"
 
+#include <type_traits>
+#include <utility>
+
 namespace ducta {
 namespace Pipeline {
 namespace Private {
@@ -61,7 +64,7 @@ bool expected_bool_value(R& r) noexcept
 }
 
 template <typename NodeType>
-Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node) noexcept
+Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
 {
     if constexpr (!has_iterate_v<NodeType>)
     {

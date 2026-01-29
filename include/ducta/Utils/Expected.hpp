@@ -3,6 +3,8 @@
 
 #include <boost/system/result.hpp>
 
+#include <utility>
+
 namespace ducta {
 namespace Utils {
 

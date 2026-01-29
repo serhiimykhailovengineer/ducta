@@ -1,7 +1,10 @@
 #ifndef DUCTA_UTILS_FORMAT_HPP
 #define DUCTA_UTILS_FORMAT_HPP
 
-#include <fmt/base.h>
+#include <fmt/format.h>
+
+#include <utility>
+#include <iterator>
 
 namespace ducta {
 

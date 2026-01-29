@@ -7,6 +7,8 @@
 #include "ducta/Utils/Error.hpp"
 #include "ducta/Utils/Expected.hpp"
 
+#include <map>
+
 namespace ducta {
 namespace Pipeline {
 namespace Private {

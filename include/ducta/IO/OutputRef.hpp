@@ -10,6 +10,7 @@
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/Utils/Deferred.hpp"
 
+#include <map>
 #include <memory>
 
 namespace ducta {

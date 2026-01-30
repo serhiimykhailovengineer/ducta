@@ -3,7 +3,7 @@
 
 #include <iostream>
 
-#include "ducta/Core/Algorithm/Format.hpp"
+#include "ducta/Core/Algorithms/Format.hpp"
 #include "ducta/Core/Types/String.hpp"
 
 #define DUCTA_LOG_INFO(fmt, args...)                                                               \

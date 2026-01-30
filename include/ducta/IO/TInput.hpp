@@ -6,8 +6,7 @@
 #ifndef DUCTA_T_INPUT_HPP
 #define DUCTA_T_INPUT_HPP
 
-#include <boost/optional.hpp>
-
+#include "ducta/Core/Types/Optional.hpp"
 #include "ducta/Core/Types/TypeIndex.hpp"
 
 namespace ducta {
@@ -25,6 +24,7 @@ class TInput
 public:
     using value_type = std::decay_t<T>;
     using storage_type = std::conditional_t<std::is_reference<T>::value, const value_type&, value_type>;
+    using storage_holder = std::conditional_t<std::is_reference<T>::value, ::ducta::OptionalRef<value_type>, ::ducta::Optional<storage_type>>;
 
 public:
     TInput() = default;
@@ -74,7 +74,7 @@ public:
     operator bool() const;
 
 private:
-    boost::optional<storage_type> _value;
+    storage_holder _value;
 };
 
 } // namespace IO

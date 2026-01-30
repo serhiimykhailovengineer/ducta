@@ -10,8 +10,10 @@
 #include "ducta/IO/InputRef.hpp"
 
 #include "ducta/Core/Types/Deferred.hpp"
+#include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 
-#include <map>
+
 #include <memory>
 
 namespace ducta {
@@ -68,7 +70,7 @@ inline Deferred bind(OutputRef output, InputRef input)
 template <typename Node>
 struct NodeOutputsTraits
 {
-    static std::map<std::string, IO::OutputRef> get(Node& node)
+    static Map<StringView, IO::OutputRef, 25> get(Node& node)
     {
         return {};
     }

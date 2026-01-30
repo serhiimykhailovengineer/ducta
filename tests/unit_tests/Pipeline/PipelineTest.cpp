@@ -20,29 +20,20 @@ TEST(PipelineTest, base_test)
     Pipeline::IterableNodeMock<void> node_4_mock;
 
     // Create nodes map
-    std::map<std::string, Pipeline::Node> nodes{};
+    Pipeline::Nodes nodes;
 
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("node_1"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::NonIterableNodeMockWrapper>{}, node_1_mock));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("node_2"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<void>>{}, node_2_mock));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("node_3"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<void>>{}, node_3_mock));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("node_4"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<void>>{}, node_4_mock));
+    nodes.add_node("node_1", Pipeline::NonIterableNodeMockWrapper{node_1_mock});
+    nodes.add_node("node_2", Pipeline::IterableNodeMockWrapper<void>{node_2_mock});
+    nodes.add_node("node_3", Pipeline::IterableNodeMockWrapper<void>{node_3_mock});
+    nodes.add_node("node_4", Pipeline::IterableNodeMockWrapper<void>{node_4_mock});
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    pipeline.configure(
-        nodes,
-        {"node_1", "node_2", "node_3", "node_4"},
-        {"node_2", "node_3", "node_4"}
-    );
+    Vector<StringView, 4> init_order{ "node_1", "node_2", "node_3", "node_4" };
+    Vector<StringView, 3> exec_order{ "node_2", "node_3", "node_4" };
+
+    pipeline.configure(nodes, init_order, exec_order);
 
     // Testing initialization
     {
@@ -86,22 +77,17 @@ TEST(PipelineTest, iteration_with_failed_node)
     Pipeline::IterableNodeMock<Expected<void, Error>> first_node_mock;
     Pipeline::IterableNodeMock<Expected<void, Error>> second_node_mock;
     // Create nodes map
-    std::map<std::string, Pipeline::Node> nodes{};
+    Pipeline::Nodes nodes;
 
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("first"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<Expected<void, Error>>>{}, first_node_mock));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("second"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<Expected<void, Error>>>{}, second_node_mock));
+    nodes.add_node("first", Pipeline::IterableNodeMockWrapper<Expected<void, Error>>{first_node_mock});
+    nodes.add_node("second", Pipeline::IterableNodeMockWrapper<Expected<void, Error>>{second_node_mock});
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    ASSERT_TRUE(pipeline.configure(
-        nodes,
-        {"first", "second"}
-    ));
+    Vector<StringView, 2> order{ "first", "second" };
+
+    ASSERT_TRUE(pipeline.configure(nodes, order));
 
     EXPECT_CALL(first_node_mock, init()).Times(1);
     EXPECT_CALL(second_node_mock, init()).Times(1);

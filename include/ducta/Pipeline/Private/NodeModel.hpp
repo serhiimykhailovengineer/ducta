@@ -188,12 +188,12 @@ public:
         m_node.release();
     }
 
-    std::map<std::string, IO::InputRef> get_inputs() override
+    Map<StringView, IO::InputRef, 25> get_inputs() override
     {
         return IO::NodeInputsTraits<NodeType>::get(m_node);
     }
 
-    std::map<std::string, IO::OutputRef> get_outputs() override
+    Map<StringView, IO::OutputRef, 25> get_outputs() override
     {
         return IO::NodeOutputsTraits<NodeType>::get(m_node);
     }

@@ -8,8 +8,9 @@
 
 #include "ducta/IO/Private/InputModelRef.hpp"
 #include "ducta/Core/Types/TypeIndex.hpp"
+#include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 
-#include <map>
 #include <memory>
 
 namespace ducta {
@@ -112,7 +113,7 @@ InputT* cast(InputRef input)
 template <typename Node>
 struct NodeInputsTraits
 {
-    static std::map<std::string, IO::InputRef> get(Node& node)
+    static Map<StringView, IO::InputRef, 25> get(Node& node)
     {
         return {};
     }

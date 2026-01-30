@@ -2,7 +2,7 @@
 #define DUCTA_CORE_TYPES_TYPEINDEX_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include <etl/type_index.h>
+
 #else
 #include <boost/type_index.hpp>
 #endif
@@ -10,12 +10,51 @@
 namespace ducta {
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-using TypeIndex = etl::type_index;
-template <typename T>
-TypeIndex type_id()
+namespace Private
 {
-    return etl::type_id<T>();
+template <class T>
+struct TypeAnchor
+{
+    // This unique address is your "type id" (per type, per binary).
+    static constexpr std::uint8_t anchor = 0;
+};
+} // namespace Private
+
+struct TypeIndex
+{
+    const void* v = nullptr;
+
+    // Comparisons
+    friend constexpr bool operator==(TypeIndex a, TypeIndex b) noexcept
+    {
+        return a.v == b.v;
+    }
+
+    friend constexpr bool operator!=(TypeIndex a, TypeIndex b) noexcept
+    {
+        return a.v != b.v;
+    }
+
+    friend bool operator<(TypeIndex a, TypeIndex b) noexcept
+    {
+        return reinterpret_cast<std::uintptr_t>(a.v) < reinterpret_cast<std::uintptr_t>(b.v);
+    }
+
+    // Helpers
+    constexpr bool valid() const noexcept { return v != nullptr; }
+
+    std::size_t hash() const noexcept
+    {
+        return static_cast<std::size_t>(reinterpret_cast<std::uintptr_t>(v));
+    }
+};
+
+template <typename T>
+constexpr TypeIndex type_id() noexcept
+{
+    return TypeIndex{ &Private::TypeAnchor<T>::anchor };
 }
+
 #else
 using TypeIndex = boost::typeindex::type_index;
 

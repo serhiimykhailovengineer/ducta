@@ -4,6 +4,8 @@
 
 #include "ducta/IO/TInput.hpp"
 #include "ducta/IO/TOutput.hpp"
+#include "ducta/IO/DefineInputs.hpp"
+#include "ducta/IO/DefineOutputs.hpp"
 
 #include "ducta/Pipeline/Node.hpp"
 
@@ -185,36 +187,14 @@ struct NodeWithInputsAndOutputs
     {}
 };
 
-namespace ducta {
-namespace IO {
-template<>
-struct NodeInputsTraits<NodeWithInputsAndOutputs>
-{
-    using Node = NodeWithInputsAndOutputs;
-    static std::map<std::string, IO::InputRef> get(Node& node)
-    {
-        static std::map<std::string, IO::InputRef> inputs{
-            {"input1", IO::InputRef{node.input1}},
-            {"input2", IO::InputRef{node.input2}}
-        };
-        return inputs;
-    }
-};
+DEFINE_NODE_INPUTS(NodeWithInputsAndOutputs, 
+        ("input1", input1),
+        ("input2", input2)
+    );
 
-template<>
-struct NodeOutputsTraits<NodeWithInputsAndOutputs>
-{
-    using Node = NodeWithInputsAndOutputs;
-    static std::map<std::string, IO::OutputRef> get(Node& node)
-    {
-        static std::map<std::string, IO::OutputRef> outputs{
-            {"output1", IO::OutputRef{node.output1}}
-        };
-        return outputs;
-    }
-};
-} // namespace IO
-} // namespace ducta
+DEFINE_NODE_OUTPUTS(NodeWithInputsAndOutputs, 
+        ("output1", output1)
+    );
 
 TEST(NodeTests, check_inputs_and_outputs) 
 {

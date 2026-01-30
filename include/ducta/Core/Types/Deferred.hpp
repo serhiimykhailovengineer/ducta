@@ -12,7 +12,7 @@ public:
 
     template <typename Func>
     Deferred(Func&& func)
-    : _func(std::forward<Func>(func))
+    : _func(makeFunction(std::forward<Func>(func)))
     {}
 
     ~Deferred()
@@ -29,7 +29,7 @@ public:
     Deferred(Deferred&& other) noexcept
     : _func(std::move(other._func))
     {
-        other._func = nullptr;
+        other = {};
     }
 
     Deferred& operator=(Deferred&& other) noexcept
@@ -37,7 +37,7 @@ public:
         if (this != &other)
         {
             _func = std::move(other._func);
-            other._func = nullptr;
+            other = {};
         }
         return *this;
     }

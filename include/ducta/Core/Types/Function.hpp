@@ -2,7 +2,7 @@
 #define DUCTA_CORE_TYPES_FUNCTION_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include <etl/function.h>
+#include <etl/delegate.h>
 #else
 #include <functional>
 #endif
@@ -11,7 +11,14 @@ namespace ducta {
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 template <typename Fn>
-using Function = etl::function<Fn, 256>;
+using Function = etl::delegate<Fn>;
+
+template <typename TLambda>
+constexpr auto makeFunction(TLambda&& instance) noexcept
+{
+    return etl::make_delegate<TLambda>(instance);
+}
+
 #else
 template <typename Fn>
 using Function = std::function<Fn>;

@@ -6,6 +6,8 @@
 
 #include "ducta/Core/Types/Error.hpp"
 #include "ducta/Core/Types/Expected.hpp"
+#include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Core/Types/Map.hpp"
 
 #include <map>
 
@@ -21,8 +23,8 @@ public:
     virtual Expected<bool, Error> iterate() = 0;
     virtual void release() = 0;
 
-    virtual std::map<std::string, IO::InputRef> get_inputs() = 0;
-    virtual std::map<std::string, IO::OutputRef> get_outputs() = 0;
+    virtual Map<StringView, IO::InputRef, 25> get_inputs() = 0;
+    virtual Map<StringView, IO::OutputRef, 25> get_outputs() = 0;
 };
 } // namespace Private
 } // namespace Pipeline

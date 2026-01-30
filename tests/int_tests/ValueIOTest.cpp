@@ -22,12 +22,12 @@ public:
     } outputs;
 
 public:
-    std::map<std::string, IO::InputRef> get_inputs()
+    Map<StringView, IO::InputRef, 25> get_inputs()
     {
         return {{"left", IO::InputRef{inputs.left}}, {"right", IO::InputRef{inputs.right}}};
     }
 
-    std::map<std::string, IO::OutputRef> get_outputs()
+    Map<StringView, IO::OutputRef, 25> get_outputs()
     {
         return {{"result", IO::OutputRef{outputs.result}}};
     }

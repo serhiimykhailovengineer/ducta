@@ -19,7 +19,7 @@ using format_string = etl::format_string<Args...>;
 template <class StringType, class... Args>
 StringType& format_to(StringType& s, format_string<Args...> fmt, Args&&... args)
 {
-    etl::format_to(std::back_inserter(s), fmt, std::forward<Args>(args)...);
+    etl::format_to(s, fmt, std::forward<Args>(args)...);
     return s;
 }
 

@@ -69,13 +69,13 @@ public:
      * @brief Get the inputs of the node
      * @return A map of input names to InputRef objects
     */
-    std::map<std::string, IO::InputRef> get_inputs();
+    Map<StringView, IO::InputRef, 25> get_inputs();
 
     /*
      * @brief Get the outputs of the node
      * @return A map of output names to OutputRef objects
     */
-    std::map<std::string, IO::OutputRef> get_outputs();
+    Map<StringView, IO::OutputRef, 25> get_outputs();
 
 private:
     std::unique_ptr<Private::NodeConcept> m_concept;

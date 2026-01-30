@@ -47,26 +47,19 @@ TEST(PipelineTest, base_test)
     TestClock clock_mock;
 
     // Create nodes map
-    std::map<std::string, Pipeline::Node> nodes{};
+    Pipeline::Nodes nodes;
 
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("add"), 
-                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Adder<int>>{}));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("sub"), 
-                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Subtractor<int>>{}));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("div"), 
-                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Divider<int>>{}));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("mul"), 
-                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Multiplier<int>>{}));
+    nodes.add_node("add", ducta::Test::Adder<int>{});
+    nodes.add_node("sub", ducta::Test::Subtractor<int>{});
+    nodes.add_node("div", ducta::Test::Divider<int>{});
+    nodes.add_node("mul", ducta::Test::Multiplier<int>{});
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    pipeline.configure(nodes,
-        {"add", "mul", "div", "sub"});
+    Vector<StringView, 4> order{ "add", "mul", "div", "sub" };
+
+    pipeline.configure(nodes, order);
 
     // Calculate (((2 + 2) * 3) / 2) - 10 = -4
 
@@ -79,15 +72,15 @@ TEST(PipelineTest, base_test)
     
     std::vector<Deferred> cons{};
 
-    cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.at("add").get_inputs().at("left")));
-    cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.at("add").get_inputs().at("right")));
-    cons.emplace_back(IO::bind(nodes.at("add").get_outputs().at("result"), nodes.at("mul").get_inputs().at("left")));
-    cons.emplace_back(IO::bind(IO::OutputRef{const_3}, nodes.at("mul").get_inputs().at("right")));
-    cons.emplace_back(IO::bind(IO::OutputRef{nodes.at("mul").get_outputs().at("result")}, nodes.at("div").get_inputs().at("left")));
-    cons.emplace_back(IO::bind(IO::OutputRef{const_2}, nodes.at("div").get_inputs().at("denominator")));
-    cons.emplace_back(IO::bind(IO::OutputRef{nodes.at("div").get_outputs().at("result")}, nodes.at("sub").get_inputs().at("left")));
-    cons.emplace_back(IO::bind(IO::OutputRef{const_10}, nodes.at("sub").get_inputs().at("right")));
-    cons.emplace_back(IO::bind(IO::OutputRef{nodes.at("sub").get_outputs().at("result")}, IO::InputRef{result}));
+    cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.get_node("add")->node.get_inputs().at("left")));
+    cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.get_node("add")->node.get_inputs().at("right")));
+    cons.emplace_back(IO::bind(nodes.get_node("add")->node.get_outputs().at("result"), nodes.get_node("mul")->node.get_inputs().at("left")));
+    cons.emplace_back(IO::bind(IO::OutputRef{const_3}, nodes.get_node("mul")->node.get_inputs().at("right")));
+    cons.emplace_back(IO::bind(IO::OutputRef{nodes.get_node("mul")->node.get_outputs().at("result")}, nodes.get_node("div")->node.get_inputs().at("left")));
+    cons.emplace_back(IO::bind(IO::OutputRef{const_2}, nodes.get_node("div")->node.get_inputs().at("denominator")));
+    cons.emplace_back(IO::bind(IO::OutputRef{nodes.get_node("div")->node.get_outputs().at("result")}, nodes.get_node("sub")->node.get_inputs().at("left")));
+    cons.emplace_back(IO::bind(IO::OutputRef{const_10}, nodes.get_node("sub")->node.get_inputs().at("right")));
+    cons.emplace_back(IO::bind(IO::OutputRef{nodes.get_node("sub")->node.get_outputs().at("result")}, IO::InputRef{result}));
 
     first.set(2);
     second.set(2);
@@ -108,20 +101,17 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     TestClock clock_mock;
 
     // Create nodes map
-    std::map<std::string, Pipeline::Node> nodes{};
+    Pipeline::Nodes nodes;
 
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("add"), 
-                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Adder<int>>{}));
-    nodes.emplace(std::piecewise_construct, 
-                  std::forward_as_tuple("sub"), 
-                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Subtractor<int>>{}));
+    nodes.add_node("add", ducta::Test::Adder<int>{});
+    nodes.add_node("sub", ducta::Test::Subtractor<int>{});
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    pipeline.configure(nodes,
-        {"add"});
+    Vector<StringView, 2> order{ "add", "sub" };
+
+    pipeline.configure(nodes, order);
 
     IO::TOutput<int> first;
     IO::TOutput<int> second;
@@ -129,8 +119,8 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     
     std::vector<Deferred> cons{};
 
-    cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.at("add").get_inputs().at("left")));
-    cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.at("add").get_inputs().at("right")));
+    cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.get_node("add")->node.get_inputs().at("left")));
+    cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.get_node("add")->node.get_inputs().at("right")));
 
 
     pipeline.init();

@@ -20,6 +20,9 @@ namespace ducta {
 template<class Value, class Error>
 using Expected = etl::expected<Value, Error>;
 
+template <class Error>
+using Unexpected = etl::unexpected<Error>;
+
 #else
 
 template<class Value, class Error>

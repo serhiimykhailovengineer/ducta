@@ -76,9 +76,13 @@ template <class R>
 bool expected_bool_value(R& r) noexcept
 {
     if constexpr (has_deref<R>::value)
+    {
         return static_cast<bool>(*r);
+    }
     else
+    {
         return static_cast<bool>(r.value());
+    }
 }
 
 template <class E>
@@ -152,6 +156,7 @@ Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
                 "Unsupported iterate() signature. Use void, bool, or expected-like with value_type/error_type.");
         }
     }
+    return true;
 }
 
 template <typename NodeType>

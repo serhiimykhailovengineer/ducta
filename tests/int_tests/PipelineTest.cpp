@@ -102,3 +102,40 @@ TEST(PipelineTest, base_test)
     ASSERT_TRUE(result.ready());
     EXPECT_EQ(result.value(), -4);
 }
+
+TEST(PipelineTest, pipeline_with_failed_iteration)
+{
+    TestClock clock_mock;
+
+    // Create nodes map
+    std::map<std::string, Pipeline::Node> nodes{};
+
+    nodes.emplace(std::piecewise_construct, 
+                  std::forward_as_tuple("add"), 
+                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Adder<int>>{}));
+    nodes.emplace(std::piecewise_construct, 
+                  std::forward_as_tuple("sub"), 
+                  std::forward_as_tuple(std::in_place_type_t<ducta::Test::Subtractor<int>>{}));
+
+    // Configure pipeline
+    Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
+
+    pipeline.configure(nodes,
+        {"add"});
+
+    IO::TOutput<int> first;
+    IO::TOutput<int> second;
+    IO::TInput<int> result;
+    
+    std::vector<Utils::Deferred> cons{};
+
+    cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.at("add").get_inputs().at("left")));
+    cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.at("add").get_inputs().at("right")));
+
+
+    pipeline.init();
+    EXPECT_FALSE(pipeline.iterate());
+    pipeline.release();
+
+    ASSERT_FALSE(result.ready());
+}

@@ -6,8 +6,23 @@
 #include "ducta/IO/DefineInputs.hpp"
 #include "ducta/IO/DefineOutputs.hpp"
 
+#include "ducta/Utils/Expected.hpp"
+#include "ducta/Utils/String.hpp"
+
 namespace ducta {
 namespace Test {
+
+struct AdderError
+{
+    String<100> message;
+
+    explicit AdderError()
+    {}
+
+    explicit AdderError(String<100> msg)
+    : message{msg}
+    {}
+};
 
 template <class T>
 class Adder
@@ -20,14 +35,15 @@ public:
 public:
     void init() {}
 
-    void iterate()
+    Utils::Expected<bool, AdderError> iterate()
     {
         if (!left.ready() || !right.ready())
         {
-            return;
+            return Utils::Unexpected<AdderError>{AdderError{"Inputs not ready"}};
         }
 
         result = left.value() + right.value();
+        return true;
     }
 
     void release() {}

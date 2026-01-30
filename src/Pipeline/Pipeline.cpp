@@ -2,6 +2,8 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
+#include "ducta/Utils/Log.h"
+
 namespace ducta {
 namespace Pipeline {
 
@@ -10,32 +12,56 @@ Pipeline::Pipeline(Clock&& clock)
 {
 }
 
-void Pipeline::configure(Nodes& nodes, std::vector<std::string> order)
+bool Pipeline::configure(Nodes& nodes, std::vector<std::string> order)
 {
     m_init_order.clear();
     m_nodes.clear();
     for (auto const& name : order)
     {
-        m_init_order.emplace_back(name, std::ref(nodes.at(name)));
-        m_nodes.emplace_back(name, std::ref(nodes.at(name)));
+        auto node_it = nodes.find(name);
+        if (node_it == nodes.end())
+        {
+            DUCTA_LOG_ERROR("Node not found: {}", name);
+            m_init_order.clear();
+            m_nodes.clear();
+            return false;
+        }
+        m_init_order.emplace_back(name, std::ref(node_it->second));
+        m_nodes.emplace_back(name, std::ref(node_it->second));
     }
-
-    
+    return true;
 }
 
-void Pipeline::configure(Nodes& nodes, std::vector<std::string> init_order, std::vector<std::string> exec_order)
+bool Pipeline::configure(Nodes& nodes, std::vector<std::string> init_order, std::vector<std::string> exec_order)
 {
     m_init_order.clear();
     for (auto const& name : init_order)
     {
-        m_init_order.emplace_back(name, std::ref(nodes.at(name)));
+        auto node_it = nodes.find(name);
+        if (node_it == nodes.end())
+        {
+            DUCTA_LOG_ERROR("Node not found: {}", name);
+            m_init_order.clear();
+            m_nodes.clear();
+            return false;
+        }
+        m_init_order.emplace_back(name, std::ref(node_it->second));
     }
 
     m_nodes.clear();
     for (auto const& name : exec_order)
     {
-        m_nodes.emplace_back(name, std::ref(nodes.at(name)));
+        auto node_it = nodes.find(name);
+        if (node_it == nodes.end())
+        {
+            DUCTA_LOG_ERROR("Node not found: {}", name);
+            m_init_order.clear();
+            m_nodes.clear();
+            return false;
+        }
+        m_nodes.emplace_back(name, std::ref(node_it->second));
     }
+    return true;
 }
 
 void Pipeline::init()
@@ -50,7 +76,27 @@ bool Pipeline::iterate()
 {
     for (auto& node : m_nodes)
     {
-        node.second.get().iterate();
+        try 
+        {
+            auto result = node.second.get().iterate();
+            if(result)
+            {
+                if (!*result)
+                {
+                    return false; // Stop iteration as requested by the node
+                }
+            }
+            else
+            {
+                DUCTA_LOG_ERROR("Error during iteration of node: {}", node.first);
+                return false;
+            }
+        } 
+        catch (const std::exception& e) 
+        {
+            DUCTA_LOG_ERROR("Exception during iteration of node: {}, what(): {}", node.first, e.what());
+            return false;
+        }
     }
 
     return true;

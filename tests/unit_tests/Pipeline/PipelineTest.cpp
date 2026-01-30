@@ -83,17 +83,17 @@ TEST(PipelineTest, iteration_with_failed_node)
 {
     Pipeline::ClockMock clock_mock;
 
-    Pipeline::IterableNodeMock<Utils::Expected<void, Utils::Error>> first_node_mock;
-    Pipeline::IterableNodeMock<Utils::Expected<void, Utils::Error>> second_node_mock;
+    Pipeline::IterableNodeMock<Expected<void, Error>> first_node_mock;
+    Pipeline::IterableNodeMock<Expected<void, Error>> second_node_mock;
     // Create nodes map
     std::map<std::string, Pipeline::Node> nodes{};
 
     nodes.emplace(std::piecewise_construct, 
                   std::forward_as_tuple("first"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<Utils::Expected<void, Utils::Error>>>{}, first_node_mock));
+                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<Expected<void, Error>>>{}, first_node_mock));
     nodes.emplace(std::piecewise_construct, 
                   std::forward_as_tuple("second"), 
-                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<Utils::Expected<void, Utils::Error>>>{}, second_node_mock));
+                  std::forward_as_tuple(std::in_place_type_t<Pipeline::IterableNodeMockWrapper<Expected<void, Error>>>{}, second_node_mock));
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
@@ -106,7 +106,7 @@ TEST(PipelineTest, iteration_with_failed_node)
     EXPECT_CALL(first_node_mock, init()).Times(1);
     EXPECT_CALL(second_node_mock, init()).Times(1);
     EXPECT_CALL(first_node_mock, iterate())
-        .WillOnce(::testing::Return(Utils::Unexpected<Utils::Error>{Utils::Error{}}));
+        .WillOnce(::testing::Return(Unexpected<Error>{Error{}}));
     EXPECT_CALL(second_node_mock, iterate()).Times(0);
     EXPECT_CALL(second_node_mock, release()).Times(1);
     EXPECT_CALL(first_node_mock, release()).Times(1);

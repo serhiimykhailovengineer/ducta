@@ -77,7 +77,7 @@ TEST(PipelineTest, base_test)
     IO::TOutput<int> const_10;
     IO::TInput<int> result;
     
-    std::vector<Utils::Deferred> cons{};
+    std::vector<Deferred> cons{};
 
     cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.at("add").get_inputs().at("left")));
     cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.at("add").get_inputs().at("right")));
@@ -127,7 +127,7 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     IO::TOutput<int> second;
     IO::TInput<int> result;
     
-    std::vector<Utils::Deferred> cons{};
+    std::vector<Deferred> cons{};
 
     cons.emplace_back(IO::bind(IO::OutputRef{first}, nodes.at("add").get_inputs().at("left")));
     cons.emplace_back(IO::bind(IO::OutputRef{second}, nodes.at("add").get_inputs().at("right")));

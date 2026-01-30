@@ -8,7 +8,7 @@
 
 #include <boost/optional.hpp>
 
-#include "ducta/Utils/TypeIndex.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
@@ -34,7 +34,7 @@ public:
      * @param type The type to check compatibility against
      * @return true if compatible, false otherwise
      */
-    bool compatible(Utils::TypeIndex type) const;
+    bool compatible(TypeIndex type) const;
 
     /**
      * @brief Check if the input has a ready value

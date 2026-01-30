@@ -46,7 +46,7 @@ TEST(ValueIOTest, multiplier_process)
 
     Multiplier mul;
 
-    std::vector<Utils::Deferred> connections;
+    std::vector<Deferred> connections;
     connections.emplace_back(bind(IO::OutputRef{left}, mul.get_inputs().at("left")));
     connections.emplace_back(bind(IO::OutputRef{right}, mul.get_inputs().at("right")));
     connections.emplace_back(bind(mul.get_outputs().at("result"), IO::InputRef{result}));

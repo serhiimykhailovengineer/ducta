@@ -55,10 +55,10 @@ public:
 
     /*
      * @brief Perform an iteration of the node
-     * @return Utils::Expected<bool, Utils::Error>: true if iteration was successful and should continue iteration, 
+     * @return Expected<bool, Error>: true if iteration was successful and should continue iteration, 
      *                                       false if iteration should stop, or an Error if iteration failed
     */
-    Utils::Expected<bool, Utils::Error> iterate();
+    Expected<bool, Error> iterate();
 
     /*
      * @brief Release the node

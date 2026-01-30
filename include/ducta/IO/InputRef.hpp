@@ -7,7 +7,7 @@
 #define DUCTA_T_INPUT_REF_HPP
 
 #include "ducta/IO/Private/InputModelRef.hpp"
-#include "ducta/Utils/TypeIndex.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
 #include <map>
 #include <memory>
@@ -47,7 +47,7 @@ public:
      * @param type The type to check compatibility against
      * @return true if compatible, false otherwise
      */
-    bool compatible(Utils::TypeIndex type) const
+    bool compatible(TypeIndex type) const
     {
         return m_concept->is_compatible(type);
     }
@@ -60,7 +60,7 @@ public:
     template <typename T>
     void notify(T const& value)
     {
-        m_concept->notify(Utils::type_id<std::decay_t<T>>(), &value);
+        m_concept->notify(type_id<std::decay_t<T>>(), &value);
     }
 
     /**
@@ -71,7 +71,7 @@ public:
     template <typename InputT>
     InputT* as()
     {
-        if (Utils::type_id<InputT>() != m_concept->type_id())
+        if (type_id<InputT>() != m_concept->type_id())
             return nullptr;
 
         using ModelRefT = Private::InputModelRef<InputT>;

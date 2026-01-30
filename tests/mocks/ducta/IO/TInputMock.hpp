@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-#include "ducta/Utils/TypeIndex.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
@@ -17,7 +17,7 @@ public:
 
 public:
     MOCK_METHOD(bool, ready, (), (const));
-    MOCK_METHOD(bool, compatible, (Utils::TypeIndex type), (const));
+    MOCK_METHOD(bool, compatible, (TypeIndex type), (const));
     MOCK_METHOD(void, notify, (value_type const& value), ());
 };
 
@@ -40,7 +40,7 @@ public:
         return mock.ready();
     }
 
-    bool compatible(Utils::TypeIndex type) const
+    bool compatible(TypeIndex type) const
     {
         return mock.compatible(type);
     }

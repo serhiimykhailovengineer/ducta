@@ -4,8 +4,8 @@
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
 
-#include "ducta/Utils/Error.hpp"
-#include "ducta/Utils/Expected.hpp"
+#include "ducta/Core/Types/Error.hpp"
+#include "ducta/Core/Types/Expected.hpp"
 
 #include <map>
 
@@ -18,7 +18,7 @@ class NodeConcept
 public:
     virtual ~NodeConcept() = default;
     virtual void init() = 0;
-    virtual Utils::Expected<bool, Utils::Error> iterate() = 0;
+    virtual Expected<bool, Error> iterate() = 0;
     virtual void release() = 0;
 
     virtual std::map<std::string, IO::InputRef> get_inputs() = 0;

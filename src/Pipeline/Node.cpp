@@ -8,7 +8,7 @@ void Node::init()
     m_concept->init();
 }
 
-Utils::Expected<bool, Utils::Error> Node::iterate()
+Expected<bool, Error> Node::iterate()
 {
     return m_concept->iterate();
 }

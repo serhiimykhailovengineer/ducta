@@ -3,7 +3,7 @@
 
 #include "ducta/IO/InputRef.hpp"
 
-#include "ducta/Utils/Deferred.hpp"
+#include "ducta/Core/Types/Deferred.hpp"
 
 namespace ducta {
 namespace IO {
@@ -14,8 +14,8 @@ class OutputConcept
 public:
     virtual ~OutputConcept() = default;
 
-    virtual Utils::Deferred do_bind(InputRef& input) = 0;
-    virtual Utils::TypeIndex type_id() const = 0;
+    virtual Deferred do_bind(InputRef& input) = 0;
+    virtual TypeIndex type_id() const = 0;
     virtual bool areEqual(OutputConcept const& other) const = 0;
 };
 

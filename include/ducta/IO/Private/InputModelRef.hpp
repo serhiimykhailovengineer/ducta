@@ -24,15 +24,15 @@ public:
         return m_input.ready();
     }
 
-    bool is_compatible(Utils::TypeIndex type) const override
+    bool is_compatible(TypeIndex type) const override
     {
         return m_input.compatible(type);
     }
 
-    void notify(Utils::TypeIndex type, void const* value) override
+    void notify(TypeIndex type, void const* value) override
     {
         using ValueType = typename InputT::value_type;
-        if (type != Utils::type_id<ValueType>())
+        if (type != ::ducta::type_id<ValueType>())
         {
             throw std::runtime_error("Incompatible type for notification");
         }
@@ -40,14 +40,14 @@ public:
         m_input.notify(*static_cast<ValueType const*>(value));
     }
 
-    Utils::TypeIndex type_id() const override
+    TypeIndex type_id() const override
     {
-        return Utils::type_id<InputT>();
+        return ::ducta::type_id<InputT>();
     }
 
     bool areEqual(InputConcept const& other) const override
     {
-        if (Utils::type_id<InputT>() != other.type_id())
+        if (::ducta::type_id<InputT>() != other.type_id())
             return false;
 
         auto const& other_model = static_cast<InputModelRef<InputT> const&>(other);

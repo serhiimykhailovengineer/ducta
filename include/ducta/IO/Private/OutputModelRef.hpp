@@ -18,19 +18,19 @@ public:
     : m_output(output) 
     {}
 
-    Utils::Deferred do_bind(InputRef& input) override
+    Deferred do_bind(InputRef& input) override
     {
         return bind(m_output, input);
     }
 
-    Utils::TypeIndex type_id() const override
+    TypeIndex type_id() const override
     {
-        return Utils::type_id<OutputT>();
+        return ::ducta::type_id<OutputT>();
     }
 
     bool areEqual(OutputConcept const& other) const override
     {
-        if (Utils::type_id<OutputT>() != other.type_id())
+        if (::ducta::type_id<OutputT>() != other.type_id())
             return false;
 
         auto const& other_model = static_cast<OutputModelRef<OutputT> const&>(other);

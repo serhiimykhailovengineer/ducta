@@ -271,12 +271,12 @@ TEST(NodeTests, check_result_of_iterate_with_expected)
     struct NodeWithExpectedIterate
     {
         using value_type = bool;
-        using error_type = Utils::Error;
+        using error_type = Error;
 
         void init()
         {}
 
-        Utils::Expected<bool, Utils::Error> iterate()
+        Expected<bool, Error> iterate()
         {
             return false;
         }
@@ -299,14 +299,14 @@ TEST(NodeTests, check_result_of_iterate_with_expected_error)
     struct NodeWithExpectedIterate
     {
         using value_type = bool;
-        using error_type = Utils::Error;
+        using error_type = Error;
 
         void init()
         {}
 
-        Utils::Expected<bool, Utils::Error> iterate()
+        Expected<bool, Error> iterate()
         {
-            return Utils::Unexpected<Utils::Error>{Utils::Error{}};
+            return Unexpected<Error>{Error{}};
         }
 
         void release()
@@ -326,7 +326,7 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
     struct CustomExpectedLike
     {
         using value_type = bool;
-        using error_type = Utils::Error;
+        using error_type = Error;
 
         CustomExpectedLike(bool has_value, bool value = false)
         : m_has_value{has_value}, m_value{value}
@@ -342,9 +342,9 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
             return m_value;
         }
 
-        Utils::Error error() const
+        Error error() const
         {
-            return Utils::Error{};
+            return {};
         }
 
     private:

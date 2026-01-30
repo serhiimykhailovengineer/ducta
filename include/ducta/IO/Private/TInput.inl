@@ -12,9 +12,9 @@ namespace ducta {
 namespace IO {
 
 template <typename T>
-bool TInput<T>::compatible(Utils::TypeIndex type) const
+bool TInput<T>::compatible(TypeIndex type) const
 {
-    return type == Utils::type_id<value_type>();
+    return type == ::ducta::type_id<value_type>();
 }
 
 template <typename T>

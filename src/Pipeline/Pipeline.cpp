@@ -2,7 +2,7 @@
 
 #include <boost/range/adaptor/reversed.hpp>
 
-#include "ducta/Utils/Log.h"
+#include "ducta/Utils/Log.hpp"
 
 namespace ducta {
 namespace Pipeline {

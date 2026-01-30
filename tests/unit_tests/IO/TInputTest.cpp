@@ -36,9 +36,9 @@ TEST(TInputTests, value_input)
     IO::TInput<int> input{};
 
     EXPECT_FALSE(input.ready());
-    EXPECT_TRUE(input.compatible(Utils::type_id<int>()));
-    EXPECT_TRUE(input.compatible(Utils::type_id<int&>()));
-    EXPECT_FALSE(input.compatible(Utils::type_id<float>()));
+    EXPECT_TRUE(input.compatible(::ducta::type_id<int>()));
+    EXPECT_TRUE(input.compatible(::ducta::type_id<int&>()));
+    EXPECT_FALSE(input.compatible(::ducta::type_id<float>()));
     EXPECT_THROW(input.value(), std::runtime_error);
     EXPECT_EQ(input.value_or(input_value), input_value);
 
@@ -63,9 +63,9 @@ TEST(TInputTests, ref_input)
     IO::TInput<int&> input{};
 
     EXPECT_FALSE(input.ready());
-    EXPECT_TRUE(input.compatible(Utils::type_id<int>()));
-    EXPECT_TRUE(input.compatible(Utils::type_id<int&>()));
-    EXPECT_FALSE(input.compatible(Utils::type_id<float>()));
+    EXPECT_TRUE(input.compatible(::ducta::type_id<int>()));
+    EXPECT_TRUE(input.compatible(::ducta::type_id<int&>()));
+    EXPECT_FALSE(input.compatible(::ducta::type_id<float>()));
     EXPECT_THROW(input.value(), std::runtime_error);
     EXPECT_EQ(input.value_or(input_value), input_value);
 

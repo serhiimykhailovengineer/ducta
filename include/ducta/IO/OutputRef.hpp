@@ -8,7 +8,8 @@
 
 #include "ducta/IO/Private/OutputModelRef.hpp"
 #include "ducta/IO/InputRef.hpp"
-#include "ducta/Utils/Deferred.hpp"
+
+#include "ducta/Core/Types/Deferred.hpp"
 
 #include <map>
 #include <memory>
@@ -39,7 +40,7 @@ public:
      * @param input The input to bind to
      * @return A Deferred object that will unbind the input when destroyed
      */
-    Utils::Deferred do_bind(InputRef input)
+    Deferred do_bind(InputRef input)
     {
         return m_output->do_bind(input);
     }
@@ -59,7 +60,7 @@ private:
     std::shared_ptr<Private::OutputConcept> m_output; ///< Type-erased output implementation
 };
 
-inline Utils::Deferred bind(OutputRef output, InputRef input)
+inline Deferred bind(OutputRef output, InputRef input)
 {
     return output.do_bind(input);
 }

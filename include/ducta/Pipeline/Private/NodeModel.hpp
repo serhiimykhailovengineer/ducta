@@ -86,23 +86,23 @@ bool expected_bool_value(R& r) noexcept
 }
 
 template <class E>
-Utils::Error convert_to_utils_error(E const& e) noexcept
+Error convert_to_error(E const& e) noexcept
 {
-    if constexpr (std::is_same_v<E, Utils::Error>)
+    if constexpr (std::is_same_v<E, Error>)
     {
         return e;
     }
     else if constexpr (has_message<E>::value)
     {
-        return Utils::Error{e.message};
+        return Error{e.message};
     }
     else if constexpr (has_message_fn<E>::value)
     {
-        return Utils::Error{e.message()};
+        return Error{e.message()};
     }
     else if constexpr (has_what<E>::value)
     {
-        return Utils::Error{String<100>(e.what())};
+        return Error{String<100>(e.what())};
     }
     else
     {
@@ -112,7 +112,7 @@ Utils::Error convert_to_utils_error(E const& e) noexcept
 
 
 template <typename NodeType>
-Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
+Expected<bool, Error> call_iterate(NodeType& node)
 {
     if constexpr (!has_iterate_v<NodeType>)
     {
@@ -136,7 +136,7 @@ Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
             auto r = node.iterate();
             if (!r)
             {
-                return Utils::Unexpected<Utils::Error>{convert_to_utils_error(r.error())};
+                return Unexpected<Error>{convert_to_error(r.error())};
             }
             return true;
         }
@@ -146,7 +146,7 @@ Utils::Expected<bool, Utils::Error> call_iterate(NodeType& node)
             auto r = node.iterate();
             if (!r)
             {
-                return Utils::Unexpected<Utils::Error>{convert_to_utils_error(r.error())};
+                return Unexpected<Error>{convert_to_error(r.error())};
             }
             return expected_bool_value(r); // true=continue, false=stop
         }
@@ -178,7 +178,7 @@ public:
         m_node.init();
     }
 
-    Utils::Expected<bool, Utils::Error> iterate() override
+    Expected<bool, Error> iterate() override
     {
         return Private::call_iterate(m_node);
     }

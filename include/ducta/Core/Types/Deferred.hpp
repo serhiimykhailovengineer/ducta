@@ -1,10 +1,9 @@
-#ifndef DUCTA_UTILS_DEFERRED_HPP
-#define DUCTA_UTILS_DEFERRED_HPP
+#ifndef DUCTA_CORE_TYPES_DEFERRED_HPP
+#define DUCTA_CORE_TYPES_DEFERRED_HPP
 
-#include "ducta/Utils/Function.hpp"
+#include "ducta/Core/Types/Function.hpp"
 
 namespace ducta {
-namespace Utils {
 
 class Deferred
 {
@@ -48,7 +47,7 @@ private:
     Function<void()> _func;
 };
 
-} // namespace Utils
 } // namespace ducta
 
-#endif // DUCTA_UTILS_DEFERRED_HPP
+
+#endif // DUCTA_CORE_TYPES_DEFERRED_HPP

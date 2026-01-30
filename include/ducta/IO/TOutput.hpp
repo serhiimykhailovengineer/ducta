@@ -8,8 +8,8 @@
 #include "ducta/IO/TInput.hpp"
 #include "ducta/IO/InputRef.hpp"
 
-#include "ducta/Utils/TypeIndex.hpp"
-#include "ducta/Utils/Deferred.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
+#include "ducta/Core/Types/Deferred.hpp"
 
 namespace ducta {
 namespace IO {
@@ -64,7 +64,7 @@ public:
      * @param input The input to bind to
      * @return A Deferred object that will unbind the input upon destruction
      */
-    Utils::Deferred bind(InputRef const& input);
+    Deferred bind(InputRef const& input);
 
 private:
     value_type _value;
@@ -72,7 +72,7 @@ private:
 };
 
 template <typename T>
-Utils::Deferred bind(TOutput<T>& output, InputRef const& input)
+Deferred bind(TOutput<T>& output, InputRef const& input)
 {
     return output.bind(input);
 }

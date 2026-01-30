@@ -3,8 +3,8 @@
 
 #include <iostream>
 
-#include "ducta/Utils/Format.hpp"
-#include "ducta/Utils/String.hpp"
+#include "ducta/Core/Algorithm/Format.hpp"
+#include "ducta/Core/Types/String.hpp"
 
 #define DUCTA_LOG_INFO(fmt, args...)                                                               \
 do {                                                                                               \

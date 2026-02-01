@@ -39,7 +39,7 @@ typename TInput<T>::storage_type TInput<T>::value()
 template <typename T>
 typename TInput<T>::storage_type TInput<T>::value_or(value_type const& default_value)
 {
-    storage_type result_value = _value.value_or(default_value);
+    auto const& result_value = _value.value_or(default_value);
     _value.reset();
     return result_value;
 }

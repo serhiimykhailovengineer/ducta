@@ -28,6 +28,13 @@ constexpr auto makeFunctionRef(T& instance) noexcept
 #else
 template <typename Fn>
 using FunctionRef = std::function<Fn>;
+
+template <typename T, auto Method>
+constexpr auto makeFunctionRef(T& instance) noexcept
+{
+    return std::bind(Method, &instance, std::placeholders::_1);
+}
+
 #endif
 
 } // namespace ducta

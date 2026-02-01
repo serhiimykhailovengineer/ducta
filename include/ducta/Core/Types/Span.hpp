@@ -4,7 +4,7 @@
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/span.h>
 #else
-#include <span>
+#include <boost/core/span.hpp>
 #endif
 
 namespace ducta {
@@ -14,7 +14,7 @@ template <typename T>
 using Span = etl::span<T>;
 #else
 template <typename T>
-using Span = std::span<T>;
+using Span = boost::span<T>;
 #endif
 
 } // namespace ducta

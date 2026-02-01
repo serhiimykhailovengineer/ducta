@@ -64,6 +64,10 @@ private:
 #else
 template <typename T>
 using Optional = boost::optional<T>;
+
+template <typename T>
+using OptionalRef = boost::optional<T const&>;
+
 #endif
 
 } // namespace ducta

@@ -22,7 +22,7 @@ TEST(OutputRefTests, value_bind_check)
     IO::InputRef input_ref{input_wrapper};
 
     EXPECT_CALL(output_mock, bind(input_ref)).Times(1)
-        .WillOnce(testing::Return(Deferred{}));
+        .WillOnce(testing::Return(Connection{}));
 
     auto deferred = bind(output_ref, input_ref);
 }

@@ -52,7 +52,7 @@ struct TypeIndex
 template <typename T>
 constexpr TypeIndex type_id() noexcept
 {
-    return TypeIndex{ &Private::TypeAnchor<T>::anchor };
+    return TypeIndex{ &Private::TypeAnchor<std::remove_cv_t<std::remove_reference_t<T>>>::anchor };
 }
 
 #else

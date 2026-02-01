@@ -42,7 +42,7 @@ public:
      * @param input The input to bind to
      * @return A Deferred object that will unbind the input when destroyed
      */
-    Deferred do_bind(InputRef input)
+    Connection do_bind(InputRef input)
     {
         return m_output->do_bind(input);
     }
@@ -62,7 +62,7 @@ private:
     std::shared_ptr<Private::OutputConcept> m_output; ///< Type-erased output implementation
 };
 
-inline Deferred bind(OutputRef output, InputRef input)
+inline Connection bind(OutputRef output, InputRef input)
 {
     return output.do_bind(input);
 }

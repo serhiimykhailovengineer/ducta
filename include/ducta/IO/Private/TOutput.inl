@@ -3,9 +3,10 @@
 
 #include "ducta/IO/TInput.hpp"
 #include "ducta/IO/InputRef.hpp"
+#include "ducta/IO/Connection.hpp"
 
 #include "ducta/Core/Types/TypeIndex.hpp"
-#include "ducta/Core/Types/Deferred.hpp"
+
 
 namespace ducta {
 namespace IO {
@@ -51,20 +52,24 @@ TOutput<T>& TOutput<T>::operator=(value_type&& value)
 }
 
 template <typename T>
-Deferred TOutput<T>::bind(InputRef const& input)
+Connection TOutput<T>::bind(InputRef const& input)
 {
     if (input.compatible(type_id<T>()))
     {
         _inputs.emplace_back(input);
-        return Deferred{[this, input = std::move(input)]() {
-            // Remove input from the list upon destruction
-            _inputs.erase(std::remove_if(_inputs.begin(), _inputs.end(),
-                [&input](InputRef& ref) { return ref == input; }),
-                _inputs.end());
-        }};
+
+        return makeDeferred<InputRef>(makeFunctionRef<TOutput<T>, &TOutput<T>::unbind>(*this), input);
     }
 
     return {};
+}
+
+template <typename T>
+void TOutput<T>::unbind(InputRef const& input)
+{
+    _inputs.erase(std::remove_if(_inputs.begin(), _inputs.end(),
+        [&input](InputRef& ref) { return ref == input; }),
+        _inputs.end());
 }
 
 } // namespace IO

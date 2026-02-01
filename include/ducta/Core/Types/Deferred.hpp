@@ -1,25 +1,29 @@
 #ifndef DUCTA_CORE_TYPES_DEFERRED_HPP
 #define DUCTA_CORE_TYPES_DEFERRED_HPP
 
-#include "ducta/Core/Types/Function.hpp"
+#include "ducta/Core/Types/FunctionRef.hpp"
+#include "ducta/Core/Types/Optional.hpp"
 
 namespace ducta {
 
+template <class ValueType>
 class Deferred
 {
 public:
     Deferred() = default;
 
     template <typename Func>
-    Deferred(Func&& func)
-    : _func(makeFunction(std::forward<Func>(func)))
-    {}
+    Deferred(Func&& func, ValueType value)
+    : _func(std::forward<Func>(func))
+    , _value(std::move(value))
+    {
+    }
 
-    ~Deferred()
+    ~Deferred() noexcept
     {
         if (_func)
         {
-            _func();
+            _func(_value.value());
         }
     }
     
@@ -28,8 +32,9 @@ public:
 
     Deferred(Deferred&& other) noexcept
     : _func(std::move(other._func))
+    , _value(std::move(other._value))
     {
-        other = {};
+        other.reset();
     }
 
     Deferred& operator=(Deferred&& other) noexcept
@@ -37,15 +42,29 @@ public:
         if (this != &other)
         {
             _func = std::move(other._func);
-            other = {};
+            _value = std::move(other._value);
+            other.reset();
         }
         return *this;
     }
 
+private:
+    void reset() noexcept
+    {
+        _func  = {};
+        _value = {};
+    }
 
 private:
-    Function<void()> _func;
+    FunctionRef<void(ValueType const&)> _func;
+    Optional<ValueType> _value;
 };
+
+template <class ValueType>
+Deferred<ValueType> makeDeferred(FunctionRef<void(ValueType const&)> func, ValueType value)
+{
+    return Deferred<ValueType>{func, std::move(value)};
+}
 
 } // namespace ducta
 

@@ -18,7 +18,7 @@ public:
     : m_output(output) 
     {}
 
-    Deferred do_bind(InputRef& input) override
+    Connection do_bind(InputRef& input) override
     {
         return bind(m_output, input);
     }

@@ -9,7 +9,7 @@
 #include "ducta/IO/InputRef.hpp"
 
 #include "ducta/Core/Types/TypeIndex.hpp"
-#include "ducta/Core/Types/Deferred.hpp"
+#include "ducta/IO/Connection.hpp"
 
 namespace ducta {
 namespace IO {
@@ -62,9 +62,16 @@ public:
     /** 
      * @brief Bind the output to an input
      * @param input The input to bind to
-     * @return A Deferred object that will unbind the input upon destruction
+     * @return A Connection object that will unbind the input upon destruction
      */
-    Deferred bind(InputRef const& input);
+    Connection bind(InputRef const& input);
+
+private:
+    /** 
+     * @brief Unbind the output from an input
+     * @param input The input to unbind from
+     */
+    void unbind(InputRef const& input);
 
 private:
     value_type _value;
@@ -72,7 +79,7 @@ private:
 };
 
 template <typename T>
-Deferred bind(TOutput<T>& output, InputRef const& input)
+Connection bind(TOutput<T>& output, InputRef const& input)
 {
     return output.bind(input);
 }

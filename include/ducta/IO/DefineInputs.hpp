@@ -23,8 +23,7 @@
 #define DUCTA_NODE_INPUTS_INIT(node, ...)                                       \
     DUCTA_FOR_EACH_I(DUCTA_NODE_INPUTS_ELEM, node, __VA_ARGS__)
 
-// Main macro
-// Note: if NodeType contains commas (e.g. Foo<std::pair<int,int>>), pass it as (Foo<std::pair<int,int>>)
+// Main macro to define inputs for a node type
 #define DEFINE_NODE_INPUTS(NodeType, ...)                                                 \
 template<>                                                                                \
 struct ducta::IO::NodeInputsTraits<DUCTA_PP_UNPAREN((NodeType))>                          \

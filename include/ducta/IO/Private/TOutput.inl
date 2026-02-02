@@ -58,7 +58,7 @@ Connection TOutput<T>::bind(InputRef const& input)
     {
         _inputs.emplace_back(input);
 
-        return makeDeferred<InputRef>(makeFunctionRef<TOutput<T>, &TOutput<T>::unbind>(*this), input);
+        return makeConnection(makeFunctionRef<TOutput<T>, &TOutput<T>::unbind>(*this), input);
     }
 
     return {};

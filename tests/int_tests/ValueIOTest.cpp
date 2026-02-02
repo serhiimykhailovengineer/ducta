@@ -4,9 +4,10 @@
 #include "ducta/IO/TOutput.hpp"
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
+#include "ducta/IO/Connection.hpp"
 
 #include "ducta/Core/Types/StringView.hpp"
-#include "ducta/Core/Types/Deferred.hpp"
+
 #include "ducta/Core/Types/Vector.hpp"
 
 using namespace ducta;

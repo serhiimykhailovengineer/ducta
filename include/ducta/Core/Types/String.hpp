@@ -1,5 +1,5 @@
-#ifndef DUCTA_UTILS_STRING_HPP
-#define DUCTA_UTILS_STRING_HPP
+#ifndef DUCTA_CORE_TYPES_STRING_HPP
+#define DUCTA_CORE_TYPES_STRING_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/string.h>
@@ -20,4 +20,4 @@ using String = std::string;
 
 } // namespace ducta
 
-#endif // DUCTA_UTILS_STRING_HPP
+#endif // DUCTA_CORE_TYPES_STRING_HPP

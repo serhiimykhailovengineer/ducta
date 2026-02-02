@@ -9,9 +9,10 @@
 #include "ducta/IO/Private/OutputModelRef.hpp"
 #include "ducta/IO/InputRef.hpp"
 
-#include "ducta/Core/Types/Deferred.hpp"
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/StringView.hpp"
+
+#include "ducta/IO/Connection.hpp"
 
 
 #include <memory>
@@ -40,7 +41,7 @@ public:
     /**
      * @brief Bind the output to an input
      * @param input The input to bind to
-     * @return A Deferred object that will unbind the input when destroyed
+     * @return A Connection object that will unbind the input when destroyed
      */
     Connection do_bind(InputRef input)
     {

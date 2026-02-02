@@ -11,7 +11,7 @@
 namespace ducta {
 namespace IO {
 
-Deferred OutputRef::do_bind(InputRef input)
+Connection OutputRef::do_bind(InputRef input)
 {
     return m_output->do_bind(input);
 }

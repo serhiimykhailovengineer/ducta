@@ -25,7 +25,7 @@
     DUCTA_FOR_EACH_I(DUCTA_NODE_OUTPUTS_ELEM, node, __VA_ARGS__)
 
 
-// 3) Main macro
+// 3) Main macro to define outputs for a node type
 #define DEFINE_NODE_OUTPUTS(NodeType, ...)                                                 \
 template<>                                                                                 \
 struct ducta::IO::NodeOutputsTraits<DUCTA_PP_UNPAREN((NodeType))>                          \

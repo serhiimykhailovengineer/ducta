@@ -4,6 +4,7 @@
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Core/Types/String.hpp"
 #include "ducta/Core/Types/Optional.hpp"
 
 namespace ducta {
@@ -27,17 +28,17 @@ public:
 
     Optional<NodeInfo> get_node(::ducta::StringView name)
     {
-        auto it = m_nodes.find(name);
+        auto it = m_nodes.find(::ducta::String<50>(name));
         if (it != m_nodes.end())
         {
-            return Optional<NodeInfo>{NodeInfo{name, it->second}};
+            return Optional<NodeInfo>{NodeInfo{it->first, it->second}};
         }
         return {};
     }
     
 
 private:
-    ::ducta::Map<::ducta::StringView, Node, 50> m_nodes;
+    ::ducta::Map<::ducta::String<50>, Node, 50> m_nodes;
 };
 
 } // namespace Pipeline

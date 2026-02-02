@@ -14,8 +14,8 @@ struct Reversed
     {
     }
 
-    auto begin() { return std::rbegin(iterable); }
-    auto end() { return std::rend(iterable); }
+    auto begin() { return iterable.rbegin(); }
+    auto end() { return iterable.rend(); }
 };
 
 } // namespace Adapters

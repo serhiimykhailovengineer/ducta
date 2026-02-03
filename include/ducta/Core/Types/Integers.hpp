@@ -2,6 +2,7 @@
 #define DUCTA_CORE_TYPES_INTEGERS_HPP
 
 #include <cstdint>
+#include <cstddef>
 
 namespace ducta {
 

@@ -16,7 +16,7 @@ using Connection = Deferred<InputRef>;
 
 inline Connection makeConnection(FunctionRef<void(InputRef const&)> unbind_func, InputRef input)
 {
-    return makeDeferred<InputRef>(std::move(unbind_func), input);
+    return makeDeferred<InputRef>(::ducta::move(unbind_func), input);
 }
 
 } // namespace IO

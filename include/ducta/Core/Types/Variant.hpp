@@ -18,7 +18,7 @@ using Variant = etl::variant<Types...>;
 template<class Visitor, class... Variants>
 constexpr decltype(auto) visit(Visitor&& v, Variants&&... values)
 {
-    return etl::visit(std::forward<Visitor>(v), std::forward<Variants>(values)...);
+    return etl::visit(etl::forward<Visitor>(v), etl::forward<Variants>(values)...);
 }
 
 #else

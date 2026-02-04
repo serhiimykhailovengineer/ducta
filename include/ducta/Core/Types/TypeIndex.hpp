@@ -2,7 +2,7 @@
 #define DUCTA_CORE_TYPES_TYPEINDEX_HPP
 
 #include "ducta/Core/Types/Integers.hpp"
-#include "ducta/Core/Types/TypeTraits.hpp"
+#include "ducta/Core/TypeTraits.hpp"
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 

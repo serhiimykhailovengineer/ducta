@@ -6,9 +6,12 @@
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/String.hpp"
 #include "ducta/Core/Types/Optional.hpp"
+#include "ducta/Core/Utility.hpp"
 
 namespace ducta {
 namespace Pipeline {
+
+using NodeName = ::ducta::String<50>;
 
 class Nodes
 {
@@ -17,18 +20,18 @@ public:
 
     void add_node(::ducta::StringView name, Node node)
     {
-        m_nodes.insert(std::make_pair(name, std::move(node)));
+        m_nodes.insert(std::make_pair(NodeName{name}, ::ducta::move(node)));
     }
 
     template <typename... Args>
     void add_node(::ducta::StringView name, Args&&... args)
     {
-        m_nodes.insert(std::make_pair(name, Node(std::forward<Args>(args)...)));
+        m_nodes.insert(std::make_pair(NodeName{name}, Node(::ducta::forward<Args>(args)...)));
     }
 
     Optional<NodeInfo> get_node(::ducta::StringView name)
     {
-        auto it = m_nodes.find(::ducta::String<50>(name));
+        auto it = m_nodes.find(NodeName{name});
         if (it != m_nodes.end())
         {
             return Optional<NodeInfo>{NodeInfo{it->first, it->second}};
@@ -38,7 +41,7 @@ public:
     
 
 private:
-    ::ducta::Map<::ducta::String<50>, Node, 50> m_nodes;
+    ::ducta::Map<NodeName, Node, 50> m_nodes;
 };
 
 } // namespace Pipeline

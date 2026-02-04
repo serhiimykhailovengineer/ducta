@@ -9,6 +9,8 @@
 #include "ducta/IO/InputRef.hpp"
 
 #include "ducta/Core/Types/TypeIndex.hpp"
+#include "ducta/Core/TypeTraits.hpp"
+
 #include "ducta/IO/Connection.hpp"
 
 namespace ducta {
@@ -24,7 +26,7 @@ template <typename T>
 class TOutput
 {
 public:
-    using value_type = std::decay_t<T>;
+    using value_type = ::ducta::decay_t<T>;
     using storage_type = value_type;
 
 public:

@@ -30,8 +30,8 @@ TEST(PipelineTest, base_test)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    Vector<StringView, 4> init_order{ "node_1", "node_2", "node_3", "node_4" };
-    Vector<StringView, 3> exec_order{ "node_2", "node_3", "node_4" };
+    auto init_order = makeVector<StringView>("node_1", "node_2", "node_3", "node_4");
+    auto exec_order = makeVector<StringView>("node_2", "node_3", "node_4");
 
     pipeline.configure(nodes, init_order, exec_order);
 
@@ -85,7 +85,7 @@ TEST(PipelineTest, iteration_with_failed_node)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    Vector<StringView, 2> order{ "first", "second" };
+    auto order = makeVector<StringView>("first", "second");
 
     ASSERT_TRUE(pipeline.configure(nodes, order));
 

@@ -38,7 +38,7 @@ public:
 
     void set(T&& value)
     {
-        mock.set_move(std::move(value));
+        mock.set_move(::ducta::move(value));
     }
 
     Connection bind(InputRef& input)

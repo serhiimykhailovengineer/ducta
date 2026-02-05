@@ -33,9 +33,9 @@ public:
      * @param output The output object to wrap
      */
     template <typename TOutputType,
-              typename = std::enable_if_t<!std::is_same_v<std::decay_t<TOutputType>, OutputRef>>>
+              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TOutputType>, OutputRef>>>
     explicit OutputRef(TOutputType& output)
-    : m_output(std::make_shared<Private::OutputModelRef<std::decay_t<TOutputType>>>(output))
+    : m_output(std::make_shared<Private::OutputModelRef<::ducta::decay_t<TOutputType>>>(output))
     {}
 
     /**

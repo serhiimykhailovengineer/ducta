@@ -2,6 +2,7 @@
 #define DUCTA_CORE_TYPES_OPTIONAL_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
+#include "ducta/Core/ETLProfile.hpp"
 #include <etl/optional.h>
 #else
 #include <boost/optional.hpp>

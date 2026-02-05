@@ -125,7 +125,7 @@ TEST(NodeTests, iterable_non_copy_non_move_node_test)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<NonCopyNonMoveNode>{}, 42, 54.4f, "yes"};
+    Pipeline::Node node{::ducta::in_place_type_t<NonCopyNonMoveNode>{}, 42, 54.4f, "yes"};
 }
 
 TEST(NodeTests, non_iterable_non_copy_non_move_node_test) 
@@ -149,7 +149,7 @@ TEST(NodeTests, non_iterable_non_copy_non_move_node_test)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<NonCopyNonMoveNode>{}, 42, 54.4f, "yes"};
+    Pipeline::Node node{::ducta::in_place_type_t<NonCopyNonMoveNode>{}, 42, 54.4f, "yes"};
 }
 
 
@@ -164,7 +164,7 @@ TEST(NodeTests, empty_inputs_and_outputs)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<EmptyNode>{}};
+    Pipeline::Node node{::ducta::in_place_type_t<EmptyNode>{}};
 
     EXPECT_EQ(node.get_inputs().size(), 0U);
     EXPECT_EQ(node.get_outputs().size(), 0U);
@@ -198,7 +198,7 @@ DEFINE_NODE_OUTPUTS(NodeWithInputsAndOutputs,
 
 TEST(NodeTests, check_inputs_and_outputs) 
 {
-    Pipeline::Node node{std::in_place_type_t<NodeWithInputsAndOutputs>{}};
+    Pipeline::Node node{::ducta::in_place_type_t<NodeWithInputsAndOutputs>{}};
 
     auto inputs = node.get_inputs();
     ASSERT_EQ(inputs.size(), 2U);
@@ -237,7 +237,7 @@ TEST(NodeTests, check_result_of_iterate)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<NodeWithBoolIterate>{}};
+    Pipeline::Node node{::ducta::in_place_type_t<NodeWithBoolIterate>{}};
 
     node.init();
     auto result = node.iterate();
@@ -265,7 +265,7 @@ TEST(NodeTests, check_result_of_iterate_with_expected)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<NodeWithExpectedIterate>{}};
+    Pipeline::Node node{::ducta::in_place_type_t<NodeWithExpectedIterate>{}};
 
     node.init();
     auto result = node.iterate();
@@ -293,7 +293,7 @@ TEST(NodeTests, check_result_of_iterate_with_expected_error)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<NodeWithExpectedIterate>{}};
+    Pipeline::Node node{::ducta::in_place_type_t<NodeWithExpectedIterate>{}};
 
     node.init();
     auto result = node.iterate();
@@ -346,7 +346,7 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
         {}
     };
 
-    Pipeline::Node node{std::in_place_type_t<NodeWithCustomExpectedLikeIterate>{}};
+    Pipeline::Node node{::ducta::in_place_type_t<NodeWithCustomExpectedLikeIterate>{}};
 
     node.init();
     auto result = node.iterate();

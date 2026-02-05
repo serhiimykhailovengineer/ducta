@@ -6,7 +6,7 @@
 #include "ducta/IO/Connection.hpp"
 
 #include "ducta/Core/Types/TypeIndex.hpp"
-
+#include "ducta/Core/Algorithms/Adapters.hpp"
 
 namespace ducta {
 namespace IO {
@@ -30,7 +30,7 @@ void TOutput<T>::set(value_type const& value)
 template <typename T>
 void TOutput<T>::set(value_type&& value) 
 {
-    _value = std::move(value);
+    _value = ::ducta::move(value);
     for (auto& input_ref : _inputs)
     {
         input_ref.notify(_value);
@@ -47,7 +47,7 @@ TOutput<T>& TOutput<T>::operator=(value_type const& value)
 template <typename T>
 TOutput<T>& TOutput<T>::operator=(value_type&& value)
 {
-    set(std::move(value));
+    set(::ducta::move(value));
     return *this;
 }
 
@@ -67,9 +67,7 @@ Connection TOutput<T>::bind(InputRef const& input)
 template <typename T>
 void TOutput<T>::unbind(InputRef const& input)
 {
-    _inputs.erase(std::remove_if(_inputs.begin(), _inputs.end(),
-        [&input](InputRef& ref) { return ref == input; }),
-        _inputs.end());
+    ::ducta::erase(_inputs, input);
 }
 
 } // namespace IO

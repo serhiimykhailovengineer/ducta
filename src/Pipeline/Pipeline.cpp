@@ -7,7 +7,7 @@ namespace ducta {
 namespace Pipeline {
 
 Pipeline::Pipeline(Clock&& clock)
-: m_clock(std::move(clock))
+: m_clock(::ducta::move(clock))
 {
 }
 

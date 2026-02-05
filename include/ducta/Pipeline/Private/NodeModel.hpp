@@ -165,7 +165,7 @@ public:
     {}
 
     template <typename... Args>
-    NodeModel(std::in_place_t, Args&&... args)
+    NodeModel(::ducta::in_place_t, Args&&... args)
     : m_node{::ducta::forward<Args>(args)...}
     {
     }

@@ -45,7 +45,7 @@ TEST(TOutputTests, set_move)
     IO::TOutput<int> output{};
 
     int temp_value = 200;
-    EXPECT_NO_THROW(output.set(std::move(temp_value)));
+    EXPECT_NO_THROW(output.set(::ducta::move(temp_value)));
 }
 
 TEST(TOutputTests, assign_operator) 
@@ -56,7 +56,7 @@ TEST(TOutputTests, assign_operator)
     output = temp_value;
 
     temp_value = 400;
-    EXPECT_NO_THROW(output = std::move(temp_value));
+    EXPECT_NO_THROW(output = ::ducta::move(temp_value));
 }
 
 TEST(TOutputTests, bind) 

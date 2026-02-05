@@ -2,6 +2,7 @@
 #define DUCTA_CORE_TYPES_STRING_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
+#include "ducta/Core/ETLProfile.hpp"
 #include <etl/string.h>
 #else
 #include <string>

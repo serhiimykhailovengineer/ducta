@@ -57,7 +57,7 @@ TEST(PipelineTest, base_test)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    Vector<StringView, 4> order{ "add", "mul", "div", "sub" };
+    auto order = makeVector<StringView>("add", "mul", "div", "sub");
 
     pipeline.configure(nodes, order);
 
@@ -109,7 +109,7 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    Vector<StringView, 2> order{ "add", "sub" };
+    auto order = makeVector<StringView>("add", "sub");
 
     pipeline.configure(nodes, order);
 

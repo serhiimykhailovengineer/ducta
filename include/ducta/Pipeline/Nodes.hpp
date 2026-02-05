@@ -20,13 +20,15 @@ public:
 
     void add_node(::ducta::StringView name, Node node)
     {
-        m_nodes.insert(std::make_pair(NodeName{name}, ::ducta::move(node)));
+        NodeName node_name{name};
+        m_nodes.insert(::ducta::pair<NodeName, Node>(::ducta::move(node_name), ::ducta::move(node)));
     }
 
     template <typename... Args>
     void add_node(::ducta::StringView name, Args&&... args)
     {
-        m_nodes.insert(std::make_pair(NodeName{name}, Node(::ducta::forward<Args>(args)...)));
+        NodeName node_name{name};
+        m_nodes.insert(::ducta::pair<NodeName, Node>(::ducta::move(node_name), Node(::ducta::forward<Args>(args)...)));
     }
 
     Optional<NodeInfo> get_node(::ducta::StringView name)

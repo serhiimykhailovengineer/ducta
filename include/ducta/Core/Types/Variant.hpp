@@ -3,6 +3,7 @@
 
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
+#include "ducta/Core/ETLProfile.hpp"
 #include <etl/variant.h>
 #else
 #include <variant>

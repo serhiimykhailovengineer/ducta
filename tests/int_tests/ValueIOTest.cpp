@@ -31,8 +31,8 @@ public:
     {
         Map<StringView, IO::InputRef, 25> inputs_ref;
         
-        inputs_ref.insert(std::make_pair<StringView, IO::InputRef>("left", IO::InputRef{inputs.left}));
-        inputs_ref.insert(std::make_pair<StringView, IO::InputRef>("right", IO::InputRef{inputs.right}));
+        inputs_ref.insert(::ducta::make_pair<StringView, IO::InputRef>("left", IO::InputRef{inputs.left}));
+        inputs_ref.insert(::ducta::make_pair<StringView, IO::InputRef>("right", IO::InputRef{inputs.right}));
         return inputs_ref;
     }
 
@@ -40,7 +40,7 @@ public:
     {
         Map<StringView, IO::OutputRef, 25> outputs_ref;
         
-        outputs_ref.insert(std::make_pair<StringView, IO::OutputRef>("result", IO::OutputRef{outputs.result}));
+        outputs_ref.insert(::ducta::make_pair<StringView, IO::OutputRef>("result", IO::OutputRef{outputs.result}));
         return outputs_ref;
     }
 

@@ -9,6 +9,7 @@
 #include "ducta/IO/InputRef.hpp"
 
 #include "ducta/Core/Types/TypeIndex.hpp"
+#include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Core/TypeTraits.hpp"
 
 #include "ducta/IO/Connection.hpp"
@@ -77,7 +78,7 @@ private:
 
 private:
     value_type _value;
-    std::vector<InputRef> _inputs;
+    ::ducta::Vector<InputRef, 50> _inputs;
 };
 
 template <typename T>

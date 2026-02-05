@@ -2,6 +2,7 @@
 #define DUCTA_CORE_TYPES_SPAN_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
+#include "ducta/Core/ETLProfile.hpp"
 #include <etl/span.h>
 #else
 #include <boost/core/span.hpp>

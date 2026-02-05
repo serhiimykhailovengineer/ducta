@@ -2,7 +2,7 @@
 #define DUCTA_CORE_TYPES_EXPECTED_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-
+#include "ducta/Core/ETLProfile.hpp"
 #include <etl/expected.h>
 
 #else
@@ -43,7 +43,7 @@ struct Unexpected
     template <class Value>
     operator Expected<Value, Error>() &&
     {
-        return {boost::system::in_place_error, std::move(error)};
+        return {boost::system::in_place_error, ::ducta::move(error)};
     }
 };
 

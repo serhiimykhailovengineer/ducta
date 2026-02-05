@@ -13,6 +13,10 @@ class Input
 
 class InputRef
 {
+    explicit InputRef(Input& input)
+    : ref(input)
+    {}
+
     Input& ref;
 };
 

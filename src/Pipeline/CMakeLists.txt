@@ -1,5 +1,4 @@
 add_library(ducta_pipeline STATIC
-    Node.cpp
     Pipeline.cpp
 )
 

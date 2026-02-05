@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "ducta/Pipeline/Node.hpp"
+#include "ducta/Pipeline/NodeRef.hpp"
 #include "ducta/Pipeline/Pipeline.hpp"
 
 #include "ducta/IO/OutputRef.hpp"
@@ -46,14 +46,19 @@ TEST(PipelineTest, base_test)
 {
     TestClock clock_mock;
 
+    ducta::Test::Adder<int> adder{};
+    ducta::Test::Subtractor<int> subtractor{};
+    ducta::Test::Divider<int> divider{};
+    ducta::Test::Multiplier<int> multiplier{};
+
+
     // Create nodes map
     Pipeline::Nodes nodes;
 
-    nodes.add_node("add", ducta::Test::Adder<int>{});
-    nodes.add_node("sub", ducta::Test::Subtractor<int>{});
-    nodes.add_node("div", ducta::Test::Divider<int>{});
-    nodes.add_node("mul", ducta::Test::Multiplier<int>{});
-
+    nodes.add_node("add", adder);
+    nodes.add_node("sub", subtractor);
+    nodes.add_node("div", divider);
+    nodes.add_node("mul", multiplier);
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
@@ -100,11 +105,15 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
 {
     TestClock clock_mock;
 
+    ducta::Test::Adder<int> adder{};
+    ducta::Test::Subtractor<int> subtractor{};
+
     // Create nodes map
     Pipeline::Nodes nodes;
 
-    nodes.add_node("add", ducta::Test::Adder<int>{});
-    nodes.add_node("sub", ducta::Test::Subtractor<int>{});
+
+    nodes.add_node("add", adder);
+    nodes.add_node("sub", subtractor);
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};

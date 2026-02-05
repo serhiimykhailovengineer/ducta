@@ -1,7 +1,8 @@
-#ifndef DUCTA_PIPELINE_NODE_MODEL_HPP
-#define DUCTA_PIPELINE_NODE_MODEL_HPP
+#ifndef DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP
+#define DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP
 
-#include "ducta/Pipeline/Private/NodeConcept.hpp"
+#include "ducta/Core/Types/Expected.hpp"
+#include "ducta/Core/Types/Error.hpp"
 
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Utility.hpp"
@@ -156,51 +157,8 @@ Expected<bool, Error> call_iterate(NodeType& node)
     return true;
 }
 
-template <typename NodeType>
-class NodeModel : public Private::NodeConcept
-{
-public:
-    NodeModel(NodeType&& node)
-    : m_node{::ducta::forward<NodeType>(node)}
-    {}
-
-    template <typename... Args>
-    NodeModel(::ducta::in_place_t, Args&&... args)
-    : m_node{::ducta::forward<Args>(args)...}
-    {
-    }
-
-    void init() override
-    {
-        m_node.init();
-    }
-
-    Expected<bool, Error> iterate() override
-    {
-        return Private::call_iterate(m_node);
-    }
-
-    void release() override
-    {
-        m_node.release();
-    }
-
-    Map<StringView, IO::InputRef, 25> get_inputs() override
-    {
-        return IO::NodeInputsTraits<NodeType>::get(m_node);
-    }
-
-    Map<StringView, IO::OutputRef, 25> get_outputs() override
-    {
-        return IO::NodeOutputsTraits<NodeType>::get(m_node);
-    }
-
-private:
-    NodeType m_node;
-};
-
 } // namespace Private
 } // namespace Pipeline
 } // namespace ducta
 
-#endif // DUCTA_PIPELINE_NODE_MODEL_HPP
+#endif // DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP

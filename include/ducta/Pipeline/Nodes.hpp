@@ -18,17 +18,17 @@ class Nodes
 public:
     Nodes() = default;
 
-    void add_node(::ducta::StringView name, Node node)
+    void add_node(::ducta::StringView name, NodeRef node)
     {
         NodeName node_name{name};
-        m_nodes.insert(::ducta::pair<NodeName, Node>(::ducta::move(node_name), ::ducta::move(node)));
+        m_nodes.insert(::ducta::pair<NodeName, NodeRef>(::ducta::move(node_name), ::ducta::move(node)));
     }
 
-    template <typename... Args>
-    void add_node(::ducta::StringView name, Args&&... args)
+    template <class NodeType>
+    void add_node(::ducta::StringView name, NodeType& node)
     {
         NodeName node_name{name};
-        m_nodes.insert(::ducta::pair<NodeName, Node>(::ducta::move(node_name), Node(::ducta::forward<Args>(args)...)));
+        m_nodes.insert(::ducta::pair<NodeName, NodeRef>(::ducta::move(node_name), NodeRef(node)));
     }
 
     Optional<NodeInfo> get_node(::ducta::StringView name)
@@ -43,7 +43,7 @@ public:
     
 
 private:
-    ::ducta::Map<NodeName, Node, 50> m_nodes;
+    ::ducta::Map<NodeName, NodeRef, 50> m_nodes;
 };
 
 } // namespace Pipeline

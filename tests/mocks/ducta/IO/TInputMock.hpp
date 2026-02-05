@@ -21,36 +21,5 @@ public:
     MOCK_METHOD(void, notify, (value_type const& value), ());
 };
 
-template <typename T>
-class TInputMockWrapper
-{
-public:
-    using value_type = typename TInputMock<T>::value_type;
-    using storage_type = typename TInputMock<T>::storage_type;
-
-public:
-    explicit TInputMockWrapper(TInputMock<T>& mock_ref)
-        : mock(mock_ref)
-    {}
-
-    TInputMock<T>& mock;
-
-    bool ready() const
-    {
-        return mock.ready();
-    }
-
-    bool compatible(TypeIndex type) const
-    {
-        return mock.compatible(type);
-    }
-
-    void notify(value_type const& value)
-    {
-        mock.notify(value);
-    }
-
-};
-
 } // namespace IO
 } // namespace ducta

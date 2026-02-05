@@ -12,14 +12,12 @@ using namespace ducta::IO;
 TEST(OutputRefTests, value_bind_check) 
 {
     IO::TOutputMock<int> output_mock{};
-    IO::TOutputMockWrapper<int> output_wrapper{output_mock};
     
-    IO::OutputRef output_ref{output_wrapper};
+    IO::OutputRef output_ref{output_mock};
 
     IO::TInputMock<int> input{};
 
-    IO::TInputMockWrapper<int> input_wrapper{input};
-    IO::InputRef input_ref{input_wrapper};
+    IO::InputRef input_ref{input};
 
     EXPECT_CALL(output_mock, bind(input_ref)).Times(1)
         .WillOnce(testing::Return(Connection{}));
@@ -30,9 +28,8 @@ TEST(OutputRefTests, value_bind_check)
 TEST(OutputRefTests, copy_ref) 
 {
     IO::TOutputMock<int> output_mock{};
-    IO::TOutputMockWrapper<int> output_wrapper{output_mock};
 
-    IO::OutputRef output_ref{output_wrapper};
+    IO::OutputRef output_ref{output_mock};
     
     IO::OutputRef output_another_ref{output_ref};
 

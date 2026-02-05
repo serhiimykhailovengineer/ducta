@@ -7,7 +7,7 @@
 #include "ducta/IO/DefineInputs.hpp"
 #include "ducta/IO/DefineOutputs.hpp"
 
-#include "ducta/Pipeline/Node.hpp"
+#include "ducta/Pipeline/NodeRef.hpp"
 
 #include "ducta/Core/Types/ReferenceWrapper.hpp"
 
@@ -19,56 +19,11 @@ public:
     MOCK_METHOD(void, release, (), ());
 };
 
-class IterableNodeMockWrapper
-{
-public:
-    ::ducta::reference_wrapper<IterableNodeMock> mock;
-
-    explicit IterableNodeMockWrapper(IterableNodeMock& mock)
-        : mock(::ducta::ref(mock))
-    {}
-
-    void init() 
-    {
-        mock.get().init();
-    }
-
-    void iterate() 
-    {
-        mock.get().iterate();
-    }
-
-    void release() 
-    {
-        mock.get().release();
-    }
-};
-
 class NonIterableNodeMock
 {
 public:
     MOCK_METHOD(void, init, (), ());
     MOCK_METHOD(void, release, (), ());
-};
-
-class NonIterableNodeMockWrapper
-{
-public:
-    ::ducta::reference_wrapper<NonIterableNodeMock> mock;
-
-    explicit NonIterableNodeMockWrapper(NonIterableNodeMock& mock)
-        : mock(::ducta::ref(mock))
-    {}
-
-    void init() 
-    {
-        mock.get().init();
-    }
-
-    void release() 
-    {
-        mock.get().release();
-    }
 };
 
 struct EmptyNode
@@ -90,7 +45,7 @@ TEST(NodeTests, iterable_node_test)
     EXPECT_CALL(node_mock, iterate()).Times(1);
     EXPECT_CALL(node_mock, release()).Times(1);
 
-    Pipeline::Node node{IterableNodeMockWrapper{node_mock}};
+    Pipeline::NodeRef node{node_mock};
 
     node.init();
     node.iterate();
@@ -104,11 +59,11 @@ TEST(NodeTests, non_iterable_node_test)
     EXPECT_CALL(node_mock, init()).Times(1);
     EXPECT_CALL(node_mock, release()).Times(1);
 
-    Pipeline::Node node{NonIterableNodeMockWrapper{node_mock}};
+    Pipeline::NodeRef node_ref{node_mock};
 
-    node.init();
-    node.iterate();
-    node.release();
+    node_ref.init();
+    node_ref.iterate();
+    node_ref.release();
 }
 
 TEST(NodeTests, iterable_non_copy_non_move_node_test) 
@@ -133,9 +88,9 @@ TEST(NodeTests, iterable_non_copy_non_move_node_test)
 
         void release()
         {}
-    };
+    } node_instance{42, 54.4f, "yes"};
 
-    Pipeline::Node node{::ducta::in_place_type_t<NonCopyNonMoveNode>{}, 42, 54.4f, "yes"};
+    Pipeline::NodeRef node_ref{node_instance};
 }
 
 TEST(NodeTests, non_iterable_non_copy_non_move_node_test) 
@@ -159,7 +114,9 @@ TEST(NodeTests, non_iterable_non_copy_non_move_node_test)
         {}
     };
 
-    Pipeline::Node node{::ducta::in_place_type_t<NonCopyNonMoveNode>{}, 42, 54.4f, "yes"};
+    NonCopyNonMoveNode node{42, 54.4f, "yes"};
+
+    Pipeline::NodeRef node_ref{node};
 }
 
 
@@ -172,12 +129,12 @@ TEST(NodeTests, empty_inputs_and_outputs)
 
         void release()
         {}
-    };
+    } empty_node;
 
-    Pipeline::Node node{::ducta::in_place_type_t<EmptyNode>{}};
+    Pipeline::NodeRef node_ref{empty_node};
 
-    EXPECT_EQ(node.get_inputs().size(), 0U);
-    EXPECT_EQ(node.get_outputs().size(), 0U);
+    EXPECT_EQ(node_ref.get_inputs().size(), 0U);
+    EXPECT_EQ(node_ref.get_outputs().size(), 0U);
 }
 
 
@@ -208,9 +165,10 @@ DEFINE_NODE_OUTPUTS(NodeWithInputsAndOutputs,
 
 TEST(NodeTests, check_inputs_and_outputs) 
 {
-    Pipeline::Node node{::ducta::in_place_type_t<NodeWithInputsAndOutputs>{}};
+    NodeWithInputsAndOutputs node_instance;
+    Pipeline::NodeRef node_ref{node_instance};
 
-    auto inputs = node.get_inputs();
+    auto inputs = node_ref.get_inputs();
     ASSERT_EQ(inputs.size(), 2U);
 
     {
@@ -222,7 +180,7 @@ TEST(NodeTests, check_inputs_and_outputs)
         ASSERT_NE(it, inputs.end());
     }
 
-    auto outputs = node.get_outputs();
+    auto outputs = node_ref.get_outputs();
     ASSERT_EQ(outputs.size(), 1U);
 
     {
@@ -245,15 +203,15 @@ TEST(NodeTests, check_result_of_iterate)
 
         void release()
         {}
-    };
+    } node_instance;
 
-    Pipeline::Node node{::ducta::in_place_type_t<NodeWithBoolIterate>{}};
+    Pipeline::NodeRef node_ref{node_instance};
 
-    node.init();
-    auto result = node.iterate();
+    node_ref.init();
+    auto result = node_ref.iterate();
     ASSERT_TRUE(result);
     ASSERT_FALSE(*result);
-    node.release();
+    node_ref.release();
 }
 
 TEST(NodeTests, check_result_of_iterate_with_expected) 
@@ -273,15 +231,15 @@ TEST(NodeTests, check_result_of_iterate_with_expected)
 
         void release()
         {}
-    };
+    } node_instance;
 
-    Pipeline::Node node{::ducta::in_place_type_t<NodeWithExpectedIterate>{}};
+    Pipeline::NodeRef node_ref{node_instance};
 
-    node.init();
-    auto result = node.iterate();
+    node_ref.init();
+    auto result = node_ref.iterate();
     ASSERT_TRUE(result);
     ASSERT_FALSE(*result);
-    node.release();
+    node_ref.release();
 }
 
 TEST(NodeTests, check_result_of_iterate_with_expected_error) 
@@ -301,14 +259,14 @@ TEST(NodeTests, check_result_of_iterate_with_expected_error)
 
         void release()
         {}
-    };
+    } node_instance;
 
-    Pipeline::Node node{::ducta::in_place_type_t<NodeWithExpectedIterate>{}};
+    Pipeline::NodeRef node_ref{node_instance};
 
-    node.init();
-    auto result = node.iterate();
+    node_ref.init();
+    auto result = node_ref.iterate();
     ASSERT_FALSE(result);
-    node.release();
+    node_ref.release();
 }
 
 TEST(NodeTests, check_result_of_custom_expected_like_iterate) 
@@ -354,13 +312,13 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
 
         void release()
         {}
-    };
+    } node_instance;
 
-    Pipeline::Node node{::ducta::in_place_type_t<NodeWithCustomExpectedLikeIterate>{}};
+    Pipeline::NodeRef node_ref{node_instance};
 
-    node.init();
-    auto result = node.iterate();
+    node_ref.init();
+    auto result = node_ref.iterate();
     ASSERT_TRUE(result);
     ASSERT_FALSE(*result);
-    node.release();
+    node_ref.release();
 }

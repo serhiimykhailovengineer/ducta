@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "ducta/Pipeline/Node.hpp"
+#include "ducta/Pipeline/NodeRef.hpp"
 #include "ducta/Pipeline/Pipeline.hpp"
 #include "ducta/Pipeline/Clock.hpp"
 
@@ -22,10 +22,10 @@ TEST(PipelineTest, base_test)
     // Create nodes map
     Pipeline::Nodes nodes;
 
-    nodes.add_node("node_1", Pipeline::NonIterableNodeMockWrapper{node_1_mock});
-    nodes.add_node("node_2", Pipeline::IterableNodeMockWrapper<void>{node_2_mock});
-    nodes.add_node("node_3", Pipeline::IterableNodeMockWrapper<void>{node_3_mock});
-    nodes.add_node("node_4", Pipeline::IterableNodeMockWrapper<void>{node_4_mock});
+    nodes.add_node("node_1", node_1_mock);
+    nodes.add_node("node_2", node_2_mock);
+    nodes.add_node("node_3", node_3_mock);
+    nodes.add_node("node_4", node_4_mock);
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
@@ -79,8 +79,8 @@ TEST(PipelineTest, iteration_with_failed_node)
     // Create nodes map
     Pipeline::Nodes nodes;
 
-    nodes.add_node("first", Pipeline::IterableNodeMockWrapper<Expected<void, Error>>{first_node_mock});
-    nodes.add_node("second", Pipeline::IterableNodeMockWrapper<Expected<void, Error>>{second_node_mock});
+    nodes.add_node("first", first_node_mock);
+    nodes.add_node("second", second_node_mock);
 
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};

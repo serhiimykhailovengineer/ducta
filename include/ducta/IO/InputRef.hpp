@@ -41,7 +41,13 @@ private:
                 using ValueType = typename T::value_type;
                 if (type != ::ducta::type_id<ValueType>())
                 {
+#if !defined(DUCTA_USE_EMBEDDED_BACKEND)
                     throw std::runtime_error("Incompatible type for notification");
+#else
+                    // In embedded backend, we may not have exceptions, so we can handle this case differently, such as by logging an error or using an assertion
+                    // For this example, we'll just use an assertion
+                    ETL_ASSERT(false, "Incompatible type for notification");
+#endif
                 }
 
                 static_cast<T*>(obj)->notify(*static_cast<ValueType const*>(value));

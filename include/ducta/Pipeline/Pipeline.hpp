@@ -1,10 +1,7 @@
 #ifndef DUCTA_PIPELINE_PIPELINE_HPP
 #define DUCTA_PIPELINE_PIPELINE_HPP
 
-#include <vector>
-
 #include "ducta/Pipeline/Clock.hpp"
-#include "ducta/Pipeline/Node.hpp"
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Nodes.hpp"
 
@@ -31,8 +28,8 @@ public:
 private:
     Clock m_clock;
 
-    Vector<NodeInfo, 100> m_init_order;
-    Vector<NodeInfo, 100> m_nodes;
+    Vector<NodeInfo, 50> m_init_order;
+    Vector<NodeInfo, 50> m_nodes;
 };
 
 class PipelineEngine

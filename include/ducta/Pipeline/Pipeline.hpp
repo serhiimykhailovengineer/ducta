@@ -47,4 +47,6 @@ private:
 } // namespace Pipeline
 } // namespace ducta
 
+#include "ducta/Pipeline/Private/Pipeline.inl"
+
 #endif // DUCTA_PIPELINE_PIPELINE_HPP

@@ -1,3 +1,6 @@
+#ifndef DUCTA_PIPELINE_PRIVATE_PIPELINE_INL
+#define DUCTA_PIPELINE_PRIVATE_PIPELINE_INL
+
 #include "ducta/Pipeline/Pipeline.hpp"
 
 #include "ducta/Core/Algorithms/Adapters.hpp"
@@ -141,3 +144,5 @@ int PipelineEngine::run()
 
 } // namespace Pipeline
 } // namespace ducta
+
+#endif // DUCTA_PIPELINE_PRIVATE_PIPELINE_INL

@@ -4,7 +4,7 @@ project(Ducta LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(USE_EMBEDDED_BACKEND "Use embedded backend" ON)
+option(USE_EMBEDDED_BACKEND "Use embedded backend" OFF)
 
 message(STATUS "Use embedded backend ${USE_EMBEDDED_BACKEND}")
 
@@ -26,5 +26,14 @@ target_include_directories(ducta_io
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-add_subdirectory(src)
+add_library(ducta_pipeline INTERFACE)
+target_include_directories(ducta_pipeline
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(ducta_pipeline
+    INTERFACE
+        ducta_io
+)
+
 add_subdirectory(tests)

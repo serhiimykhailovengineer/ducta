@@ -20,13 +20,13 @@ namespace detail {
 
 // Detect etl::pair<*, *>
 template <class T>
-struct is_etl_pair : std::false_type {};
+struct is_etl_pair : etl::false_type {};
 
 template <class A, class B>
-struct is_etl_pair<etl::pair<A, B>> : std::true_type {};
+struct is_etl_pair<etl::pair<A, B>> : etl::true_type {};
 
 template <class... Args>
-using all_etl_pairs = std::conjunction<is_etl_pair<std::decay_t<Args>>...>;
+using all_etl_pairs = etl::conjunction<is_etl_pair<etl::decay_t<Args>>...>;
 
 // Insert K,V,... (two-at-a-time)
 template <typename K, typename V, size_t SIZE>
@@ -39,11 +39,11 @@ template <typename K, typename V, size_t SIZE, class K1, class V1, class... Rest
 inline void map_emplace_kv(etl::map<K, V, SIZE>& map, K1&& k, V1&& v, Rest&&... rest) noexcept
 {
     // Construct value_type and forward to insert
-    map.insert(typename etl::map<K, V, SIZE>::value_type{ std::forward<K1>(k), std::forward<V1>(v) });
+    map.insert(typename etl::map<K, V, SIZE>::value_type{ etl::forward<K1>(k), etl::forward<V1>(v) });
 
     if constexpr (sizeof...(Rest) > 0)
     {
-        map_emplace_kv<K, V, SIZE>(map, std::forward<Rest>(rest)...);
+        map_emplace_kv<K, V, SIZE>(map, etl::forward<Rest>(rest)...);
     }
 }
 
@@ -59,12 +59,12 @@ inline void map_emplace(etl::map<K, V, SIZE>& map, Args&&... args) noexcept
     else if constexpr (detail::all_etl_pairs<Args...>::value)
     {
         // All args are etl::pair<*,*> (forward rvalues as rvalues, lvalues as lvalues)
-        (map.insert(std::forward<Args>(args)), ...);
+        (map.insert(etl::forward<Args>(args)), ...);
     }
     else
     {
         static_assert(sizeof...(Args) % 2 == 0, "map_emplace(K,V,...) requires an even number of arguments");
-        detail::map_emplace_kv<K, V, SIZE>(map, std::forward<Args>(args)...);
+        detail::map_emplace_kv<K, V, SIZE>(map, etl::forward<Args>(args)...);
     }
 }
 

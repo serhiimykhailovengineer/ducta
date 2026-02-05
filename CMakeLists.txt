@@ -4,14 +4,16 @@ project(Ducta LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 
-option(DUCTA_USE_EMBEDDED_BACKEND "Use embedded backend" OFF)
+option(USE_EMBEDDED_BACKEND "Use embedded backend" ON)
 
-message(STATUS "Use embedded backend ${DUCTA_USE_EMBEDDED_BACKEND}")
+message(STATUS "Use embedded backend ${USE_EMBEDDED_BACKEND}")
 
-if (DUCTA_USE_EMBEDDED_BACKEND)
+if (USE_EMBEDDED_BACKEND)
+    set(DUCTA_USE_EMBEDDED_BACKEND TRUE)
     add_definitions(-DDUCTA_USE_EMBEDDED_BACKEND)
     find_package(etl REQUIRED)
 else()
+    set(DUCTA_USE_EMBEDDED_BACKEND FALSE)
     find_package(Boost REQUIRED COMPONENTS system)
     find_package(fmt REQUIRED)
 endif()

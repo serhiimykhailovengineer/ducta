@@ -3,7 +3,7 @@
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include "ducta/Core/ETLProfile.hpp"
-#include <etl/reference_wrapper.h>
+#include <etl/functional.h>
 
 namespace ducta {
 using etl::reference_wrapper;

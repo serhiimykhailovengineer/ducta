@@ -20,6 +20,10 @@ class NonIterableNodeMockWrapper
 public:
     ::ducta::reference_wrapper<NonIterableNodeMock> mock;
 
+    explicit NonIterableNodeMockWrapper(NonIterableNodeMock& mock)
+        : mock(::ducta::ref(mock))
+    {}
+
     void init() 
     {
         mock.get().init();

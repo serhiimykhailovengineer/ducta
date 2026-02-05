@@ -6,9 +6,10 @@
 #ifndef DUCTA_T_INPUT_HPP
 #define DUCTA_T_INPUT_HPP
 
-#include <boost/optional.hpp>
+#include "ducta/Core/Types/Optional.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
-#include "ducta/Utils/TypeIndex.hpp"
+#include "ducta/Core/TypeTraits.hpp"
 
 namespace ducta {
 namespace IO {
@@ -23,8 +24,9 @@ template <typename T>
 class TInput
 {
 public:
-    using value_type = std::decay_t<T>;
-    using storage_type = std::conditional_t<std::is_reference<T>::value, const value_type&, value_type>;
+    using value_type = ::ducta::decay_t<T>;
+    using storage_type = ::ducta::conditional_t<::ducta::is_reference<T>::value, const value_type&, value_type>;
+    using storage_holder = ::ducta::conditional_t<::ducta::is_reference<T>::value, ::ducta::OptionalRef<value_type>, ::ducta::Optional<storage_type>>;
 
 public:
     TInput() = default;
@@ -34,7 +36,7 @@ public:
      * @param type The type to check compatibility against
      * @return true if compatible, false otherwise
      */
-    bool compatible(Utils::TypeIndex type) const;
+    bool compatible(TypeIndex type) const;
 
     /**
      * @brief Check if the input has a ready value
@@ -74,7 +76,7 @@ public:
     operator bool() const;
 
 private:
-    boost::optional<storage_type> _value;
+    storage_holder _value;
 };
 
 } // namespace IO

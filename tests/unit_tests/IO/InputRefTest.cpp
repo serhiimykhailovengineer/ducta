@@ -10,17 +10,15 @@ TEST(InputRefTests, value_input)
 {
     IO::TInputMock<int> input{};
 
-    TInputMockWrapper input_wrapper{input};
-
     EXPECT_CALL(input, ready()).WillOnce(testing::Return(false));
-    EXPECT_CALL(input, compatible(Utils::type_id<int>())).WillOnce(testing::Return(true));
-    EXPECT_CALL(input, compatible(Utils::type_id<float>())).WillOnce(testing::Return(false));
+    EXPECT_CALL(input, compatible(::ducta::type_id<int>())).WillOnce(testing::Return(true));
+    EXPECT_CALL(input, compatible(::ducta::type_id<float>())).WillOnce(testing::Return(false));
     EXPECT_CALL(input, notify(testing::Eq(42))).Times(1);
 
-    IO::InputRef input_ref{input_wrapper};
+    IO::InputRef input_ref{input};
     EXPECT_FALSE(input_ref.ready());
-    EXPECT_TRUE(input_ref.compatible(Utils::type_id<int>()));
-    EXPECT_FALSE(input_ref.compatible(Utils::type_id<float>()));
+    EXPECT_TRUE(input_ref.compatible(::ducta::type_id<int>()));
+    EXPECT_FALSE(input_ref.compatible(::ducta::type_id<float>()));
     EXPECT_NO_THROW(input_ref.notify<int>(42));
 }
 

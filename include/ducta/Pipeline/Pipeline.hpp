@@ -1,10 +1,14 @@
 #ifndef DUCTA_PIPELINE_PIPELINE_HPP
 #define DUCTA_PIPELINE_PIPELINE_HPP
 
-#include <vector>
-
 #include "ducta/Pipeline/Clock.hpp"
-#include "ducta/Pipeline/Node.hpp"
+#include "ducta/Pipeline/NodeInfo.hpp"
+#include "ducta/Pipeline/Nodes.hpp"
+
+#include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Core/Types/Vector.hpp"
+#include "ducta/Core/Types/Span.hpp"
 
 namespace ducta {
 namespace Pipeline {
@@ -12,13 +16,10 @@ namespace Pipeline {
 class Pipeline
 {
 public:
-    using Nodes = std::map<std::string, Node>;
-
-public:
     Pipeline(Clock&& clock);
 
-    bool configure(Nodes& nodes, std::vector<std::string> order);
-    bool configure(Nodes& nodes, std::vector<std::string> init_order, std::vector<std::string> exec_order);
+    bool configure(Nodes& nodes, Span<StringView> const& order);
+    bool configure(Nodes& nodes, Span<StringView> const& init_order, Span<StringView> const& exec_order);
 
     void init();
     bool iterate();
@@ -26,8 +27,9 @@ public:
 
 private:
     Clock m_clock;
-    std::vector<std::pair<std::string, std::reference_wrapper<Node>>> m_init_order;
-    std::vector<std::pair<std::string, std::reference_wrapper<Node>>> m_nodes;
+
+    Vector<NodeInfo, 50> m_init_order;
+    Vector<NodeInfo, 50> m_nodes;
 };
 
 class PipelineEngine
@@ -44,5 +46,7 @@ private:
 
 } // namespace Pipeline
 } // namespace ducta
+
+#include "ducta/Pipeline/Private/Pipeline.inl"
 
 #endif // DUCTA_PIPELINE_PIPELINE_HPP

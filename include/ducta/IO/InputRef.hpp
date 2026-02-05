@@ -6,11 +6,9 @@
 #ifndef DUCTA_T_INPUT_REF_HPP
 #define DUCTA_T_INPUT_REF_HPP
 
-#include "ducta/IO/Private/InputModelRef.hpp"
-#include "ducta/Utils/TypeIndex.hpp"
-
-#include <map>
-#include <memory>
+#include "ducta/Core/Types/TypeIndex.hpp"
+#include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 
 namespace ducta {
 namespace IO {
@@ -21,6 +19,46 @@ namespace IO {
  */
 class InputRef
 {
+private:
+    struct VTable {
+        bool (*is_ready)(void*);
+        bool (*is_compatible)(void*, TypeIndex);
+        void (*notify)(void*, TypeIndex, void const*);
+        TypeIndex (*type_id)(void*);
+    };
+
+    template<class T>
+    static const VTable& vt_for()
+    {
+        static const VTable vt = {
+            +[](void* obj) -> bool { 
+                return static_cast<T*>(obj)->ready(); 
+            },
+            +[](void* obj, TypeIndex type) -> bool { 
+                return static_cast<T*>(obj)->compatible(type); 
+            },
+            +[](void* obj, TypeIndex type, void const* value) { 
+                using ValueType = typename T::value_type;
+                if (type != ::ducta::type_id<ValueType>())
+                {
+#if !defined(DUCTA_USE_EMBEDDED_BACKEND)
+                    throw std::runtime_error("Incompatible type for notification");
+#else
+                    // In embedded backend, we may not have exceptions, so we can handle this case differently, such as by logging an error or using an assertion
+                    // For this example, we'll just use an assertion
+                    ETL_ASSERT(false, "Incompatible type for notification");
+#endif
+                }
+
+                static_cast<T*>(obj)->notify(*static_cast<ValueType const*>(value));
+            },
+            +[](void* obj) -> TypeIndex {
+                return ::ducta::type_id<T>(); 
+            }
+        };
+        return vt;
+    }
+
 public:
     /**
      * @brief Construct InputRef from a concrete input type
@@ -28,9 +66,10 @@ public:
      * @param input The input object to wrap
      */
     template <typename TInputType,
-              typename = std::enable_if_t<!std::is_same_v<std::decay_t<TInputType>, InputRef>>>
+              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TInputType>, InputRef>>>
     explicit InputRef(TInputType& input)
-        : m_concept(std::make_shared<Private::InputModelRef<std::decay_t<TInputType>>>(input))
+        : m_input_object(&input)
+        , m_vtable(&vt_for<::ducta::decay_t<TInputType>>())
     {}
 
     /**
@@ -39,7 +78,7 @@ public:
      */
     bool ready() const
     {
-        return m_concept->is_ready();
+        return m_vtable->is_ready(m_input_object);
     }
 
     /**
@@ -47,9 +86,9 @@ public:
      * @param type The type to check compatibility against
      * @return true if compatible, false otherwise
      */
-    bool compatible(Utils::TypeIndex type) const
+    bool compatible(TypeIndex type) const
     {
-        return m_concept->is_compatible(type);
+        return m_vtable->is_compatible(m_input_object, type);
     }
 
     /**
@@ -60,7 +99,7 @@ public:
     template <typename T>
     void notify(T const& value)
     {
-        m_concept->notify(Utils::type_id<std::decay_t<T>>(), &value);
+        m_vtable->notify(m_input_object, type_id<::ducta::decay_t<T>>(), &value);
     }
 
     /**
@@ -71,12 +110,10 @@ public:
     template <typename InputT>
     InputT* as()
     {
-        if (Utils::type_id<InputT>() != m_concept->type_id())
+        if (type_id<InputT>() != m_vtable->type_id(m_input_object))
             return nullptr;
 
-        using ModelRefT = Private::InputModelRef<InputT>;
-        auto* model = static_cast<ModelRefT*>(m_concept.get());
-        return &model->get_input();
+        return static_cast<::ducta::decay_t<InputT>*>(m_input_object);
     }
 
     /**
@@ -96,11 +133,14 @@ public:
      */
     friend bool operator==(InputRef const& lhs, InputRef const& rhs)
     {
-        return lhs.m_concept->areEqual(*rhs.m_concept);
+        if(lhs.m_vtable != rhs.m_vtable)
+            return false;
+        return lhs.m_input_object == rhs.m_input_object;
     }
 
 private:
-    std::shared_ptr<Private::InputConcept> m_concept; ///< Type-erased input implementation
+    void* m_input_object;
+    const VTable* m_vtable;
 };
 
 template <typename InputT>
@@ -112,7 +152,7 @@ InputT* cast(InputRef input)
 template <typename Node>
 struct NodeInputsTraits
 {
-    static std::map<std::string, IO::InputRef> get(Node& node)
+    static Map<StringView, IO::InputRef, 25> get(Node& node)
     {
         return {};
     }

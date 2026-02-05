@@ -4,6 +4,11 @@
 #include "ducta/IO/TOutput.hpp"
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
+#include "ducta/IO/Connection.hpp"
+
+#include "ducta/Core/Types/StringView.hpp"
+
+#include "ducta/Core/Types/Vector.hpp"
 
 using namespace ducta;
 
@@ -22,14 +27,21 @@ public:
     } outputs;
 
 public:
-    std::map<std::string, IO::InputRef> get_inputs()
+    Map<StringView, IO::InputRef, 25> get_inputs()
     {
-        return {{"left", IO::InputRef{inputs.left}}, {"right", IO::InputRef{inputs.right}}};
+        Map<StringView, IO::InputRef, 25> inputs_ref;
+        
+        inputs_ref.insert(::ducta::make_pair<StringView, IO::InputRef>("left", IO::InputRef{inputs.left}));
+        inputs_ref.insert(::ducta::make_pair<StringView, IO::InputRef>("right", IO::InputRef{inputs.right}));
+        return inputs_ref;
     }
 
-    std::map<std::string, IO::OutputRef> get_outputs()
+    Map<StringView, IO::OutputRef, 25> get_outputs()
     {
-        return {{"result", IO::OutputRef{outputs.result}}};
+        Map<StringView, IO::OutputRef, 25> outputs_ref;
+        
+        outputs_ref.insert(::ducta::make_pair<StringView, IO::OutputRef>("result", IO::OutputRef{outputs.result}));
+        return outputs_ref;
     }
 
     void process()
@@ -46,10 +58,25 @@ TEST(ValueIOTest, multiplier_process)
 
     Multiplier mul;
 
-    std::vector<Utils::Deferred> connections;
-    connections.emplace_back(bind(IO::OutputRef{left}, mul.get_inputs().at("left")));
-    connections.emplace_back(bind(IO::OutputRef{right}, mul.get_inputs().at("right")));
-    connections.emplace_back(bind(mul.get_outputs().at("result"), IO::InputRef{result}));
+    Vector<IO::Connection, 3> connections;
+    {
+        auto mul_inputs = mul.get_inputs();
+        auto mul_left_it = mul_inputs.find("left");
+        ASSERT_TRUE(mul_left_it != mul_inputs.end());
+
+        ASSERT_NO_THROW(connections.emplace_back(bind(IO::OutputRef{left}, mul_left_it->second)));
+
+        auto mul_right_it = mul_inputs.find("right");
+        ASSERT_TRUE(mul_right_it != mul_inputs.end());
+        ASSERT_NO_THROW(connections.emplace_back(bind(IO::OutputRef{right}, mul_right_it->second)));
+    }
+    {
+        auto mul_outputs = mul.get_outputs();
+        auto mul_result_it = mul_outputs.find("result");
+        ASSERT_TRUE(mul_result_it != mul_outputs.end());
+
+        ASSERT_NO_THROW(connections.emplace_back(bind(mul_result_it->second, IO::InputRef{result})));
+    }
 
     left = 10;
     right = 5;

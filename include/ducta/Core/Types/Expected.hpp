@@ -1,12 +1,29 @@
-#ifndef DUCTA_UTILS_EXPECTED_HPP
-#define DUCTA_UTILS_EXPECTED_HPP
+#ifndef DUCTA_CORE_TYPES_EXPECTED_HPP
+#define DUCTA_CORE_TYPES_EXPECTED_HPP
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+#include "ducta/Core/ETLProfile.hpp"
+#include <etl/expected.h>
+
+#else
 
 #include <boost/system/result.hpp>
 
 #include <utility>
 
+#endif
+
 namespace ducta {
-namespace Utils {
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+
+template<class Value, class Error>
+using Expected = etl::expected<Value, Error>;
+
+template <class Error>
+using Unexpected = etl::unexpected<Error>;
+
+#else
 
 template<class Value, class Error>
 using Expected = boost::system::result<Value, Error>;
@@ -26,11 +43,14 @@ struct Unexpected
     template <class Value>
     operator Expected<Value, Error>() &&
     {
-        return {boost::system::in_place_error, std::move(error)};
+        return {boost::system::in_place_error, ::ducta::move(error)};
     }
 };
 
-} // namespace Utils
+#endif
+
+
+
 } // namespace ducta
 
-#endif // DUCTA_UTILS_EXPECTED_HPP
+#endif // DUCTA_CORE_TYPES_EXPECTED_HPP

@@ -6,8 +6,8 @@
 #include "ducta/IO/DefineInputs.hpp"
 #include "ducta/IO/DefineOutputs.hpp"
 
-#include "ducta/Utils/Expected.hpp"
-#include "ducta/Utils/String.hpp"
+#include "ducta/Core/Types/Expected.hpp"
+#include "ducta/Core/Types/String.hpp"
 
 namespace ducta {
 namespace Test {
@@ -35,11 +35,11 @@ public:
 public:
     void init() {}
 
-    Utils::Expected<bool, AdderError> iterate()
+    Expected<bool, AdderError> iterate()
     {
         if (!left.ready() || !right.ready())
         {
-            return Utils::Unexpected<AdderError>{AdderError{"Inputs not ready"}};
+            return Unexpected<AdderError>{AdderError{"Inputs not ready"}};
         }
 
         result = left.value() + right.value();

@@ -8,41 +8,36 @@
 
 #include "ducta/IO/OutputRef.hpp"
 
-#include <boost/preprocessor/variadic/to_seq.hpp>
-#include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-
-#include <map>
+#include "ducta/Core/Preprocessor.hpp"
+#include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 
 
 // 1) One entry: ("name", member) -> { "name", OutputRef{ node.member } }
-#define DUCTA_NODE_OUTPUTS_ELEM(r, node, i, elem)                                           \
-    BOOST_PP_COMMA_IF(i)                                                                    \
-    {                                                                                       \
-        BOOST_PP_TUPLE_ELEM(2, 0, elem),                                                    \
-        ::ducta::IO::OutputRef{ node.BOOST_PP_TUPLE_ELEM(2, 1, elem) }                      \
+#define DUCTA_NODE_OUTPUTS_ELEM(node, i, elem)                                   \
+    DUCTA_COMMA_IF(i)                                                            \
+    ::ducta::pair<::ducta::StringView, ::ducta::IO::OutputRef>{                  \
+        DUCTA_TUPLE_ELEM(2, 0, elem),                                            \
+        ::ducta::IO::OutputRef{ (node).DUCTA_TUPLE_ELEM(2, 1, elem) }            \
     }
 
-#define DUCTA_NODE_OUTPUTS_INIT(node, ...)                                                  \
-    BOOST_PP_SEQ_FOR_EACH_I(                                                                \
-        DUCTA_NODE_OUTPUTS_ELEM,                                                            \
-        node,                                                                               \
-        BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)                                               \
-    )
+#define DUCTA_NODE_OUTPUTS_INIT(node, ...)                                       \
+    DUCTA_FOR_EACH_I(DUCTA_NODE_OUTPUTS_ELEM, node, __VA_ARGS__)
 
-// 3) Main macro
-#define DEFINE_NODE_OUTPUTS(NodeType, ...)                                              \
-template<>                                                                              \
-struct ::ducta::IO::NodeOutputsTraits<NodeType>                                         \
-{                                                                                       \
-    using Node = NodeType;                                                              \
-    static std::map<std::string, ::ducta::IO::OutputRef> get(Node& node)                \
-    {                                                                                   \
-        return std::map<std::string, ::ducta::IO::OutputRef>{                           \
-            DUCTA_NODE_OUTPUTS_INIT(node, __VA_ARGS__)                                  \
-        };                                                                              \
-    }                                                                                   \
+
+// 3) Main macro to define outputs for a node type
+#define DEFINE_NODE_OUTPUTS(NodeType, ...)                                                 \
+template<>                                                                                 \
+struct ducta::IO::NodeOutputsTraits<DUCTA_PP_UNPAREN((NodeType))>                          \
+{                                                                                          \
+    using Node = DUCTA_PP_UNPAREN((NodeType));                                             \
+    static ::ducta::Map<::ducta::StringView, ::ducta::IO::OutputRef, 25> get(Node& node)   \
+    {                                                                                      \
+        return ::ducta::makeMap<::ducta::StringView, ::ducta::IO::OutputRef, 25>           \
+        (                                                                                  \
+            DUCTA_NODE_OUTPUTS_INIT(node, __VA_ARGS__)                                     \
+        );                                                                                 \
+    }                                                                                      \
 };
 
 #endif // DUCTA_DEFINE_OUTPUTS_HPP

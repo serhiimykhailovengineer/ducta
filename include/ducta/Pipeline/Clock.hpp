@@ -1,8 +1,9 @@
 #ifndef DUCTA_PIPELINE_CLOCK_HPP
 #define DUCTA_PIPELINE_CLOCK_HPP
 
-#include <map>
-#include <memory>
+#include "ducta/Core/Types/ReferenceWrapper.hpp"
+#include "ducta/Core/Types/Integers.hpp"
+#include "ducta/Core/TypeTraits.hpp"
 
 namespace ducta {
 namespace Pipeline {
@@ -13,54 +14,49 @@ public:
     using Timestamp = uint64_t;
 
 private:
-    class Concept
-    {
-    public:
-        virtual ~Concept() = default;
-        virtual Timestamp epoch() = 0;
-        virtual Timestamp now() = 0;
+    struct VTable {
+        Timestamp (*now)(void*) ;
+        Timestamp (*epoch)(void*) ;
     };
 
-    template <typename ClockType>
-    class Model : public Concept
+    template<class T>
+    static const VTable& vt_for()
     {
-    public:
-        Model(ClockType& clock)
-        : m_clock{clock}
-        {}
-
-        Timestamp epoch() override
-        {
-            return m_clock.get().epoch();
-        }
-
-        Timestamp now() override
-        {
-            return m_clock.get().now();
-        }
-    private:
-        std::reference_wrapper<ClockType> m_clock;
-    };
+        static const VTable vt = {
+            +[](void* obj) -> Timestamp { return static_cast<T*>(obj)->now(); },
+            +[](void* obj) -> Timestamp { return static_cast<T*>(obj)->epoch(); }
+        };
+        return vt;
+    }
     
 public:
-    template <typename ClockType>
+    template <typename ClockType,
+              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<ClockType>, Clock>>>
     Clock(ClockType& clock)
-    : m_concept{std::make_shared<Model<ClockType>>(clock)}
+    : m_clock_obj{&clock}
+    , m_vtable{&vt_for<ClockType>()}
     {
     }
 
+    Clock(Clock const& other) = default;
+    Clock& operator=(Clock const& other) = default;
+
+    Clock(Clock&& other) noexcept = default;
+    Clock& operator=(Clock&& other) noexcept = default;
+
     Timestamp epoch() 
     {
-        return m_concept->epoch();
+        return m_vtable->epoch(m_clock_obj);
     }
     
     Timestamp now()
     {
-        return m_concept->now();
+        return m_vtable->now(m_clock_obj);
     }
 
 private:
-    std::shared_ptr<Concept> m_concept;
+    void* m_clock_obj;
+    const VTable* m_vtable;
 };
 
 } // namespace Pipeline

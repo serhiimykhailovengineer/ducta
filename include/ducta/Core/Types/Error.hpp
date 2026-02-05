@@ -1,10 +1,9 @@
-#ifndef DUCTA_UTILS_ERROR_HPP
-#define DUCTA_UTILS_ERROR_HPP
+#ifndef DUCTA_CORE_TYPES_ERROR_HPP
+#define DUCTA_CORE_TYPES_ERROR_HPP
 
-#include "ducta/Utils/String.hpp"
+#include "ducta/Core/Types/String.hpp"
 
 namespace ducta {
-namespace Utils {
 
 struct Error
 {
@@ -19,7 +18,6 @@ OutputStream& operator<<(OutputStream& os, const Error& error)
 }
 
 
-} // namespace Utils
 } // namespace ducta
 
-#endif // DUCTA_UTILS_ERROR_HPP
+#endif // DUCTA_CORE_TYPES_ERROR_HPP

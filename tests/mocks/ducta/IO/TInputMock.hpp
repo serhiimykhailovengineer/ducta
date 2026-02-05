@@ -2,7 +2,7 @@
 
 #include <gmock/gmock.h>
 
-#include "ducta/Utils/TypeIndex.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
@@ -17,39 +17,8 @@ public:
 
 public:
     MOCK_METHOD(bool, ready, (), (const));
-    MOCK_METHOD(bool, compatible, (Utils::TypeIndex type), (const));
+    MOCK_METHOD(bool, compatible, (TypeIndex type), (const));
     MOCK_METHOD(void, notify, (value_type const& value), ());
-};
-
-template <typename T>
-class TInputMockWrapper
-{
-public:
-    using value_type = typename TInputMock<T>::value_type;
-    using storage_type = typename TInputMock<T>::storage_type;
-
-public:
-    explicit TInputMockWrapper(TInputMock<T>& mock_ref)
-        : mock(mock_ref)
-    {}
-
-    TInputMock<T>& mock;
-
-    bool ready() const
-    {
-        return mock.ready();
-    }
-
-    bool compatible(Utils::TypeIndex type) const
-    {
-        return mock.compatible(type);
-    }
-
-    void notify(value_type const& value)
-    {
-        mock.notify(value);
-    }
-
 };
 
 } // namespace IO

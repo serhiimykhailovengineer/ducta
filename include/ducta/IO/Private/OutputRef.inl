@@ -8,12 +8,10 @@
 
 #include "ducta/IO/OutputRef.hpp"
 
-#include <memory>
-
 namespace ducta {
 namespace IO {
 
-Utils::Deferred OutputRef::do_bind(InputRef input)
+Connection OutputRef::do_bind(InputRef input)
 {
     return m_output->do_bind(input);
 }

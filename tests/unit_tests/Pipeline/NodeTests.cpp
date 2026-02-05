@@ -9,6 +9,8 @@
 
 #include "ducta/Pipeline/Node.hpp"
 
+#include "ducta/Core/Types/ReferenceWrapper.hpp"
+
 class IterableNodeMock
 {
 public:
@@ -20,7 +22,7 @@ public:
 class IterableNodeMockWrapper
 {
 public:
-    std::reference_wrapper<IterableNodeMock> mock;
+    ::ducta::reference_wrapper<IterableNodeMock> mock;
 
     void init() 
     {
@@ -48,7 +50,7 @@ public:
 class NonIterableNodeMockWrapper
 {
 public:
-    std::reference_wrapper<NonIterableNodeMock> mock;
+    ::ducta::reference_wrapper<NonIterableNodeMock> mock;
 
     void init() 
     {

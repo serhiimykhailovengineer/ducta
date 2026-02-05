@@ -2,6 +2,8 @@
 
 #include <gmock/gmock.h>
 
+#include "ducta/Core/Types/ReferenceWrapper.hpp"
+
 namespace ducta {
 namespace Pipeline {
 
@@ -16,7 +18,7 @@ public:
 class NonIterableNodeMockWrapper
 {
 public:
-    std::reference_wrapper<NonIterableNodeMock> mock;
+    ::ducta::reference_wrapper<NonIterableNodeMock> mock;
 
     void init() 
     {
@@ -75,7 +77,7 @@ public:
     }
 
 public:
-    std::reference_wrapper<MockType> mock;
+    ::ducta::reference_wrapper<MockType> mock;
 };
 
 

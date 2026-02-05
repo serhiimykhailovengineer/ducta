@@ -3,6 +3,8 @@
 #include "ducta/IO/TInput.hpp"
 #include "ducta/IO/TOutput.hpp"
 
+#include "ducta/Core/Types/ReferenceWrapper.hpp"
+
 
 using namespace ducta;
 
@@ -22,7 +24,7 @@ class InputRef
 
 class InputRefWrapper
 {
-    std::reference_wrapper<Input> ref;
+    ::ducta::reference_wrapper<Input> ref;
 };
 
 TEST(IOSizeTest, int_size) 

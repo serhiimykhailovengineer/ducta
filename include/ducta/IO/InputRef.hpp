@@ -29,9 +29,9 @@ public:
      * @param input The input object to wrap
      */
     template <typename TInputType,
-              typename = std::enable_if_t<!std::is_same_v<std::decay_t<TInputType>, InputRef>>>
+              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TInputType>, InputRef>>>
     explicit InputRef(TInputType& input)
-        : m_concept(std::make_shared<Private::InputModelRef<std::decay_t<TInputType>>>(input))
+        : m_concept(std::make_shared<Private::InputModelRef<::ducta::decay_t<TInputType>>>(input))
     {}
 
     /**
@@ -61,7 +61,7 @@ public:
     template <typename T>
     void notify(T const& value)
     {
-        m_concept->notify(type_id<std::decay_t<T>>(), &value);
+        m_concept->notify(type_id<::ducta::decay_t<T>>(), &value);
     }
 
     /**

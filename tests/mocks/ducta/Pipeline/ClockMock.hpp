@@ -2,6 +2,8 @@
 
 #include <gmock/gmock.h>
 
+#include "ducta/Chrono/Chrono.hpp"
+
 namespace ducta {
 namespace Pipeline {
 

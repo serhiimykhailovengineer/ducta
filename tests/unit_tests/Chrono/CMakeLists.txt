@@ -4,11 +4,6 @@ add_executable(${TARGET_NAME}
     SteadyClockTests.cpp
 )
 
-target_include_directories(${TARGET_NAME}
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-)
-
 set(BACKEND_LIBS)
 
 if (DUCTA_USE_EMBEDDED_BACKEND)

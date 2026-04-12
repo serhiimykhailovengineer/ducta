@@ -3,8 +3,10 @@
 
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <chrono>
+#include <thread>
 #else
 #include "etl/chrono.h"
+#include "etl/thread.h"
 #endif
 
 namespace ducta {

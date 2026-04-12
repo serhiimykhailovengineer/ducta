@@ -65,9 +65,10 @@ TEST(PipelineTest, base_test)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    auto order = makeVector<StringView>("add", "mul", "div", "sub");
+    Pipeline::Pipeline::Config config{};
+    config.order = makeVector<StringView>("add", "mul", "div", "sub");
 
-    pipeline.configure(nodes, order);
+    pipeline.configure(nodes, config);
 
     // Calculate (((2 + 2) * 3) / 2) - 10 = -4
 
@@ -121,9 +122,10 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    auto order = makeVector<StringView>("add", "sub");
+    Pipeline::Pipeline::Config config{};
+    config.order = makeVector<StringView>("add", "sub");
 
-    pipeline.configure(nodes, order);
+    pipeline.configure(nodes, config);
 
     IO::TOutput<int> first;
     IO::TOutput<int> second;

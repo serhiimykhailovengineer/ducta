@@ -14,51 +14,18 @@ Pipeline::Pipeline(Clock&& clock)
 {
 }
 
-bool Pipeline::configure(Nodes& nodes, Span<StringView> const& order)
+bool Pipeline::configure(Nodes& nodes, Config const& config)
 {
+    m_trace_enabled = config.should_trace_execution;
+
     m_init_order.clear();
     m_nodes.clear();
-    for (auto const& name : order)
+
+    for (auto const& name : config.order)
     {
         if (auto node_info = nodes.get_node(name))
         {
             m_init_order.emplace_back(*node_info);
-            m_nodes.emplace_back(*node_info);
-        }
-        else
-        {
-            DUCTA_LOG_ERROR("Node not found: {}", name);
-            m_init_order.clear();
-            m_nodes.clear();
-            return false;
-        }
-    }
-    return true;
-}
-
-bool Pipeline::configure(Nodes& nodes, Span<StringView> const& init_order, Span<StringView> const& exec_order)
-{
-    m_init_order.clear();
-    for (auto const& name : init_order)
-    {
-        if (auto node_info = nodes.get_node(name))
-        {
-            m_init_order.emplace_back(*node_info);
-        }
-        else
-        {
-            DUCTA_LOG_ERROR("Node not found: {}", name);
-            m_init_order.clear();
-            m_nodes.clear();
-            return false;
-        }
-    }
-
-    m_nodes.clear();
-    for (auto const& name : exec_order)
-    {
-        if (auto node_info = nodes.get_node(name))
-        {
             m_nodes.emplace_back(*node_info);
         }
         else
@@ -74,9 +41,6 @@ bool Pipeline::configure(Nodes& nodes, Span<StringView> const& init_order, Span<
 
 void Pipeline::init()
 {
-    m_frame_index = 0;
-    m_start_iteration_timestamp.reset();
-
     for (auto& node_info : m_init_order)
     {
         node_info.node.init();
@@ -85,47 +49,57 @@ void Pipeline::init()
 
 bool Pipeline::iterate()
 {
-    if (!m_start_iteration_timestamp.has_value())
+    if(m_trace_enabled)
     {
-        m_start_iteration_timestamp = m_clock.now();
+        m_trace_info.frame_start(m_clock.now());
     }
 
-    auto const start_frame = m_clock.now();
     for (auto& node_info : m_nodes)
     {
         auto const start_node = m_clock.now();
         try 
         {
             auto result = node_info.node.iterate(start_node);
-            auto const end_node = m_clock.now();
-            auto node_duration = end_node - start_node;
-            DUCTA_LOG_INFO("Node {}: Duration = {} microseconds", node_info.name, node_duration.count());
+            if(m_trace_enabled)
+            {
+                m_trace_info.node_duration(m_clock.now() - start_node);
+            }
 
             if(result)
             {
                 if (!*result)
                 {
+                    if(m_trace_enabled)
+                    {
+                        m_trace_info.frame_end(m_clock.now());
+                    }
                     return false; // Stop iteration as requested by the node
                 }
             }
             else
             {
+                if(m_trace_enabled)
+                {
+                    m_trace_info.frame_end(m_clock.now());
+                }
                 DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
                 return false;
             }
         } 
         catch (const std::exception& e) 
         {
+            if(m_trace_enabled)
+            {
+                m_trace_info.frame_end(m_clock.now());
+            }
             DUCTA_LOG_ERROR("Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
     }
-    auto const end_frame = m_clock.now();
-
-    // Log frame time
-    auto frame_duration = end_frame - start_frame;
-    DUCTA_LOG_INFO("Frame {}: Duration = {} microseconds", m_frame_index, frame_duration.count());
-    ++m_frame_index;
+    if(m_trace_enabled)
+    {
+        m_trace_info.frame_end(m_clock.now());
+    }
 
     return true;
 }

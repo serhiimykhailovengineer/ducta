@@ -6,17 +6,17 @@
 namespace ducta {
 namespace Chrono {
 
-SteadyClock::Timestamp SteadyClock::epoch() const
+inline SteadyClock::Timestamp SteadyClock::epoch() const
 {
     return Timestamp{0};
 }
 
-SteadyClock::Timestamp SteadyClock::now() const
+inline SteadyClock::Timestamp SteadyClock::now() const
 {
     return getSteadyTimestampUS();
 }
 
-void SteadyClock::sleepFor(Timestamp duration) const
+inline void SteadyClock::sleepFor(Timestamp duration) const
 {
     Chrono::sleepFor(duration);
 }

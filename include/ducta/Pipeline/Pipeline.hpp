@@ -5,6 +5,8 @@
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Nodes.hpp"
 
+#include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
+
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/Vector.hpp"
@@ -13,13 +15,21 @@
 namespace ducta {
 namespace Pipeline {
 
+struct PipelineConfig
+{
+    Vector<StringView, 50> order;
+    bool should_trace_execution{false};
+};
+
 class Pipeline
 {
 public:
+    using Config = PipelineConfig;
+
+public:
     Pipeline(Clock&& clock);
 
-    bool configure(Nodes& nodes, Span<StringView> const& order);
-    bool configure(Nodes& nodes, Span<StringView> const& init_order, Span<StringView> const& exec_order);
+    bool configure(Nodes& nodes, Config const& config);
 
     void init();
     bool iterate();
@@ -27,8 +37,8 @@ public:
 
 private:
     Clock m_clock;
-    size_t m_frame_index{0};
-    Optional<Chrono::TimestampUS> m_start_iteration_timestamp;
+    bool m_trace_enabled{false};
+    Private::PipelineTraceInfo m_trace_info;
 
     Vector<NodeInfo, 50> m_init_order;
     Vector<NodeInfo, 50> m_nodes;

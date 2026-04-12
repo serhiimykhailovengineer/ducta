@@ -3,16 +3,10 @@
 
 #include "ducta/Chrono/Chrono.hpp"
 
-#if !defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include <thread>
-#else
-#include "etl/thread.h"
-#endif
-
 namespace ducta {
 namespace Chrono {
 
-TimestampUS getSteadyTimestampUS()
+inline TimestampUS getSteadyTimestampUS()
 {
     auto now = chrono::steady_clock::now();
     
@@ -20,7 +14,7 @@ TimestampUS getSteadyTimestampUS()
     return timestamp;
 }
 
-void sleepFor(TimestampUS duration)
+inline void sleepFor(TimestampUS duration)
 {
     this_thread::sleep_for(duration);
 }

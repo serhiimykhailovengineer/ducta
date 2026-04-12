@@ -74,6 +74,9 @@ bool Pipeline::configure(Nodes& nodes, Span<StringView> const& init_order, Span<
 
 void Pipeline::init()
 {
+    m_frame_index = 0;
+    m_start_iteration_timestamp.reset();
+
     for (auto& node_info : m_init_order)
     {
         node_info.node.init();
@@ -82,11 +85,22 @@ void Pipeline::init()
 
 bool Pipeline::iterate()
 {
+    if (!m_start_iteration_timestamp.has_value())
+    {
+        m_start_iteration_timestamp = m_clock.now();
+    }
+
+    auto const start_frame = m_clock.now();
     for (auto& node_info : m_nodes)
     {
+        auto const start_node = m_clock.now();
         try 
         {
-            auto result = node_info.node.iterate();
+            auto result = node_info.node.iterate(start_node);
+            auto const end_node = m_clock.now();
+            auto node_duration = end_node - start_node;
+            DUCTA_LOG_INFO("Node {}: Duration = {} microseconds", node_info.name, node_duration.count());
+
             if(result)
             {
                 if (!*result)
@@ -106,6 +120,12 @@ bool Pipeline::iterate()
             return false;
         }
     }
+    auto const end_frame = m_clock.now();
+
+    // Log frame time
+    auto frame_duration = end_frame - start_frame;
+    DUCTA_LOG_INFO("Frame {}: Duration = {} microseconds", m_frame_index, frame_duration.count());
+    ++m_frame_index;
 
     return true;
 }

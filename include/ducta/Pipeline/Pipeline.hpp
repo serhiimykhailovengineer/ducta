@@ -27,6 +27,8 @@ public:
 
 private:
     Clock m_clock;
+    size_t m_frame_index{0};
+    Optional<Chrono::TimestampUS> m_start_iteration_timestamp;
 
     Vector<NodeInfo, 50> m_init_order;
     Vector<NodeInfo, 50> m_nodes;

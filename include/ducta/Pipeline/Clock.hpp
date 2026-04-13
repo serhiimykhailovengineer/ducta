@@ -4,6 +4,7 @@
 #include "ducta/Core/Types/ReferenceWrapper.hpp"
 #include "ducta/Core/Types/Integers.hpp"
 #include "ducta/Core/TypeTraits.hpp"
+#include "ducta/Chrono/Chrono.hpp"
 
 namespace ducta {
 namespace Pipeline {
@@ -11,7 +12,7 @@ namespace Pipeline {
 class Clock
 {
 public:
-    using Timestamp = uint64_t;
+    using Timestamp = Chrono::TimestampUS;
 
 private:
     struct VTable {

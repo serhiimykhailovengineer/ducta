@@ -14,28 +14,31 @@
 class TestClock 
 {
 public:
-    TestClock(std::uint64_t epoch = 0)
+    using Timestamp = ducta::Chrono::TimestampUS;
+
+public:
+    TestClock(Timestamp epoch = Timestamp{0})
     : _epoch(epoch), _now(epoch)
     {}
 
-    std::uint64_t epoch()
+    Timestamp epoch()
     {
         return _epoch;
     }
 
-    std::uint64_t now()
+    Timestamp now()
     {
         return _now;
     }
 
-    void set_now(std::uint64_t value)
+    void set_now(Timestamp value)
     {
         _now = value;
     }
 
 private:
-    std::uint64_t _epoch;
-    std::uint64_t _now;
+    Timestamp _epoch;
+    Timestamp _now;
 };
 
 
@@ -62,9 +65,10 @@ TEST(PipelineTest, base_test)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    auto order = makeVector<StringView>("add", "mul", "div", "sub");
+    Pipeline::Pipeline::Config config{};
+    config.order = makeVector<StringView>("add", "mul", "div", "sub");
 
-    pipeline.configure(nodes, order);
+    pipeline.configure(nodes, config);
 
     // Calculate (((2 + 2) * 3) / 2) - 10 = -4
 
@@ -118,9 +122,10 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     // Configure pipeline
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
-    auto order = makeVector<StringView>("add", "sub");
+    Pipeline::Pipeline::Config config{};
+    config.order = makeVector<StringView>("add", "sub");
 
-    pipeline.configure(nodes, order);
+    pipeline.configure(nodes, config);
 
     IO::TOutput<int> first;
     IO::TOutput<int> second;

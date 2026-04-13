@@ -7,6 +7,8 @@
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Utility.hpp"
 
+#include "ducta/Chrono/Chrono.hpp"
+
 namespace ducta {
 namespace Pipeline {
 namespace Private {
@@ -110,7 +112,7 @@ Error convert_to_error(E const& e) noexcept
 
 
 template <typename NodeType>
-Expected<bool, Error> call_iterate(NodeType& node)
+Expected<bool, Error> call_iterate(NodeType& node, Chrono::TimestampUS timestamp)
 {
     if constexpr (!has_iterate_v<NodeType>)
     {

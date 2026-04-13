@@ -2,12 +2,14 @@
 
 #include <gmock/gmock.h>
 
+#include "ducta/Chrono/Chrono.hpp"
+
 namespace ducta {
 namespace Pipeline {
 
 class ClockMock
 {
-    using Timestamp = std::uint64_t;
+    using Timestamp = Chrono::TimestampUS;
 
 public:
     MOCK_METHOD(Timestamp, epoch, (), ());

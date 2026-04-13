@@ -13,6 +13,8 @@
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/TypeTraits.hpp"
 
+#include "ducta/Chrono/Chrono.hpp"
+
 namespace ducta {
 namespace Pipeline {
 
@@ -21,7 +23,7 @@ class NodeRef
 private:
     struct VTable {
         void (*init)(void*);
-        Expected<bool, Error> (*iterate)(void*);
+        Expected<bool, Error> (*iterate)(void*, Chrono::TimestampUS);
         void (*release)(void*);
         Map<StringView, IO::InputRef, 25> (*get_inputs)(void*);
         Map<StringView, IO::OutputRef, 25> (*get_outputs)(void*);
@@ -34,10 +36,10 @@ private:
             +[](void* obj) {
                 static_cast<T*>(obj)->init();
             },
-            +[](void* obj) -> Expected<bool, Error> {
+            +[](void* obj, Chrono::TimestampUS timestamp) -> Expected<bool, Error> {
                 using NodeType = ::ducta::decay_t<T>;
                 NodeType& node = *static_cast<NodeType*>(obj);
-                return Private::call_iterate(node);
+                return Private::call_iterate(node, timestamp);
             },
             +[](void* obj) {
                 static_cast<T*>(obj)->release();
@@ -71,7 +73,6 @@ public:
     {
     }
 
-    
     /*
      * @brief Initialize the node
     */
@@ -85,9 +86,9 @@ public:
      * @return Expected<bool, Error>: true if iteration was successful and should continue iteration, 
      *                                       false if iteration should stop, or an Error if iteration failed
     */
-    Expected<bool, Error> iterate()
+    Expected<bool, Error> iterate(Chrono::TimestampUS timestamp = Chrono::TimestampUS{0})
     {
-        return m_vtable->iterate(m_node_obj);
+        return m_vtable->iterate(m_node_obj, timestamp);
     }
 
     /*

@@ -15,17 +15,17 @@ namespace Private {
 struct FrameTraceInfo { 
     Chrono::TimestampUS frame_start; 
     Chrono::TimestampUS frame_end; 
-    std::vector<Chrono::TimestampUS> nodes_durations; 
+    Vector<Chrono::TimestampUS> nodes_durations; 
 };
 
 class PipelineTraceInfo
 {
 public:
 
-    bool configure(Span<StringView> const& node_names)
+    void configure(Span<StringView const> const& node_names)
     {
         m_node_names = node_names;
-        return true;
+        m_frames_info.clear();
     }
 
     void frame_start(Chrono::TimestampUS ts)
@@ -50,8 +50,8 @@ public:
     }
 
 private:
-    Span<StringView> m_node_names;
-    std::vector<FrameTraceInfo> m_frames_info;
+    Span<StringView const> m_node_names;
+    Vector<FrameTraceInfo> m_frames_info;
 };
 
 } // namespace Private

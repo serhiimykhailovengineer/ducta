@@ -36,6 +36,8 @@ bool Pipeline::configure(Nodes& nodes, Config const& config)
             return false;
         }
     }
+
+    m_trace_info.configure(Span<StringView const>(config.order.data(), config.order.size()));
     return true;
 }
 

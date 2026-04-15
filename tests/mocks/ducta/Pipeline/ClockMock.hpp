@@ -14,6 +14,7 @@ class ClockMock
 public:
     MOCK_METHOD(Timestamp, epoch, (), ());
     MOCK_METHOD(Timestamp, now, (), ());
+    MOCK_METHOD(void, sleepFor, (Timestamp duration), ());
 };
 
 } // namespace Pipeline

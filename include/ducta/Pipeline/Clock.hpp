@@ -18,6 +18,7 @@ private:
     struct VTable {
         Timestamp (*now)(void*) ;
         Timestamp (*epoch)(void*) ;
+        void (*sleepFor)(void*, Timestamp);
     };
 
     template<class T>
@@ -25,7 +26,8 @@ private:
     {
         static const VTable vt = {
             +[](void* obj) -> Timestamp { return static_cast<T*>(obj)->now(); },
-            +[](void* obj) -> Timestamp { return static_cast<T*>(obj)->epoch(); }
+            +[](void* obj) -> Timestamp { return static_cast<T*>(obj)->epoch(); },
+            +[](void* obj, Timestamp duration) { static_cast<T*>(obj)->sleepFor(duration); }
         };
         return vt;
     }
@@ -53,6 +55,11 @@ public:
     Timestamp now()
     {
         return m_vtable->now(m_clock_obj);
+    }
+
+    void sleepFor(Timestamp duration)
+    {
+        m_vtable->sleepFor(m_clock_obj, duration);
     }
 
 private:

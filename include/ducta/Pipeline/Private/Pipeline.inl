@@ -17,6 +17,8 @@ Pipeline::Pipeline(Clock&& clock)
 bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
 {
     m_trace_enabled = config.should_trace_execution;
+    m_target_frame_duration = config.target_frame_duration;
+    m_trace_flush_threshold = config.trace_flush_threshold;
     m_trace_callback = trace_callback;
 
     m_init_order.clear();
@@ -106,7 +108,7 @@ bool Pipeline::iterate()
         m_trace_info.frame_end(m_clock.now());
     }
 
-    if (m_trace_enabled && m_trace_info.pending_frames() >= m_trace_flush_threshold)
+    if (m_trace_enabled && m_trace_callback && m_trace_info.pending_frames() >= m_trace_flush_threshold)
     {
         m_trace_info.flush(m_trace_callback);
     }

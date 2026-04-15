@@ -11,6 +11,7 @@
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Core/Types/Span.hpp"
+#include "ducta/Core/Types/FunctionRef.hpp"
 
 namespace ducta {
 namespace Pipeline {

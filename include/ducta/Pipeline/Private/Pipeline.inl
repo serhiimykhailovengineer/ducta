@@ -14,9 +14,10 @@ Pipeline::Pipeline(Clock&& clock)
 {
 }
 
-bool Pipeline::configure(Nodes& nodes, Config const& config)
+bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
 {
     m_trace_enabled = config.should_trace_execution;
+    m_trace_callback = trace_callback;
 
     m_init_order.clear();
     m_nodes.clear();
@@ -51,11 +52,13 @@ void Pipeline::init()
 
 bool Pipeline::iterate()
 {
+    auto const frame_start_time = m_clock.now();
     if(m_trace_enabled)
     {
-        m_trace_info.frame_start(m_clock.now());
+        m_trace_info.frame_start(frame_start_time);
     }
 
+    size_t node_index = 0;
     for (auto& node_info : m_nodes)
     {
         auto const start_node = m_clock.now();
@@ -64,7 +67,7 @@ bool Pipeline::iterate()
             auto result = node_info.node.iterate(start_node);
             if(m_trace_enabled)
             {
-                m_trace_info.node_duration(m_clock.now() - start_node);
+                m_trace_info.node_duration(node_index++, m_clock.now() - start_node);
             }
 
             if(result)
@@ -101,6 +104,17 @@ bool Pipeline::iterate()
     if(m_trace_enabled)
     {
         m_trace_info.frame_end(m_clock.now());
+    }
+
+    if (m_trace_enabled && m_trace_info.pending_frames() >= m_trace_flush_threshold)
+    {
+        m_trace_info.flush(m_trace_callback);
+    }
+
+    auto const frame_duration = m_clock.now() - frame_start_time;
+    if (m_target_frame_duration > frame_duration)
+    {
+        m_clock.sleepFor(m_target_frame_duration - frame_duration);
     }
 
     return true;

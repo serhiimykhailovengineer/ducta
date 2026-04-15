@@ -31,6 +31,11 @@ public:
         return _now;
     }
 
+    void sleepFor(Timestamp duration)
+    {
+        _now += duration;
+    }
+
     void set_now(Timestamp value)
     {
         _now = value;

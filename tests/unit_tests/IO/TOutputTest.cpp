@@ -59,6 +59,18 @@ TEST(TOutputTests, assign_operator)
     EXPECT_NO_THROW(output = ::ducta::move(temp_value));
 }
 
+TEST(TOutputTests, update) 
+{
+    IO::TOutput<int> output{};
+
+    int temp_value = 100;
+    output.set(temp_value);
+
+    output.update([](int& value) {
+        value += 50;
+    });
+}
+
 TEST(TOutputTests, bind) 
 {
     IO::TOutput<int> output{};

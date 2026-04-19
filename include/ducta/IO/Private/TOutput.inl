@@ -38,6 +38,16 @@ void TOutput<T>::set(value_type&& value)
 }
 
 template <typename T>
+void TOutput<T>::update(FunctionRef<void(value_type&)> callback)
+{
+    callback(_value);
+    for (auto& input_ref : _inputs)
+    {
+        input_ref.notify(_value);
+    }
+}
+
+template <typename T>
 TOutput<T>& TOutput<T>::operator=(value_type const& value)
 {
     set(value);

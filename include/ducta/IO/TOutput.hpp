@@ -10,6 +10,7 @@
 
 #include "ducta/Core/Types/TypeIndex.hpp"
 #include "ducta/Core/Types/Vector.hpp"
+#include "ducta/Core/Types/FunctionRef.hpp"
 #include "ducta/Core/TypeTraits.hpp"
 
 #include "ducta/IO/Connection.hpp"
@@ -47,6 +48,12 @@ public:
      * @param value The value to set
      */
     void set(value_type&& value);
+
+    /** 
+     * @brief Update the output value by applying a callback function to the current value.
+     * @param callback The function to apply to the current value. It should take a reference to the current value and modify it.
+     */
+    void update(FunctionRef<void(value_type&)> callback);
 
     /** 
      * @brief Assignment operator to set the output value by const reference

@@ -59,6 +59,31 @@ TEST(TOutputTests, assign_operator)
     EXPECT_NO_THROW(output = ::ducta::move(temp_value));
 }
 
+TEST(TOutputTests, update) 
+{
+    IO::TOutput<int> output{};
+
+        // Since we don't have direct access to the value, we will bind it to a mock input to check the updated value
+    IO::TInputMock<int> input_mock{};
+    IO::InputRef input_ref{input_mock};
+
+    EXPECT_CALL(input_mock, compatible(::testing::_))
+        .WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(input_mock, notify(100))
+        .Times(1);
+    EXPECT_CALL(input_mock, notify(150))
+        .Times(1);
+
+    auto connection = output.bind(input_ref);
+
+    int temp_value = 100;
+    output.set(temp_value);
+
+    output.update([](int& value) {
+        value += 50;
+    });
+}
+
 TEST(TOutputTests, bind) 
 {
     IO::TOutput<int> output{};

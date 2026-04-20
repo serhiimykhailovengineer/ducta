@@ -130,8 +130,9 @@ void Pipeline::release()
     }
 }
 
-PipelineEngine::PipelineEngine(Pipeline& pipeline)
+PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
 : m_pipeline{pipeline}
+, m_stop_token{::ducta::move(stop_token)}
 {
     m_pipeline.init();
 }
@@ -145,8 +146,15 @@ int PipelineEngine::run()
 {
     while (true)
     {
+        if (m_stop_token.stopRequested())
+        {
+            DUCTA_LOG_INFO("Stop requested, exiting pipeline engine.");
+            break;
+        }
+
         if (!m_pipeline.iterate())
         {
+            DUCTA_LOG_INFO("Pipeline iteration requested stop, exiting pipeline engine.");
             break;
         }
     }

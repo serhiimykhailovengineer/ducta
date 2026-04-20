@@ -4,6 +4,7 @@
 #include "ducta/Pipeline/Clock.hpp"
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Nodes.hpp"
+#include "ducta/Pipeline/StopToken.hpp"
 
 #include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
 
@@ -33,6 +34,11 @@ public:
 
 public:
     Pipeline(Clock&& clock);
+    template <typename ClockType,
+              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<ClockType>, Clock>>>
+    Pipeline(ClockType& clock)
+    : Pipeline(Clock(clock))
+    {}
 
     bool configure(Nodes& nodes, Config const& config, TraceCallback trace_callback = nullptr);
 
@@ -55,13 +61,21 @@ private:
 class PipelineEngine
 {
 public:
-    PipelineEngine(Pipeline& pipeline);
+    PipelineEngine(Pipeline& pipeline, StopToken&& stop_token);
+
+    template <typename StopTokenType,
+              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<StopTokenType>, StopToken>>>
+    PipelineEngine(Pipeline& pipeline, StopTokenType& stop_token)
+    : PipelineEngine(pipeline, StopToken(stop_token))
+    {}
+
     ~PipelineEngine();
 
     int run();
 
 private:
     Pipeline& m_pipeline;
+    StopToken m_stop_token;
 };
 
 } // namespace Pipeline

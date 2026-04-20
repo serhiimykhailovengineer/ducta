@@ -1,27 +1,29 @@
 #ifndef DUCTA_PIPELINE_STOPTOKEN_HPP
 #define DUCTA_PIPELINE_STOPTOKEN_HPP
 
+#include "ducta/Core/TypeTraits.hpp"
+
 namespace ducta {
 namespace Pipeline {
 class StopToken
 {
 private:
     struct VTable {
-        bool (*stopRequested)(void*) ;
+        bool (*stopRequested)(void const*) ;
     };
 
     template<class T>
     static const VTable& vt_for()
     {
         static const VTable vt = {
-            +[](void* obj) -> bool { return static_cast<T*>(obj)->stopRequested(); },
+            +[](void const* obj) -> bool { return static_cast<T const*>(obj)->stopRequested(); },
         };
         return vt;
     }
 public:
 template <typename StopTokenType,
               typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<StopTokenType>, StopToken>>>
-    StopToken(StopTokenType& stopToken)
+    StopToken(StopTokenType const& stopToken)
     : m_stop_token_obj{&stopToken}
     , m_vtable{&vt_for<StopTokenType>()}
     {
@@ -39,7 +41,7 @@ template <typename StopTokenType,
     }
 
 private:
-    void* m_stop_token_obj;
+    void const* m_stop_token_obj;
     const VTable* m_vtable;
 };
 } // namespace Pipeline

@@ -7,6 +7,7 @@
 
 #include "ducta/Pipeline/NodeMock.hpp"
 #include "ducta/Pipeline/ClockMock.hpp"
+#include "ducta/Pipeline/StopTokenMock.hpp"
 
 using namespace ducta;
 
@@ -101,4 +102,41 @@ TEST(PipelineTest, iteration_with_failed_node)
     pipeline.init();
     EXPECT_FALSE(pipeline.iterate());
     pipeline.release();
+}
+
+TEST(PipelineTest, pipeline_execution_stop_token)
+{
+    Pipeline::StopTokenMock stop_token_mock;
+
+    EXPECT_CALL(stop_token_mock, stopRequested())
+        .WillOnce(::testing::Return(false))
+        .WillOnce(::testing::Return(true));
+
+    Pipeline::ClockMock clock_mock;
+
+    Pipeline::IterableNodeMock<Expected<void, Error>> first_node_mock;
+    Pipeline::IterableNodeMock<Expected<void, Error>> second_node_mock;
+    // Create nodes map
+    Pipeline::Nodes nodes;
+
+    nodes.add_node("first", first_node_mock);
+    nodes.add_node("second", second_node_mock);
+
+    // Configure pipeline
+    Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
+
+    Pipeline::Pipeline::Config config{};
+    config.order = makeVector<StringView>("first", "second");
+
+    ASSERT_TRUE(pipeline.configure(nodes, config));
+
+    EXPECT_CALL(first_node_mock, init()).Times(1);
+    EXPECT_CALL(second_node_mock, init()).Times(1);
+    EXPECT_CALL(first_node_mock, iterate()).Times(1);
+    EXPECT_CALL(second_node_mock, iterate()).Times(1);
+    EXPECT_CALL(second_node_mock, release()).Times(1);
+    EXPECT_CALL(first_node_mock, release()).Times(1);
+
+    Pipeline::PipelineEngine engine{pipeline, stop_token_mock};
+    EXPECT_EQ(engine.run(), EXIT_SUCCESS);
 }

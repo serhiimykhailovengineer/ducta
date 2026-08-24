@@ -21,6 +21,10 @@ bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace
     m_trace_flush_threshold = config.trace_flush_threshold;
     m_trace_callback = trace_callback;
 
+    m_iteration_strategy = m_trace_enabled
+        ? &Pipeline::iterateWithTrace
+        : &Pipeline::iterateWithoutTrace;
+
     m_init_order.clear();
     m_nodes.clear();
 
@@ -54,61 +58,89 @@ void Pipeline::init()
 
 bool Pipeline::iterate()
 {
-    auto const frame_start_time = m_clock.now();
-    if(m_trace_enabled)
-    {
-        m_trace_info.frame_start(frame_start_time);
-    }
+    return (this->*m_iteration_strategy)();
+}
 
-    size_t node_index = 0;
+bool Pipeline::iterateWithoutTrace()
+{
+    auto const frame_start_time = m_clock.now();
+
     for (auto& node_info : m_nodes)
     {
         auto const start_node = m_clock.now();
-        try 
+        try
         {
             auto result = node_info.node.iterate(start_node);
-            if(m_trace_enabled)
-            {
-                m_trace_info.node_duration(node_index++, m_clock.now() - start_node);
-            }
 
-            if(result)
+            if (result)
             {
                 if (!*result)
                 {
-                    if(m_trace_enabled)
-                    {
-                        m_trace_info.frame_end(m_clock.now());
-                    }
                     return false; // Stop iteration as requested by the node
                 }
             }
             else
             {
-                if(m_trace_enabled)
-                {
-                    m_trace_info.frame_end(m_clock.now());
-                }
                 DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
                 return false;
             }
-        } 
-        catch (const std::exception& e) 
+        }
+        catch (const std::exception& e)
         {
-            if(m_trace_enabled)
-            {
-                m_trace_info.frame_end(m_clock.now());
-            }
             DUCTA_LOG_ERROR("Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
     }
-    if(m_trace_enabled)
+
+    auto const frame_duration = m_clock.now() - frame_start_time;
+    if (m_target_frame_duration > frame_duration)
     {
-        m_trace_info.frame_end(m_clock.now());
+        m_clock.sleepFor(m_target_frame_duration - frame_duration);
     }
 
-    if (m_trace_enabled && m_trace_callback && m_trace_info.pending_frames() >= m_trace_flush_threshold)
+    return true;
+}
+
+bool Pipeline::iterateWithTrace()
+{
+    auto const frame_start_time = m_clock.now();
+    m_trace_info.frame_start(frame_start_time);
+
+    size_t node_index = 0;
+    for (auto& node_info : m_nodes)
+    {
+        auto const start_node = m_clock.now();
+        try
+        {
+            auto result = node_info.node.iterate(start_node);
+            m_trace_info.node_duration(node_index++, m_clock.now() - start_node);
+
+            if (result)
+            {
+                if (!*result)
+                {
+                    m_trace_info.frame_end(m_clock.now());
+                    return false; // Stop iteration as requested by the node
+                }
+            }
+            else
+            {
+                m_trace_info.frame_end(m_clock.now());
+                DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
+                return false;
+            }
+        }
+        catch (const std::exception& e)
+        {
+            m_trace_info.frame_end(m_clock.now());
+            DUCTA_LOG_ERROR("Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
+            return false;
+        }
+    }
+
+    m_trace_info.frame_end(m_clock.now());
+
+    if (m_trace_callback && m_trace_info.pending_frames() >= m_trace_flush_threshold)
     {
         m_trace_info.flush(m_trace_callback);
     }

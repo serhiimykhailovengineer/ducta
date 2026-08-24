@@ -47,6 +47,14 @@ public:
     void release();
 
 private:
+    using IterationStrategy = bool (Pipeline::*)();
+
+    bool iterateWithTrace();
+    bool iterateWithoutTrace();
+
+    IterationStrategy m_iteration_strategy{&Pipeline::iterateWithoutTrace};
+
+private:
     Clock m_clock;
     Chrono::TimestampUS m_target_frame_duration{0};
     bool m_trace_enabled{false};

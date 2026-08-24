@@ -51,9 +51,15 @@ TEST(PipelineTest, base_test)
     {
         ::testing::InSequence seq;
 
+        EXPECT_CALL(clock_mock, now()).WillOnce(::testing::Return(Chrono::TimestampUS{0}));
+        EXPECT_CALL(clock_mock, now()).WillOnce(::testing::Return(Chrono::TimestampUS{0}));
+        EXPECT_CALL(clock_mock, now()).WillOnce(::testing::Return(Chrono::TimestampUS{0}));
         EXPECT_CALL(node_2_mock, iterate()).Times(1);
+        EXPECT_CALL(clock_mock, now()).WillOnce(::testing::Return(Chrono::TimestampUS{0}));
         EXPECT_CALL(node_3_mock, iterate()).Times(1);
+        EXPECT_CALL(clock_mock, now()).WillOnce(::testing::Return(Chrono::TimestampUS{0}));
         EXPECT_CALL(node_4_mock, iterate()).Times(1);
+        EXPECT_CALL(clock_mock, now()).WillOnce(::testing::Return(Chrono::TimestampUS{0}));
     }
 
     EXPECT_TRUE(pipeline.iterate());
@@ -93,6 +99,7 @@ TEST(PipelineTest, iteration_with_failed_node)
 
     EXPECT_CALL(first_node_mock, init()).Times(1);
     EXPECT_CALL(second_node_mock, init()).Times(1);
+    EXPECT_CALL(clock_mock, now()).WillRepeatedly(::testing::Return(Chrono::TimestampUS{0}));
     EXPECT_CALL(first_node_mock, iterate())
         .WillOnce(::testing::Return(Unexpected<Error>{Error{}}));
     EXPECT_CALL(second_node_mock, iterate()).Times(0);
@@ -129,6 +136,8 @@ TEST(PipelineTest, pipeline_execution_stop_token)
     config.order = makeVector<StringView>("first", "second");
 
     ASSERT_TRUE(pipeline.configure(nodes, config));
+
+    EXPECT_CALL(clock_mock, now()).WillRepeatedly(::testing::Return(Chrono::TimestampUS{0}));
 
     EXPECT_CALL(first_node_mock, init()).Times(1);
     EXPECT_CALL(second_node_mock, init()).Times(1);

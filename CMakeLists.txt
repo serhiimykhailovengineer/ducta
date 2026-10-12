@@ -18,6 +18,8 @@ else()
     find_package(fmt REQUIRED)
 endif()
 
+find_package(jsmn REQUIRED)
+
 find_package(GTest REQUIRED)
 
 enable_testing()
@@ -33,6 +35,10 @@ add_library(ducta_configuration INTERFACE)
 target_include_directories(ducta_configuration
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(ducta_configuration
+    INTERFACE
+        jsmn::jsmn
 )
 
 add_library(ducta_pipeline INTERFACE)

@@ -5,6 +5,7 @@ add_executable(${TARGET_NAME}
     DecodeTest.cpp
     VariantTest.cpp
     ContainersTest.cpp
+    JsonTest.cpp
 )
 
 set(BACKEND_LIBS)

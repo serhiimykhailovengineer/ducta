@@ -58,6 +58,7 @@ public:
         m_frames_info.clear();
         m_dropped_frames = 0;
         m_current_frame_index = 0;
+        m_frame_open = false;
     }
 
     void frame_start(Chrono::TimestampUS ts)

@@ -84,11 +84,87 @@ inline bool is_unit_char(char c) noexcept
     return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || u == 0xC2 || u == 0xB5;
 }
 
+constexpr int64_t gcd(int64_t a, int64_t b) noexcept
+{
+    while (b != 0)
+    {
+        int64_t const r = a % b;
+        a = b;
+        b = r;
+    }
+    return a;
+}
+
+/* A non-negative rational number, kept reduced (denominator > 0) */
+struct Fraction
+{
+    int64_t numerator{0};
+    int64_t denominator{1};
+};
+
+constexpr Fraction reduced(int64_t numerator, int64_t denominator) noexcept
+{
+    int64_t const common = gcd(numerator, denominator);
+    return Fraction{numerator / common, denominator / common};
+}
+
+/* out = a * b; false on overflow. Cross-reduces first, so only the result has to fit */
+constexpr bool multiply(Fraction a, Fraction b, Fraction& out) noexcept
+{
+    int64_t const g1 = gcd(a.numerator, b.denominator);
+    int64_t const g2 = gcd(b.numerator, a.denominator);
+    Fraction result;
+    if (!checked_mul(a.numerator / g1, b.numerator / g2, result.numerator) ||
+        !checked_mul(a.denominator / g2, b.denominator / g1, result.denominator))
+    {
+        return false;
+    }
+    out = reduced(result.numerator, result.denominator);
+    return true;
+}
+
+/* out = a + b; false on overflow */
+constexpr bool add(Fraction a, Fraction b, Fraction& out) noexcept
+{
+    int64_t const common = gcd(a.denominator, b.denominator);
+    int64_t denominator = 0;
+    int64_t left = 0;
+    int64_t right = 0;
+    int64_t numerator = 0;
+    if (!checked_mul(a.denominator / common, b.denominator, denominator) ||
+        !checked_mul(a.numerator, b.denominator / common, left) ||
+        !checked_mul(b.numerator, a.denominator / common, right) ||
+        !checked_add(left, right, numerator))
+    {
+        return false;
+    }
+    out = reduced(numerator, denominator);
+    return true;
+}
+
 /*
- * Parse text as a sum of <number><unit> parts into nanoseconds.
+ * Ticks of Period (num / den seconds) in one unit of unit_ns nanoseconds:
+ * unit_ns * den / (num * 1e9)
+ */
+template <class Period>
+constexpr bool ticks_per_unit(int64_t unit_ns, Fraction& out) noexcept
+{
+    int64_t tick_ns = 0;
+    if (!checked_mul(static_cast<int64_t>(Period::num), int64_t{1000000000}, tick_ns))
+    {
+        return false;
+    }
+    return multiply(Fraction{unit_ns, 1}, reduced(static_cast<int64_t>(Period::den), tick_ns), out);
+}
+
+/*
+ * Parse text as a sum of <number><unit> parts into ticks of Period, exactly. Every part is
+ * converted straight to ticks (as a fraction), so the result only has to fit the destination:
+ * "10000000000s" is fine for seconds although it does not fit into int64_t nanoseconds.
  * unit receives the offending unit for DurationError::Unit.
  */
-inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView& unit) noexcept
+template <class Period>
+DurationError parse_duration(StringView text, int64_t& ticks, StringView& unit) noexcept
 {
     size_t i = 0;
     size_t const n = text.size();
@@ -107,7 +183,7 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
         ++i;
     }
 
-    int64_t total = 0;
+    Fraction total;
     bool any = false;
     while (true)
     {
@@ -169,18 +245,13 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
             return DurationError::Unit;
         }
 
-        // integer * unit + fraction * unit / scale, exactly
-        int64_t part = 0;
-        int64_t fraction_ns = 0;
-        if (!checked_mul(integer, unit_ns, part) || !checked_mul(fraction, unit_ns, fraction_ns))
-        {
-            return DurationError::Range;
-        }
-        if (fraction_ns % fraction_scale != 0)
-        {
-            return DurationError::Precision;
-        }
-        if (!checked_add(part, fraction_ns / fraction_scale, part) || !checked_add(total, part, total))
+        // total += (integer + fraction / fraction_scale) * ticks per unit
+        int64_t scaled = 0;
+        Fraction per_unit;
+        Fraction part;
+        if (!checked_mul(integer, fraction_scale, scaled) ||
+            !checked_add(scaled, fraction, scaled) || !ticks_per_unit<Period>(unit_ns, per_unit) ||
+            !multiply(reduced(scaled, fraction_scale), per_unit, part) || !add(total, part, total))
         {
             return DurationError::Range;
         }
@@ -191,47 +262,11 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
     {
         return DurationError::Syntax;
     }
-    out = negative ? -total : total;
-    return DurationError::None;
-}
-
-constexpr int64_t gcd(int64_t a, int64_t b) noexcept
-{
-    while (b != 0)
-    {
-        int64_t const r = a % b;
-        a = b;
-        b = r;
-    }
-    return a;
-}
-
-/*
- * Convert nanoseconds to ticks of Period (num / den seconds), exactly:
- * ticks = nanoseconds * den / (num * 1e9), which must be a whole number
- */
-template <class Period>
-DurationError nanoseconds_to_ticks(int64_t nanoseconds, int64_t& ticks) noexcept
-{
-    constexpr int64_t num = static_cast<int64_t>(Period::num);
-    constexpr int64_t den = static_cast<int64_t>(Period::den);
-    int64_t tick_ns = 0;
-    if (!checked_mul(num, int64_t{1000000000}, tick_ns))
-    {
-        return DurationError::Range;
-    }
-    // Reduce den / tick_ns: ticks = (nanoseconds / divisor) * multiplier
-    int64_t const common = gcd(den, tick_ns);
-    int64_t const multiplier = den / common;
-    int64_t const divisor = tick_ns / common;
-    if (nanoseconds % divisor != 0)
+    if (total.denominator != 1)
     {
         return DurationError::Precision;
     }
-    if (!checked_mul(nanoseconds / divisor, multiplier, ticks))
-    {
-        return DurationError::Range;
-    }
+    ticks = negative ? -total.numerator : total.numerator;
     return DurationError::None;
 }
 
@@ -286,12 +321,7 @@ struct ValueDecoder<
         {
             StringView const text = node.as_string();
             StringView unit;
-            int64_t nanoseconds = 0;
-            Private::DurationError error = Private::parse_duration_ns(text, nanoseconds, unit);
-            if (error == Private::DurationError::None)
-            {
-                error = Private::nanoseconds_to_ticks<Period>(nanoseconds, ticks);
-            }
+            Private::DurationError const error = Private::parse_duration<Period>(text, ticks, unit);
             switch (error)
             {
             case Private::DurationError::None:

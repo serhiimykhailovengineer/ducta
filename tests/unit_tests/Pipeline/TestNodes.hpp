@@ -110,6 +110,10 @@ struct ThrowingConfig
 {
     bool in_constructor{false};
     bool in_init{false};
+    /* std::runtime_error from release() */
+    bool in_release{false};
+    /* int (not a std::exception, so Pipeline::iterate does not catch it) from iterate() */
+    bool in_iterate{false};
 };
 
 struct ThrowingNode
@@ -133,8 +137,20 @@ struct ThrowingNode
         }
     }
 
+    void iterate()
+    {
+        if (config.in_iterate)
+        {
+            throw 42;
+        }
+    }
+
     void release()
     {
+        if (config.in_release)
+        {
+            throw std::runtime_error("release failed");
+        }
     }
 
     Config config;
@@ -172,7 +188,12 @@ struct LoggingNode
 } // namespace TestNodes
 
 DEFINE_CONFIG(TestNodes::GainConfig, ("gain", gain), ("label", label));
-DEFINE_CONFIG(TestNodes::ThrowingConfig, ("in_constructor", in_constructor), ("in_init", in_init));
+DEFINE_CONFIG(
+    TestNodes::ThrowingConfig,
+    ("in_constructor", in_constructor),
+    ("in_init", in_init),
+    ("in_release", in_release),
+    ("in_iterate", in_iterate));
 DEFINE_CONFIG_RULES(TestNodes::GainConfig, ("gain", config.gain > 0.0, "must be positive"));
 
 DECLARE_NODE(Gain, TestNodes::GainNode);

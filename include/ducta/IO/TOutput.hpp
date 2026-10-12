@@ -75,9 +75,16 @@ public:
     /**
      * @brief Bind the output to an input
      * @param input The input to bind to
-     * @return A Connection object that will unbind the input upon destruction
+     * @return A Connection object that will unbind the input upon destruction, or an empty
+     *         Connection (false) if the types are incompatible or the output is full()
      */
     Connection bind(InputRef const& input);
+
+    /**
+     * @brief Whether no further input can be bound (embedded backend: at most
+     *        DUCTA_MAX_OUTPUT_CONNECTIONS inputs); always false with the standard backend
+     */
+    bool full() const noexcept;
 
 private:
     /**

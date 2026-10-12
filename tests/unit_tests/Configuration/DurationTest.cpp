@@ -121,6 +121,21 @@ TEST(DurationTest, only_signed_integral_representations_are_decoded)
         Configuration::Private::has_value_decoder<Chrono::chrono::duration<double, Ratio<1, 1>>>::value));
 }
 
+TEST(DurationTest, only_the_result_has_to_fit_the_destination)
+{
+    // Both are more than ~292 years: too long for int64_t nanoseconds, not for the destination
+    using Seconds = Chrono::chrono::seconds;
+    EXPECT_EQ(ok<Seconds>(R"("10000000000s")"), Seconds{10000000000LL});
+    EXPECT_EQ(ok(R"("106752d")"), Microseconds{106752LL * 86400 * 1000000});
+
+    // Parts that are not whole ticks on their own may add up to whole ticks
+    EXPECT_EQ(ok<Seconds>(R"("500ms 500ms")"), Seconds{1});
+    EXPECT_EQ(ok<Seconds>(R"("0.5m 30s")"), Seconds{60});
+
+    // The destination itself still bounds the value
+    EXPECT_EQ(error<Nanoseconds>(R"("106752d")"), "duration '106752d' is out of range");
+}
+
 TEST(DurationTest, precision_below_tick_is_an_error)
 {
     EXPECT_EQ(error(R"("1.5us")"), "duration '1.5us' is not a whole number of 1us");

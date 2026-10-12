@@ -539,3 +539,18 @@ TEST_F(TracedFixture, event_emitted_outside_of_frame_is_not_traced)
     ASSERT_EQ(frames.size(), 1);
     EXPECT_EQ(frames[0].events.size(), 1); // only the one from the iterate()
 }
+
+TEST(PipelineTraceInfoTest, configure_resets_an_open_frame)
+{
+    Pipeline::Private::PipelineTraceInfo trace;
+    trace.configure({});
+    trace.frame_start(Chrono::TimestampUS{1});
+    ASSERT_TRUE(trace.frame_open());
+
+    // E.g. an exception left the frame open: reconfiguring starts from a clean state
+    trace.configure({});
+    EXPECT_FALSE(trace.frame_open());
+    EXPECT_EQ(trace.pending_frames(), 0u);
+    trace.frame_start(Chrono::TimestampUS{2});
+    EXPECT_TRUE(trace.frame_open());
+}

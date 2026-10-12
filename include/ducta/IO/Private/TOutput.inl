@@ -68,7 +68,7 @@ TOutput<T>& TOutput<T>::operator=(value_type&& value)
 template <typename T>
 Connection TOutput<T>::bind(InputRef const& input)
 {
-    if (input.compatible(type_id<T>()))
+    if (input.compatible(type_id<T>()) && !full())
     {
         _inputs.emplace_back(input);
 
@@ -76,6 +76,16 @@ Connection TOutput<T>::bind(InputRef const& input)
     }
 
     return {};
+}
+
+template <typename T>
+bool TOutput<T>::full() const noexcept
+{
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+    return _inputs.full();
+#else
+    return false;
+#endif
 }
 
 template <typename T>

@@ -67,10 +67,14 @@ class NodeManager
 public:
     using Config = NodeManagerConfig;
 
+    /* The manager keeps a reference: factory must outlive it */
     explicit NodeManager(NodeFactory const& factory = NodeFactory::instance()) noexcept
         : m_factory{&factory}
     {
     }
+
+    /* A temporary factory would be destroyed before configure() uses it */
+    explicit NodeManager(NodeFactory&& factory) = delete;
 
     NodeManager(NodeManager const&) = delete;
     NodeManager& operator=(NodeManager const&) = delete;

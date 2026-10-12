@@ -18,6 +18,7 @@ public:
     MOCK_METHOD(void, set_move, (T&&), ());
 
     MOCK_METHOD(Connection, bind, (InputRef & input), ());
+    MOCK_METHOD(bool, full, (), (const)); // false by default
 };
 
 template <typename T>

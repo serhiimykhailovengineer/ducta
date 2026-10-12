@@ -77,6 +77,14 @@ public:
     {
     }
 
+    /* The engine keeps references to clock and factory: a temporary factory would be destroyed
+     * before configure() uses it */
+    template <
+        typename ClockType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<ClockType>, Pipeline::Clock>>>
+    DuctaEngine(ClockType& clock, Pipeline::NodeFactory&& factory) = delete;
+    DuctaEngine(Pipeline::Clock clock, Pipeline::NodeFactory&& factory) = delete;
+
     DuctaEngine(DuctaEngine const&) = delete;
     DuctaEngine& operator=(DuctaEngine const&) = delete;
 
@@ -156,6 +164,8 @@ public:
      *
      * Initialises the nodes in pipeline order, iterates them, then releases them in reverse
      * order. The nodes are kept: the engine can run again or be reconfigured afterwards.
+     * An exception of a node's init(), iterate() or release() is passed on once the nodes
+     * that were initialised are released (every one of them, even if another release() throws).
      *
      * @return EXIT_SUCCESS, or EXIT_FAILURE if the engine is not configured
      */
@@ -191,8 +201,32 @@ public:
             }
         } const guard{m_running};
 
-        Pipeline::PipelineEngine engine{m_pipeline, ::ducta::move(stop_token)};
-        return engine.run();
+        // Not PipelineEngine: its destructor (noexcept) could only log an exception of release()
+        m_pipeline.init(); // releases the nodes it initialised if one init() throws
+#if defined(__cpp_exceptions)
+        try
+        {
+#endif
+            while (!stop_token.stopRequested() && m_pipeline.iterate())
+            {
+            }
+#if defined(__cpp_exceptions)
+        }
+        catch (...)
+        {
+            // Release the nodes, then pass on the exception of iterate()
+            try
+            {
+                m_pipeline.release();
+            }
+            catch (...)
+            {
+            }
+            throw;
+        }
+#endif
+        m_pipeline.release(); // releases every node, then passes on the first exception
+        return EXIT_SUCCESS;
     }
 
     bool configured() const noexcept

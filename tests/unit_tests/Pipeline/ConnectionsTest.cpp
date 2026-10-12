@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <string>
+#include <vector>
 
 #include "ducta/Configuration/Configuration.hpp"
 #include "ducta/IO/DefineInputs.hpp"
@@ -278,6 +279,51 @@ TEST_F(PipelineConnectionsTest, configure_applies_the_config_rules)
     ASSERT_EQ(diagnostics.size(), 1u);
     EXPECT_EQ(str(diagnostics[0].message), "must not exceed DUCTA_MAX_TRACED_FRAMES");
 }
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+TEST(OutputCapacityTest, full_output_refuses_further_inputs)
+{
+    IO::TOutput<int> output;
+    std::vector<IO::TInput<int>> inputs(DUCTA_MAX_OUTPUT_CONNECTIONS + 1);
+    std::vector<IO::Connection> connections;
+    for (size_t i = 0; i < DUCTA_MAX_OUTPUT_CONNECTIONS; ++i)
+    {
+        connections.push_back(IO::bind(IO::OutputRef{output}, IO::InputRef{inputs[i]}));
+        ASSERT_TRUE(static_cast<bool>(connections.back())) << i;
+    }
+    EXPECT_TRUE(output.full());
+    EXPECT_TRUE(IO::OutputRef{output}.full());
+
+    // One more is refused instead of overflowing the fixed vector
+    IO::Connection extra = IO::bind(IO::OutputRef{output}, IO::InputRef{inputs.back()});
+    EXPECT_FALSE(static_cast<bool>(extra));
+    output = 1;
+    EXPECT_FALSE(inputs.back().ready());
+
+    // Unbinding one makes room again
+    connections.pop_back();
+    EXPECT_FALSE(output.full());
+}
+
+TEST_F(PipelineConnectionsTest, inputs_bound_outside_the_configuration_count_for_the_capacity)
+{
+    // The output already feeds the maximum number of inputs, bound by hand
+    std::vector<IO::TInput<int>> probes(DUCTA_MAX_OUTPUT_CONNECTIONS);
+    std::vector<IO::Connection> manual;
+    for (auto& probe : probes)
+    {
+        manual.push_back(IO::bind(IO::OutputRef{source.out}, IO::InputRef{probe}));
+    }
+    connect("src.out", "dst.in1");
+
+    EXPECT_FALSE(pipeline.configure(nodes, config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u) << describe(diagnostics);
+    EXPECT_EQ(
+        str(diagnostics[0].message),
+        "output 'src.out' is connected to more than " +
+            std::to_string(DUCTA_MAX_OUTPUT_CONNECTIONS) + " inputs");
+}
+#endif
 
 TEST_F(PipelineConnectionsTest, unknown_node_in_order)
 {

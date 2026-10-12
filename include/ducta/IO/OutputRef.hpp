@@ -29,6 +29,7 @@ private:
     {
         Connection (*do_bind)(void*, InputRef&);
         TypeIndex (*type_id)(void*);
+        bool (*is_full)(void const*);
     };
 
     template <class T>
@@ -40,6 +41,9 @@ private:
             },
             +[](void* obj) -> TypeIndex {
                 return ::ducta::type_id<T>();
+            },
+            +[](void const* obj) -> bool {
+                return static_cast<T const*>(obj)->full();
             }};
         return vt;
     }
@@ -67,6 +71,14 @@ public:
     Connection do_bind(InputRef input)
     {
         return m_vtable->do_bind(m_output_object, input);
+    }
+
+    /**
+     * @brief Whether no further input can be bound to the output (see TOutput::full)
+     */
+    bool full() const
+    {
+        return m_vtable->is_full(m_output_object);
     }
 
     /**

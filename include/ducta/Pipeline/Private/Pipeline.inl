@@ -3,6 +3,10 @@
 
 #include "ducta/Pipeline/Pipeline.hpp"
 
+#if defined(__cpp_exceptions)
+#include <exception>
+#endif
+
 #include "ducta/Core/Algorithms/Adapters.hpp"
 #include "ducta/Core/Config.hpp"
 #include "ducta/Utils/Log.hpp"
@@ -78,15 +82,10 @@ DUCTA_DECL bool Pipeline::configure(
         }
 
         /* Only the connections actually made count: a rejected one reports its own problem */
-        size_t fan_out = 0;
         bool connected_twice = false;
         for (size_t j : connected)
         {
             PortLink const& previous = config.connections[j];
-            if (previous.output.node == link.output.node && previous.output.name == link.output.name)
-            {
-                ++fan_out;
-            }
             if (previous.input.node == link.input.node && previous.input.name == link.input.name)
             {
                 connected_twice = true;
@@ -98,7 +97,8 @@ DUCTA_DECL bool Pipeline::configure(
                 PropNode{}, "input '{}.{}' is connected more than once", input_node, input_name);
             continue;
         }
-        if (fan_out >= DUCTA_MAX_OUTPUT_CONNECTIONS)
+        /* Asks the output itself, so inputs bound to it outside the configuration count too */
+        if (output->second.full())
         {
             diagnostics.errorf(
                 PropNode{},
@@ -284,6 +284,12 @@ DUCTA_DECL bool Pipeline::iterateWithTrace()
                 "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
+        catch (...)
+        {
+            // Close the frame before passing the exception on, or the next frame_start() fails
+            m_trace_info.frame_end(m_clock.now());
+            throw;
+        }
     }
 
     m_trace_info.frame_end(m_clock.now());
@@ -304,11 +310,35 @@ DUCTA_DECL bool Pipeline::iterateWithTrace()
 
 DUCTA_DECL void Pipeline::release()
 {
+#if defined(__cpp_exceptions)
+    // Every node is released even if one throws; the first exception is passed on afterwards
+    std::exception_ptr first_error;
+    for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
+    {
+        try
+        {
+            node_info.node.release();
+        }
+        catch (...)
+        {
+            if (!first_error)
+            {
+                first_error = std::current_exception();
+            }
+        }
+    }
+    m_event_wiring.disconnect();
+    if (first_error)
+    {
+        std::rethrow_exception(first_error);
+    }
+#else
     for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
     {
         node_info.node.release();
     }
     m_event_wiring.disconnect();
+#endif
 }
 
 DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
@@ -320,7 +350,23 @@ DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_t
 
 DUCTA_DECL PipelineEngine::~PipelineEngine()
 {
+#if defined(__cpp_exceptions)
+    // A destructor must not throw: an exception from a node's release() is logged
+    try
+    {
+        m_pipeline.release();
+    }
+    catch (std::exception const& e)
+    {
+        DUCTA_LOG_ERROR("Exception during release of the pipeline, what(): {}", e.what());
+    }
+    catch (...)
+    {
+        DUCTA_LOG_ERROR("Exception during release of the pipeline");
+    }
+#else
     m_pipeline.release();
+#endif
 }
 
 DUCTA_DECL int PipelineEngine::run()

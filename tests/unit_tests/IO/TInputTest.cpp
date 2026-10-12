@@ -7,7 +7,7 @@
 using namespace ducta;
 using namespace ducta::IO;
 
-TEST(TInputTests, types_check) 
+TEST(TInputTests, types_check)
 {
     {
         static_assert(std::is_same_v<IO::TInput<int>::value_type, int>);
@@ -30,7 +30,7 @@ TEST(TInputTests, types_check)
     }
 }
 
-TEST(TInputTests, value_input) 
+TEST(TInputTests, value_input)
 {
     int input_value = 10;
     IO::TInput<int> input{};
@@ -57,7 +57,7 @@ TEST(TInputTests, value_input)
     }
 }
 
-TEST(TInputTests, ref_input) 
+TEST(TInputTests, ref_input)
 {
     int input_value = 10;
     IO::TInput<int&> input{};

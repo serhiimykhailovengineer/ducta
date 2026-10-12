@@ -2,8 +2,8 @@
 #define DUCTA_CORE_TYPES_FUNCTION_REF_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/delegate.h>
+#include "ducta/Core/ETLProfile.hpp"
 #else
 #include <functional>
 #endif

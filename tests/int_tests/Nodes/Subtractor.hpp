@@ -24,7 +24,7 @@ public:
 
     void iterate()
     {
-        if(!left.ready() || !right.ready())
+        if (!left.ready() || !right.ready())
         {
             return;
         }
@@ -38,13 +38,8 @@ public:
 };
 
 } // namespace Test
-} // ducta
+} // namespace ducta
 
-DEFINE_NODE_INPUTS(ducta::Test::Subtractor<int>,
-    ("left", left),
-    ("right", right)
-);
+DEFINE_NODE_INPUTS(ducta::Test::Subtractor<int>, ("left", left), ("right", right));
 
-DEFINE_NODE_OUTPUTS(ducta::Test::Subtractor<int>,
-    ("result", result)
-);
+DEFINE_NODE_OUTPUTS(ducta::Test::Subtractor<int>, ("result", result));

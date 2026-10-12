@@ -6,46 +6,47 @@
 #ifndef DUCTA_T_INPUT_REF_HPP
 #define DUCTA_T_INPUT_REF_HPP
 
-#include "ducta/Core/Types/TypeIndex.hpp"
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
 
 /**
  * @brief Class that represents a type-erased reference of input. Read-only.
- * 
+ *
  */
 class InputRef
 {
 private:
-    struct VTable {
+    struct VTable
+    {
         bool (*is_ready)(void*);
         bool (*is_compatible)(void*, TypeIndex);
         void (*notify)(void*, TypeIndex, void const*);
         TypeIndex (*type_id)(void*);
     };
 
-    template<class T>
+    template <class T>
     static const VTable& vt_for()
     {
         static const VTable vt = {
-            +[](void* obj) -> bool { 
-                return static_cast<T*>(obj)->ready(); 
+            +[](void* obj) -> bool {
+                return static_cast<T*>(obj)->ready();
             },
-            +[](void* obj, TypeIndex type) -> bool { 
-                return static_cast<T*>(obj)->compatible(type); 
+            +[](void* obj, TypeIndex type) -> bool {
+                return static_cast<T*>(obj)->compatible(type);
             },
-            +[](void* obj, TypeIndex type, void const* value) { 
+            +[](void* obj, TypeIndex type, void const* value) {
                 using ValueType = typename T::value_type;
                 if (type != ::ducta::type_id<ValueType>())
                 {
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
                     throw std::runtime_error("Incompatible type for notification");
 #else
-                    // In embedded backend, we may not have exceptions, so we can handle this case differently, such as by logging an error or using an assertion
-                    // For this example, we'll just use an assertion
+                    // In embedded backend, we may not have exceptions, so we can handle this case
+                    // differently, such as by logging an error or using an assertion For this example, we'll just use an assertion
                     ETL_ASSERT(false, "Incompatible type for notification");
 #endif
                 }
@@ -53,9 +54,8 @@ private:
                 static_cast<T*>(obj)->notify(*static_cast<ValueType const*>(value));
             },
             +[](void* obj) -> TypeIndex {
-                return ::ducta::type_id<T>(); 
-            }
-        };
+                return ::ducta::type_id<T>();
+            }};
         return vt;
     }
 
@@ -65,12 +65,14 @@ public:
      * @tparam TInputType The concrete input type
      * @param input The input object to wrap
      */
-    template <typename TInputType,
-              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TInputType>, InputRef>>>
+    template <
+        typename TInputType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TInputType>, InputRef>>>
     explicit InputRef(TInputType& input)
         : m_input_object(&input)
         , m_vtable(&vt_for<::ducta::decay_t<TInputType>>())
-    {}
+    {
+    }
 
     /**
      * @brief Check if input has a ready value
@@ -110,18 +112,17 @@ public:
     template <typename InputT>
     InputT* as()
     {
-        if (type_id<InputT>() != m_vtable->type_id(m_input_object))
-            return nullptr;
+        if (type_id<InputT>() != m_vtable->type_id(m_input_object)) return nullptr;
 
         return static_cast<::ducta::decay_t<InputT>*>(m_input_object);
     }
 
     /**
-    * @brief Friend function to cast InputRef to concrete type
-    * @tparam InputT The concrete input type to cast to
-    * @param input The InputRef to cast
-    * @return Pointer to the concrete input type if successful, nullptr otherwise
-    */
+     * @brief Friend function to cast InputRef to concrete type
+     * @tparam InputT The concrete input type to cast to
+     * @param input The InputRef to cast
+     * @return Pointer to the concrete input type if successful, nullptr otherwise
+     */
     template <typename InputT>
     friend InputT* cast(InputRef input);
 
@@ -133,8 +134,7 @@ public:
      */
     friend bool operator==(InputRef const& lhs, InputRef const& rhs)
     {
-        if(lhs.m_vtable != rhs.m_vtable)
-            return false;
+        if (lhs.m_vtable != rhs.m_vtable) return false;
         return lhs.m_input_object == rhs.m_input_object;
     }
 

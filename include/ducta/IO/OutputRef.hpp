@@ -18,27 +18,27 @@ namespace IO {
 
 /**
  * @brief Class that represents a type-erased reference of output.
- * 
+ *
  */
 class OutputRef
 {
 private:
-    struct VTable {
+    struct VTable
+    {
         Connection (*do_bind)(void*, InputRef&);
         TypeIndex (*type_id)(void*);
     };
 
-    template<class T>
+    template <class T>
     static const VTable& vt_for()
     {
         static const VTable vt = {
             +[](void* obj, InputRef& input) -> Connection {
-                return static_cast<T*>(obj)->bind(input); 
+                return static_cast<T*>(obj)->bind(input);
             },
             +[](void* obj) -> TypeIndex {
-                return ::ducta::type_id<T>(); 
-            }
-        };
+                return ::ducta::type_id<T>();
+            }};
         return vt;
     }
 
@@ -48,12 +48,14 @@ public:
      * @tparam TOutputType The concrete output type
      * @param output The output object to wrap
      */
-    template <typename TOutputType,
-              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TOutputType>, OutputRef>>>
+    template <
+        typename TOutputType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TOutputType>, OutputRef>>>
     explicit OutputRef(TOutputType& output)
-    : m_output_object{&output}
-    , m_vtable{&vt_for<::ducta::decay_t<TOutputType>>()}
-    {}
+        : m_output_object{&output}
+        , m_vtable{&vt_for<::ducta::decay_t<TOutputType>>()}
+    {
+    }
 
     /**
      * @brief Bind the output to an input
@@ -73,8 +75,7 @@ public:
      */
     friend bool operator==(OutputRef const& lhs, OutputRef const& rhs)
     {
-        if(lhs.m_vtable != rhs.m_vtable)
-            return false;
+        if (lhs.m_vtable != rhs.m_vtable) return false;
         return lhs.m_output_object == rhs.m_output_object;
     }
 

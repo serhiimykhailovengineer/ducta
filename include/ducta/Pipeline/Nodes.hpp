@@ -1,12 +1,12 @@
 #ifndef DUCTA_PIPELINE_NODES_HPP
 #define DUCTA_PIPELINE_NODES_HPP
 
-#include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Core/Types/Map.hpp"
-#include "ducta/Core/Types/StringView.hpp"
-#include "ducta/Core/Types/String.hpp"
 #include "ducta/Core/Types/Optional.hpp"
+#include "ducta/Core/Types/String.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Utility.hpp"
+#include "ducta/Pipeline/NodeInfo.hpp"
 
 namespace ducta {
 namespace Pipeline {
@@ -40,7 +40,6 @@ public:
         }
         return {};
     }
-    
 
 private:
     ::ducta::Map<NodeName, NodeRef, 50> m_nodes;

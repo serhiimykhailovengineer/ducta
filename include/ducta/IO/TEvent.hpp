@@ -10,7 +10,7 @@ namespace IO {
 /*
  * TEvent class template for emitting events of type T.
  */
-template<class T>
+template <class T>
 class TEvent
 {
 public:
@@ -21,21 +21,21 @@ public:
     TEvent() = default;
 
     /*
-        * @brief Emit an event of type EventType to the subscribed nodes
-        * @tparam EventType The type of the event
-        * @param event The event to emit
-    */
+     * @brief Emit an event of type EventType to the subscribed nodes
+     * @tparam EventType The type of the event
+     * @param event The event to emit
+     */
     void operator()(EventType const& event) const;
 
     /*
-        * @brief Subscribe to the event
-        * @param delegate The delegate to call when the event is emitted
-    */
+     * @brief Subscribe to the event
+     * @param delegate The delegate to call when the event is emitted
+     */
     void subscribe(EventDelegate delegate);
 
     /*
-        * @brief Unsubscribe from the event
-    */
+     * @brief Unsubscribe from the event
+     */
     void unsubscribe();
 
 private:

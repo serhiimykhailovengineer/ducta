@@ -1,12 +1,15 @@
 #include <gtest/gtest.h>
 
-#include "ducta/IO/TEvent.hpp"
-#include "ducta/IO/EventRef.hpp"
 #include "ducta/IO/EventHandler.hpp"
+#include "ducta/IO/EventRef.hpp"
+#include "ducta/IO/TEvent.hpp"
 
 namespace {
 
-struct ExactEvent { int value; };
+struct ExactEvent
+{
+    int value;
+};
 
 struct Consumer
 {
@@ -28,7 +31,8 @@ using ExactHandler = ducta::IO::EventHandler<Consumer, &Consumer::OnExact>;
 
 TEST(EventHandlerTests, deduces_event_type)
 {
-    static_assert(ducta::is_same_v<ExactHandler::EventType, ExactEvent>, "event type must be deduced");
+    static_assert(
+        ducta::is_same_v<ExactHandler::EventType, ExactEvent>, "event type must be deduced");
     SUCCEED();
 }
 

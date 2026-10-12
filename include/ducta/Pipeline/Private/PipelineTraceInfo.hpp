@@ -4,11 +4,11 @@
 #include "ducta/Chrono/Chrono.hpp"
 #include "ducta/Core/Types/StringView.hpp"
 
-#include "ducta/Core/Types/Vector.hpp"
-#include "ducta/Core/Types/String.hpp"
-#include "ducta/Core/Types/Span.hpp"
-#include "ducta/Core/Types/TypeRegistry.hpp"
 #include "ducta/Core/Assert.hpp"
+#include "ducta/Core/Types/Span.hpp"
+#include "ducta/Core/Types/String.hpp"
+#include "ducta/Core/Types/TypeRegistry.hpp"
+#include "ducta/Core/Types/Vector.hpp"
 
 namespace ducta {
 namespace Pipeline {
@@ -30,16 +30,16 @@ struct EventTraceInfo
     size_t emitter_index;
     size_t receiver_index;
     ::ducta::Private::TypeId event_id;
-    Chrono::TimestampUS timestamp;  // delivery start
-    Chrono::TimestampUS duration;   // time spent in the receiver's OnEvent
+    Chrono::TimestampUS timestamp; // delivery start
+    Chrono::TimestampUS duration; // time spent in the receiver's OnEvent
 };
 
 struct FrameTraceInfo
-{ 
+{
     size_t frame_index;
-    Chrono::TimestampUS frame_start; 
-    Chrono::TimestampUS frame_end; 
-    Vector<Chrono::TimestampUS, MAX_TRACED_NODES> nodes_durations; 
+    Chrono::TimestampUS frame_start;
+    Chrono::TimestampUS frame_end;
+    Vector<Chrono::TimestampUS, MAX_TRACED_NODES> nodes_durations;
     Vector<EventTraceInfo, MAX_TRACED_EVENTS_PER_FRAME> events;
 };
 
@@ -48,7 +48,6 @@ namespace Private {
 class PipelineTraceInfo
 {
 public:
-
     void configure(Span<StringView const> const& node_names)
     {
         m_node_names = node_names;
@@ -59,7 +58,7 @@ public:
     void frame_start(Chrono::TimestampUS ts)
     {
         DUCTA_ASSERT(!m_frame_open);
-    
+
         m_frames_info.emplace_back();
 
         auto& current_frame_info = m_frames_info.back();
@@ -90,7 +89,7 @@ public:
         current_frame_info.nodes_durations[node_index] = ts;
     }
 
-    bool frame_open() const 
+    bool frame_open() const
     {
         return m_frame_open;
     }

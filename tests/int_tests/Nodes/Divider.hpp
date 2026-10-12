@@ -10,7 +10,8 @@ namespace ducta {
 namespace Test {
 
 template <class T>
-class Divider {
+class Divider
+{
 public:
     IO::TInput<T> left;
     IO::TInput<T> denominator;
@@ -54,14 +55,9 @@ public:
     }
 };
 
-} // Test
-} // ducta
+} // namespace Test
+} // namespace ducta
 
-DEFINE_NODE_INPUTS(ducta::Test::Divider<int>,
-    ("left", left),
-    ("denominator", denominator)
-);
+DEFINE_NODE_INPUTS(ducta::Test::Divider<int>, ("left", left), ("denominator", denominator));
 
-DEFINE_NODE_OUTPUTS(ducta::Test::Divider<int>,
-    ("result", result)
-);
+DEFINE_NODE_OUTPUTS(ducta::Test::Divider<int>, ("result", result));

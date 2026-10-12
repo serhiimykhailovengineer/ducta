@@ -1,28 +1,38 @@
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <initializer_list>
 #include <vector>
 
-#include "ducta/IO/TEvent.hpp"
 #include "ducta/IO/DefineEvents.hpp"
+#include "ducta/IO/TEvent.hpp"
 
-#include "ducta/Pipeline/Pipeline.hpp"
-#include "ducta/Pipeline/Nodes.hpp"
 #include "ducta/Pipeline/ClockMock.hpp"
+#include "ducta/Pipeline/Nodes.hpp"
+#include "ducta/Pipeline/Pipeline.hpp"
 
 using namespace ducta;
 
 namespace {
 
-struct Ping { int value; };
-struct Pong { int value; };
+struct Ping
+{
+    int value;
+};
+struct Pong
+{
+    int value;
+};
 
 struct Emitter
 {
     IO::TEvent<Ping> ping;
     IO::TEvent<Pong> pong;
-    void init() {}
-    void release() {}
+    void init()
+    {
+    }
+    void release()
+    {
+    }
 };
 
 struct PingReceiver
@@ -30,9 +40,17 @@ struct PingReceiver
     using SupportedEvents = EventList<Ping>;
     int calls = 0;
     int last = 0;
-    void init() {}
-    void release() {}
-    void OnEvent(Ping const& e) { ++calls; last = e.value; }
+    void init()
+    {
+    }
+    void release()
+    {
+    }
+    void OnEvent(Ping const& e)
+    {
+        ++calls;
+        last = e.value;
+    }
 };
 
 struct PingPongReceiver
@@ -40,10 +58,20 @@ struct PingPongReceiver
     using SupportedEvents = EventList<Ping, Pong>;
     int pings = 0;
     int pongs = 0;
-    void init() {}
-    void release() {}
-    void OnEvent(Ping const&) { ++pings; }
-    void OnEvent(Pong const&) { ++pongs; }
+    void init()
+    {
+    }
+    void release()
+    {
+    }
+    void OnEvent(Ping const&)
+    {
+        ++pings;
+    }
+    void OnEvent(Pong const&)
+    {
+        ++pongs;
+    }
 };
 
 // Receives Ping and emits Pong in response (receiver + emitter in one node).
@@ -51,18 +79,32 @@ struct Relay
 {
     using SupportedEvents = EventList<Ping>;
     IO::TEvent<Pong> pong;
-    void init() {}
-    void release() {}
-    void OnEvent(Ping const& e) { pong(Pong{e.value + 1}); }
+    void init()
+    {
+    }
+    void release()
+    {
+    }
+    void OnEvent(Ping const& e)
+    {
+        pong(Pong{e.value + 1});
+    }
 };
 
 // Emits Ping from iterate().
 struct Producer
 {
     IO::TEvent<Ping> ping;
-    void init() {}
-    void release() {}
-    void iterate() { ping(Ping{1}); }
+    void init()
+    {
+    }
+    void release()
+    {
+    }
+    void iterate()
+    {
+        ping(Ping{1});
+    }
 };
 
 // Handles the very event it emits.
@@ -71,23 +113,43 @@ struct SelfListener
     using SupportedEvents = EventList<Pong>;
     IO::TEvent<Pong> pong;
     int calls = 0;
-    void init() {}
-    void release() {}
-    void OnEvent(Pong const&) { ++calls; }
+    void init()
+    {
+    }
+    void release()
+    {
+    }
+    void OnEvent(Pong const&)
+    {
+        ++calls;
+    }
 };
 
 struct TickClock
 {
     Chrono::TimestampUS t{0};
-    Chrono::TimestampUS now() { t += Chrono::TimestampUS{10}; return t; }
-    Chrono::TimestampUS epoch() { return Chrono::TimestampUS{0}; }
-    void sleepFor(Chrono::TimestampUS) {}
+    Chrono::TimestampUS now()
+    {
+        t += Chrono::TimestampUS{10};
+        return t;
+    }
+    Chrono::TimestampUS epoch()
+    {
+        return Chrono::TimestampUS{0};
+    }
+    void sleepFor(Chrono::TimestampUS)
+    {
+    }
 };
 
 struct Silent
 {
-    void init() {}
-    void release() {}
+    void init()
+    {
+    }
+    void release()
+    {
+    }
 };
 
 } // namespace
@@ -254,7 +316,10 @@ struct TracedFixture : ::testing::Test
     Pipeline::Nodes nodes;
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock}};
 
-    struct Frame { std::vector<Pipeline::EventTraceInfo> events; };
+    struct Frame
+    {
+        std::vector<Pipeline::EventTraceInfo> events;
+    };
     std::vector<Frame> frames;
     size_t name_count = 0;
 
@@ -343,10 +408,10 @@ TEST_F(TracedFixture, event_emitted_outside_of_frame_is_not_traced)
 {
     ASSERT_TRUE(configure(true));
 
-    producer.ping(Ping{5});   // no frame is open
+    producer.ping(Ping{5}); // no frame is open
     EXPECT_EQ(receiver.calls, 1);
 
     ASSERT_TRUE(pipeline.iterate());
     ASSERT_EQ(frames.size(), 1);
-    EXPECT_EQ(frames[0].events.size(), 1);   // only the one from the iterate()
+    EXPECT_EQ(frames[0].events.size(), 1); // only the one from the iterate()
 }

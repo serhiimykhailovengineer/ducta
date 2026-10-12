@@ -1,8 +1,8 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP
 #define DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP
 
-#include "ducta/Core/Types/Expected.hpp"
 #include "ducta/Core/Types/Error.hpp"
+#include "ducta/Core/Types/Expected.hpp"
 
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Utility.hpp"
@@ -17,60 +17,94 @@ template <class...>
 using void_t = void;
 
 template <class T, class = void>
-struct has_iterate : ::ducta::false_type {};
+struct has_iterate : ::ducta::false_type
+{
+};
 
 template <class T>
-struct has_iterate<T, void_t<decltype(::ducta::declval<T&>().iterate())>> : ::ducta::true_type {};
+struct has_iterate<T, void_t<decltype(::ducta::declval<T&>().iterate())>> : ::ducta::true_type
+{
+};
 
 template <class T>
 constexpr bool has_iterate_v = has_iterate<T>::value;
 
 template <class T, class = void>
-struct has_value_error_types : ::ducta::false_type {};
+struct has_value_error_types : ::ducta::false_type
+{
+};
 
 template <class T>
-struct has_value_error_types<T, void_t<typename T::value_type, typename T::error_type>> : ::ducta::true_type {};
+struct has_value_error_types<T, void_t<typename T::value_type, typename T::error_type>>
+    : ::ducta::true_type
+{
+};
 template <class R, class = void>
-struct is_expected_like : ::ducta::false_type {};
+struct is_expected_like : ::ducta::false_type
+{
+};
 
 template <class R>
-struct is_expected_like<R, void_t<
-    typename R::value_type,
-    typename R::error_type,
-    decltype(static_cast<bool>(::ducta::declval<R&>())),
-    decltype(::ducta::declval<R&>().error())
->> : ::ducta::true_type {};
+struct is_expected_like<
+    R,
+    void_t<
+        typename R::value_type,
+        typename R::error_type,
+        decltype(static_cast<bool>(::ducta::declval<R&>())),
+        decltype(::ducta::declval<R&>().error())>> : ::ducta::true_type
+{
+};
 
 template <class R>
 constexpr bool is_expected_like_v = is_expected_like<R>::value;
 
 template <class R, class = void>
-struct has_deref : ::ducta::false_type {};
+struct has_deref : ::ducta::false_type
+{
+};
 
 template <class R>
-struct has_deref<R, void_t<decltype(*::ducta::declval<R&>())>> : ::ducta::true_type {};
+struct has_deref<R, void_t<decltype(*::ducta::declval<R&>())>> : ::ducta::true_type
+{
+};
 template <class R, class = void>
-struct has_value_fn : ::ducta::false_type {};
+struct has_value_fn : ::ducta::false_type
+{
+};
 
 template <class R>
-struct has_value_fn<R, void_t<decltype(::ducta::declval<R&>().value())>> : ::ducta::true_type {};
+struct has_value_fn<R, void_t<decltype(::ducta::declval<R&>().value())>> : ::ducta::true_type
+{
+};
 
 template <class R, class = void>
-struct has_message : ::ducta::false_type {};
+struct has_message : ::ducta::false_type
+{
+};
 
 template <class R>
-struct has_message<R, void_t<decltype(::ducta::declval<R&>().message)>> : ::ducta::true_type {};
+struct has_message<R, void_t<decltype(::ducta::declval<R&>().message)>> : ::ducta::true_type
+{
+};
 
 template <class R, class = void>
-struct has_message_fn : ::ducta::false_type {};
+struct has_message_fn : ::ducta::false_type
+{
+};
 
 template <class R>
-struct has_message_fn<R, void_t<decltype(::ducta::declval<R&>().message())>> : ::ducta::true_type {};
+struct has_message_fn<R, void_t<decltype(::ducta::declval<R&>().message())>> : ::ducta::true_type
+{
+};
 template <class R, class = void>
-struct has_what : ::ducta::false_type {};
+struct has_what : ::ducta::false_type
+{
+};
 
 template <class R>
-struct has_what<R, void_t<decltype(::ducta::declval<R&>().what())>> : ::ducta::true_type {};
+struct has_what<R, void_t<decltype(::ducta::declval<R&>().what())>> : ::ducta::true_type
+{
+};
 
 template <class R>
 bool expected_bool_value(R& r) noexcept
@@ -110,7 +144,6 @@ Error convert_to_error(E const& e) noexcept
     }
 }
 
-
 template <typename NodeType>
 Expected<bool, Error> call_iterate(NodeType& node, Chrono::TimestampUS timestamp)
 {
@@ -140,8 +173,9 @@ Expected<bool, Error> call_iterate(NodeType& node, Chrono::TimestampUS timestamp
             }
             return true;
         }
-        else if constexpr (is_expected_like_v<R> && ::ducta::is_same_v<typename R::value_type, bool> &&
-                           (has_deref<R>::value || has_value_fn<R>::value))
+        else if constexpr (
+            is_expected_like_v<R> && ::ducta::is_same_v<typename R::value_type, bool> &&
+            (has_deref<R>::value || has_value_fn<R>::value))
         {
             auto r = node.iterate();
             if (!r)
@@ -152,8 +186,10 @@ Expected<bool, Error> call_iterate(NodeType& node, Chrono::TimestampUS timestamp
         }
         else
         {
-            static_assert(sizeof(NodeType) == 0,
-                "Unsupported iterate() signature. Use void, bool, or expected-like with value_type/error_type.");
+            static_assert(
+                sizeof(NodeType) == 0,
+                "Unsupported iterate() signature. Use void, bool, or expected-like with "
+                "value_type/error_type.");
         }
     }
     return true;

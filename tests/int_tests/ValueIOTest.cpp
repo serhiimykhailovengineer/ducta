@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "ducta/IO/TInput.hpp"
-#include "ducta/IO/TOutput.hpp"
+#include "ducta/IO/Connection.hpp"
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
-#include "ducta/IO/Connection.hpp"
+#include "ducta/IO/TInput.hpp"
+#include "ducta/IO/TOutput.hpp"
 
 #include "ducta/Core/Types/StringView.hpp"
 
@@ -30,17 +30,20 @@ public:
     Map<StringView, IO::InputRef, 25> get_inputs()
     {
         Map<StringView, IO::InputRef, 25> inputs_ref;
-        
-        inputs_ref.insert(::ducta::make_pair<StringView, IO::InputRef>("left", IO::InputRef{inputs.left}));
-        inputs_ref.insert(::ducta::make_pair<StringView, IO::InputRef>("right", IO::InputRef{inputs.right}));
+
+        inputs_ref.insert(
+            ::ducta::make_pair<StringView, IO::InputRef>("left", IO::InputRef{inputs.left}));
+        inputs_ref.insert(
+            ::ducta::make_pair<StringView, IO::InputRef>("right", IO::InputRef{inputs.right}));
         return inputs_ref;
     }
 
     Map<StringView, IO::OutputRef, 25> get_outputs()
     {
         Map<StringView, IO::OutputRef, 25> outputs_ref;
-        
-        outputs_ref.insert(::ducta::make_pair<StringView, IO::OutputRef>("result", IO::OutputRef{outputs.result}));
+
+        outputs_ref.insert(
+            ::ducta::make_pair<StringView, IO::OutputRef>("result", IO::OutputRef{outputs.result}));
         return outputs_ref;
     }
 
@@ -50,7 +53,7 @@ public:
     }
 };
 
-TEST(ValueIOTest, multiplier_process) 
+TEST(ValueIOTest, multiplier_process)
 {
     IO::TOutput<int> left;
     IO::TOutput<int> right;

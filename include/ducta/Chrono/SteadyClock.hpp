@@ -14,19 +14,19 @@ public:
     /*
      * @brief Get the epoch timestamp of the steady clock (usually 0)
      * @return The epoch timestamp of the steady clock
-    */
+     */
     Timestamp epoch() const;
 
     /*
      * @brief Get the current timestamp of the steady clock
      * @return The current timestamp of the steady clock
-    */
+     */
     Timestamp now() const;
 
     /*
      * @brief Sleep for the specified duration using the steady clock
      * @param duration The duration to sleep
-    */
+     */
     void sleepFor(Timestamp duration) const;
 };
 

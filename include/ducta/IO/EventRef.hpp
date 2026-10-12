@@ -17,13 +17,14 @@ public:
     using EventDelegate = FunctionRef<void(void*)>;
 
 private:
-    struct VTable {
+    struct VTable
+    {
         void (*subscribe)(void*, EventDelegate);
         void (*unsubscribe)(void*);
         ::ducta::Private::TypeId (*type_id)(void*);
     };
 
-    template<class T>
+    template <class T>
     static const VTable& vt_for()
     {
         static const VTable vt = {
@@ -35,18 +36,19 @@ private:
             },
             +[](void*) {
                 return DUCTA_TYPE_ID(typename T::EventType);
-            }
-        };
+            }};
         return vt;
     }
 
 public:
-    template <typename TEventType,
-              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TEventType>, EventRef>>>
+    template <
+        typename TEventType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<TEventType>, EventRef>>>
     explicit EventRef(TEventType& event)
         : m_event_object(&event)
         , m_vtable(&vt_for<::ducta::decay_t<TEventType>>())
-    {}
+    {
+    }
 
     ::ducta::Private::TypeId type_id() const
     {
@@ -70,7 +72,10 @@ private:
 template <typename Node>
 struct NodeEventsTraits
 {
-    static ::ducta::Map<::ducta::StringView, EventRef, 25> get(Node&) { return {}; }
+    static ::ducta::Map<::ducta::StringView, EventRef, 25> get(Node&)
+    {
+        return {};
+    }
 };
 
 } // namespace IO

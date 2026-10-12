@@ -1,10 +1,9 @@
 #ifndef DUCTA_CORE_TYPES_VECTOR_HPP
 #define DUCTA_CORE_TYPES_VECTOR_HPP
 
-
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/vector.h>
+#include "ducta/Core/ETLProfile.hpp"
 #else
 #include <vector>
 #endif
@@ -32,8 +31,8 @@ Vector<T, MAX_SIZE> makeVector(Args&&... args)
     return vec;
 }
 
-template< class InputIt, class T >
-InputIt find(InputIt first, InputIt last, T const& value )
+template <class InputIt, class T>
+InputIt find(InputIt first, InputIt last, T const& value)
 {
     for (; first != last; ++first)
     {

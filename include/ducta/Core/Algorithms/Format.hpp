@@ -2,13 +2,13 @@
 #define DUCTA_CORE_ALGORITHM_FORMAT_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/format.h>
+#include "ducta/Core/ETLProfile.hpp"
 #else
 #include <fmt/format.h>
 
-#include <utility>
 #include <iterator>
+#include <utility>
 #endif
 
 #include "ducta/Core/Utility.hpp"

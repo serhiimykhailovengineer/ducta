@@ -8,24 +8,29 @@ namespace Pipeline {
 class StopToken
 {
 private:
-    struct VTable {
-        bool (*stopRequested)(void const*) ;
+    struct VTable
+    {
+        bool (*stopRequested)(void const*);
     };
 
-    template<class T>
+    template <class T>
     static const VTable& vt_for()
     {
         static const VTable vt = {
-            +[](void const* obj) -> bool { return static_cast<T const*>(obj)->stopRequested(); },
+            +[](void const* obj) -> bool {
+                return static_cast<T const*>(obj)->stopRequested();
+            },
         };
         return vt;
     }
+
 public:
-template <typename StopTokenType,
-              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<StopTokenType>, StopToken>>>
+    template <
+        typename StopTokenType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<StopTokenType>, StopToken>>>
     StopToken(StopTokenType const& stopToken)
-    : m_stop_token_obj{&stopToken}
-    , m_vtable{&vt_for<StopTokenType>()}
+        : m_stop_token_obj{&stopToken}
+        , m_vtable{&vt_for<StopTokenType>()}
     {
     }
 

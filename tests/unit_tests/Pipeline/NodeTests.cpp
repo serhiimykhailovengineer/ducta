@@ -2,13 +2,13 @@
 
 #include <gmock/gmock.h>
 
-#include "ducta/IO/TInput.hpp"
-#include "ducta/IO/TOutput.hpp"
+#include "ducta/IO/DefineEvents.hpp"
 #include "ducta/IO/DefineInputs.hpp"
 #include "ducta/IO/DefineOutputs.hpp"
-#include "ducta/IO/TEvent.hpp"
-#include "ducta/IO/DefineEvents.hpp"
 #include "ducta/IO/EventHandler.hpp"
+#include "ducta/IO/TEvent.hpp"
+#include "ducta/IO/TInput.hpp"
+#include "ducta/IO/TOutput.hpp"
 
 #include "ducta/Pipeline/NodeRef.hpp"
 
@@ -32,15 +32,17 @@ public:
 struct EmptyNode
 {
     void init()
-    {}
+    {
+    }
 
     void release()
-    {}
+    {
+    }
 };
 
 using namespace ducta;
 
-TEST(NodeTests, iterable_node_test) 
+TEST(NodeTests, iterable_node_test)
 {
     IterableNodeMock node_mock;
 
@@ -55,7 +57,7 @@ TEST(NodeTests, iterable_node_test)
     node.release();
 }
 
-TEST(NodeTests, non_iterable_node_test) 
+TEST(NodeTests, non_iterable_node_test)
 {
     NonIterableNodeMock node_mock;
 
@@ -69,52 +71,57 @@ TEST(NodeTests, non_iterable_node_test)
     node_ref.release();
 }
 
-TEST(NodeTests, iterable_non_copy_non_move_node_test) 
+TEST(NodeTests, iterable_non_copy_non_move_node_test)
 {
     struct NonCopyNonMoveNode
     {
         NonCopyNonMoveNode(NonCopyNonMoveNode const&) = delete;
-        NonCopyNonMoveNode(NonCopyNonMoveNode &&) noexcept = delete;
+        NonCopyNonMoveNode(NonCopyNonMoveNode&&) noexcept = delete;
 
         NonCopyNonMoveNode& operator=(NonCopyNonMoveNode const&) = delete;
-        NonCopyNonMoveNode& operator=(NonCopyNonMoveNode &&) noexcept = delete;
+        NonCopyNonMoveNode& operator=(NonCopyNonMoveNode&&) noexcept = delete;
 
         int a;
         float b;
         std::string c;
 
         void init()
-        {}
+        {
+        }
 
         void iterate()
-        {}
+        {
+        }
 
         void release()
-        {}
+        {
+        }
     } node_instance{42, 54.4f, "yes"};
 
     Pipeline::NodeRef node_ref{node_instance};
 }
 
-TEST(NodeTests, non_iterable_non_copy_non_move_node_test) 
+TEST(NodeTests, non_iterable_non_copy_non_move_node_test)
 {
     struct NonCopyNonMoveNode
     {
         NonCopyNonMoveNode(NonCopyNonMoveNode const&) = delete;
-        NonCopyNonMoveNode(NonCopyNonMoveNode &&) noexcept = delete;
+        NonCopyNonMoveNode(NonCopyNonMoveNode&&) noexcept = delete;
 
         NonCopyNonMoveNode& operator=(NonCopyNonMoveNode const&) = delete;
-        NonCopyNonMoveNode& operator=(NonCopyNonMoveNode &&) noexcept = delete;
+        NonCopyNonMoveNode& operator=(NonCopyNonMoveNode&&) noexcept = delete;
 
         int a;
         float b;
         std::string c;
 
         void init()
-        {}
+        {
+        }
 
         void release()
-        {}
+        {
+        }
     };
 
     NonCopyNonMoveNode node{42, 54.4f, "yes"};
@@ -122,16 +129,17 @@ TEST(NodeTests, non_iterable_non_copy_non_move_node_test)
     Pipeline::NodeRef node_ref{node};
 }
 
-
-TEST(NodeTests, empty_inputs_and_outputs) 
+TEST(NodeTests, empty_inputs_and_outputs)
 {
     struct EmptyNode
     {
         void init()
-        {}
+        {
+        }
 
         void release()
-        {}
+        {
+        }
     } empty_node;
 
     Pipeline::NodeRef node_ref{empty_node};
@@ -140,7 +148,6 @@ TEST(NodeTests, empty_inputs_and_outputs)
     EXPECT_EQ(node_ref.get_outputs().size(), 0U);
 }
 
-
 struct NodeWithInputsAndOutputs
 {
     IO::TInput<int> input1;
@@ -148,25 +155,23 @@ struct NodeWithInputsAndOutputs
     IO::TOutput<int> output1;
 
     NodeWithInputsAndOutputs()
-    {}
+    {
+    }
 
     void init()
-    {}
+    {
+    }
 
     void release()
-    {}
+    {
+    }
 };
 
-DEFINE_NODE_INPUTS(NodeWithInputsAndOutputs, 
-        ("input1", input1),
-        ("input2", input2)
-    );
+DEFINE_NODE_INPUTS(NodeWithInputsAndOutputs, ("input1", input1), ("input2", input2));
 
-DEFINE_NODE_OUTPUTS(NodeWithInputsAndOutputs, 
-        ("output1", output1)
-    );
+DEFINE_NODE_OUTPUTS(NodeWithInputsAndOutputs, ("output1", output1));
 
-TEST(NodeTests, check_inputs_and_outputs) 
+TEST(NodeTests, check_inputs_and_outputs)
 {
     NodeWithInputsAndOutputs node_instance;
     Pipeline::NodeRef node_ref{node_instance};
@@ -192,12 +197,13 @@ TEST(NodeTests, check_inputs_and_outputs)
     }
 }
 
-TEST(NodeTests, check_result_of_iterate) 
+TEST(NodeTests, check_result_of_iterate)
 {
     struct NodeWithBoolIterate
     {
         void init()
-        {}
+        {
+        }
 
         bool iterate()
         {
@@ -205,7 +211,8 @@ TEST(NodeTests, check_result_of_iterate)
         }
 
         void release()
-        {}
+        {
+        }
     } node_instance;
 
     Pipeline::NodeRef node_ref{node_instance};
@@ -217,7 +224,7 @@ TEST(NodeTests, check_result_of_iterate)
     node_ref.release();
 }
 
-TEST(NodeTests, check_result_of_iterate_with_expected) 
+TEST(NodeTests, check_result_of_iterate_with_expected)
 {
     struct NodeWithExpectedIterate
     {
@@ -225,7 +232,8 @@ TEST(NodeTests, check_result_of_iterate_with_expected)
         using error_type = Error;
 
         void init()
-        {}
+        {
+        }
 
         Expected<bool, Error> iterate()
         {
@@ -233,7 +241,8 @@ TEST(NodeTests, check_result_of_iterate_with_expected)
         }
 
         void release()
-        {}
+        {
+        }
     } node_instance;
 
     Pipeline::NodeRef node_ref{node_instance};
@@ -245,7 +254,7 @@ TEST(NodeTests, check_result_of_iterate_with_expected)
     node_ref.release();
 }
 
-TEST(NodeTests, check_result_of_iterate_with_expected_error) 
+TEST(NodeTests, check_result_of_iterate_with_expected_error)
 {
     struct NodeWithExpectedIterate
     {
@@ -253,7 +262,8 @@ TEST(NodeTests, check_result_of_iterate_with_expected_error)
         using error_type = Error;
 
         void init()
-        {}
+        {
+        }
 
         Expected<bool, Error> iterate()
         {
@@ -261,7 +271,8 @@ TEST(NodeTests, check_result_of_iterate_with_expected_error)
         }
 
         void release()
-        {}
+        {
+        }
     } node_instance;
 
     Pipeline::NodeRef node_ref{node_instance};
@@ -272,7 +283,7 @@ TEST(NodeTests, check_result_of_iterate_with_expected_error)
     node_ref.release();
 }
 
-TEST(NodeTests, check_result_of_custom_expected_like_iterate) 
+TEST(NodeTests, check_result_of_custom_expected_like_iterate)
 {
     struct CustomExpectedLike
     {
@@ -280,8 +291,10 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
         using error_type = Error;
 
         CustomExpectedLike(bool has_value, bool value = false)
-        : m_has_value{has_value}, m_value{value}
-        {}
+            : m_has_value{has_value}
+            , m_value{value}
+        {
+        }
 
         explicit operator bool() const
         {
@@ -306,7 +319,8 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
     struct NodeWithCustomExpectedLikeIterate
     {
         void init()
-        {}
+        {
+        }
 
         CustomExpectedLike iterate()
         {
@@ -314,7 +328,8 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
         }
 
         void release()
-        {}
+        {
+        }
     } node_instance;
 
     Pipeline::NodeRef node_ref{node_instance};
@@ -326,7 +341,7 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
     node_ref.release();
 }
 
-TEST(NodeTests, send_event_to_node_with_supported_event) 
+TEST(NodeTests, send_event_to_node_with_supported_event)
 {
     struct MyEvent
     {
@@ -338,7 +353,8 @@ TEST(NodeTests, send_event_to_node_with_supported_event)
         using SupportedEvents = EventList<MyEvent>;
 
         void init()
-        {}
+        {
+        }
 
         void OnEvent(MyEvent const& event)
         {
@@ -346,7 +362,8 @@ TEST(NodeTests, send_event_to_node_with_supported_event)
         }
 
         void release()
-        {}
+        {
+        }
 
         int m_last_event_value{0};
     } node_instance;
@@ -364,14 +381,24 @@ TEST(NodeTests, send_event_to_node_with_supported_event)
 
 namespace {
 
-struct PingEvent { int value; };
+struct PingEvent
+{
+    int value;
+};
 
 struct EmitterNode
 {
     ducta::IO::TEvent<PingEvent> ping;
-    void init() {}
-    void release() {}
-    void fire(int v) { ping(PingEvent{v}); }
+    void init()
+    {
+    }
+    void release()
+    {
+    }
+    void fire(int v)
+    {
+        ping(PingEvent{v});
+    }
 };
 
 struct PingReceiver
@@ -414,7 +441,8 @@ TEST(NodeTests, emitted_event_reaches_subscriber_via_node_ref)
     Pipeline::NodeRef node{emitter};
 
     auto events = node.get_events();
-    events.find("ping")->second.subscribe(makeFunctionRef<PingReceiver, &PingReceiver::OnRaw>(receiver));
+    events.find("ping")->second.subscribe(
+        makeFunctionRef<PingReceiver, &PingReceiver::OnRaw>(receiver));
 
     emitter.fire(1);
     emitter.fire(2);
@@ -428,9 +456,13 @@ struct PingConsumer
 {
     int calls = 0;
     int last = 0;
-    void OnExact(PingEvent const& e) { ++calls; last = e.value; }
+    void OnExact(PingEvent const& e)
+    {
+        ++calls;
+        last = e.value;
+    }
 };
-}
+} // namespace
 
 TEST(NodeTests, emitted_event_reaches_exact_typed_handler_via_node_ref)
 {

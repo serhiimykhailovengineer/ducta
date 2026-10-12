@@ -1,8 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_TYPEINDEX_HPP
 #define DUCTA_CORE_TYPES_TYPEINDEX_HPP
 
-#include "ducta/Core/Types/Integers.hpp"
 #include "ducta/Core/TypeTraits.hpp"
+#include "ducta/Core/Types/Integers.hpp"
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 
@@ -13,8 +13,7 @@
 namespace ducta {
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-namespace Private
-{
+namespace Private {
 template <class T>
 struct TypeAnchor
 {
@@ -44,7 +43,10 @@ struct TypeIndex
     }
 
     // Helpers
-    constexpr bool valid() const noexcept { return v != nullptr; }
+    constexpr bool valid() const noexcept
+    {
+        return v != nullptr;
+    }
 
     ::ducta::size_t hash() const noexcept
     {
@@ -55,7 +57,7 @@ struct TypeIndex
 template <typename T>
 constexpr TypeIndex type_id() noexcept
 {
-    return TypeIndex{ &Private::TypeAnchor<remove_cv_t<remove_reference_t<T>>>::anchor };
+    return TypeIndex{&Private::TypeAnchor<remove_cv_t<remove_reference_t<T>>>::anchor};
 }
 
 #else
@@ -71,4 +73,3 @@ TypeIndex type_id()
 } // namespace ducta
 
 #endif // DUCTA_CORE_TYPES_TYPEINDEX_HPP
-

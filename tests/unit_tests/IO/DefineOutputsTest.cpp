@@ -9,12 +9,9 @@ struct TestNode
     ducta::IO::TOutput<float> output2;
 };
 
-DEFINE_NODE_OUTPUTS(TestNode, 
-        ("output1", output1),
-        ("output2", output2)
-    );
+DEFINE_NODE_OUTPUTS(TestNode, ("output1", output1), ("output2", output2));
 
-TEST(DefineOutputsTests, base_test) 
+TEST(DefineOutputsTests, base_test)
 {
     TestNode node;
 

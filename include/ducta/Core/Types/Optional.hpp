@@ -2,8 +2,8 @@
 #define DUCTA_CORE_TYPES_OPTIONAL_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/optional.h>
+#include "ducta/Core/ETLProfile.hpp"
 #else
 #include <boost/optional.hpp>
 #endif
@@ -38,7 +38,8 @@ public:
     {
         // if (!has_value())
         // {
-        //     throw etl::optional_exception(ETL_ERROR_TEXT("optional:bad_access", "DUCTA_CORE_TYPES_OPTIONAL_HPP"), ETL_FILE, ETL_LINE);
+        //     throw etl::optional_exception(ETL_ERROR_TEXT("optional:bad_access",
+        //     "DUCTA_CORE_TYPES_OPTIONAL_HPP"), ETL_FILE, ETL_LINE);
         // }
         return *_ptr;
     }

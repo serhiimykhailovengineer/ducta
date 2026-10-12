@@ -5,7 +5,6 @@
 
 #include "ducta/Core/Types/ReferenceWrapper.hpp"
 
-
 using namespace ducta;
 
 class Input
@@ -16,8 +15,9 @@ class Input
 class InputRef
 {
     explicit InputRef(Input& input)
-    : ref(input)
-    {}
+        : ref(input)
+    {
+    }
 
     Input& ref;
 };
@@ -27,7 +27,7 @@ class InputRefWrapper
     ::ducta::reference_wrapper<Input> ref;
 };
 
-TEST(IOSizeTest, int_size) 
+TEST(IOSizeTest, int_size)
 {
     EXPECT_EQ(sizeof(int), 4);
     EXPECT_EQ(sizeof(Input), 8);

@@ -4,8 +4,8 @@
 
 #include "ducta/IO/Connection.hpp"
 
-#include "ducta/IO/TInputMock.hpp"
 #include "ducta/IO/InputRef.hpp"
+#include "ducta/IO/TInputMock.hpp"
 
 namespace ducta {
 namespace IO {
@@ -17,8 +17,7 @@ public:
     MOCK_METHOD(void, set_const_ref, (T const&), ());
     MOCK_METHOD(void, set_move, (T&&), ());
 
-    MOCK_METHOD(Connection, bind, (InputRef& input), ());
-
+    MOCK_METHOD(Connection, bind, (InputRef & input), ());
 };
 
 template <typename T>

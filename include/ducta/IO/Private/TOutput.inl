@@ -1,24 +1,24 @@
 #ifndef DUCTA_T_OUTPUT_INL
 #define DUCTA_T_OUTPUT_INL
 
-#include "ducta/IO/TInput.hpp"
-#include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/Connection.hpp"
+#include "ducta/IO/InputRef.hpp"
+#include "ducta/IO/TInput.hpp"
 
-#include "ducta/Core/Types/TypeIndex.hpp"
 #include "ducta/Core/Algorithms/Adapters.hpp"
+#include "ducta/Core/Types/TypeIndex.hpp"
 
 namespace ducta {
 namespace IO {
 
 template <typename T>
 TOutput<T>::TOutput()
-: _value{}
+    : _value{}
 {
 }
 
 template <typename T>
-void TOutput<T>::set(value_type const& value) 
+void TOutput<T>::set(value_type const& value)
 {
     _value = value;
     for (auto& input_ref : _inputs)
@@ -28,7 +28,7 @@ void TOutput<T>::set(value_type const& value)
 }
 
 template <typename T>
-void TOutput<T>::set(value_type&& value) 
+void TOutput<T>::set(value_type&& value)
 {
     _value = ::ducta::move(value);
     for (auto& input_ref : _inputs)
@@ -40,7 +40,7 @@ void TOutput<T>::set(value_type&& value)
 template <typename T>
 void TOutput<T>::update(FunctionRef<void(value_type&)> callback)
 {
-    if(!callback)
+    if (!callback)
     {
         return;
     }

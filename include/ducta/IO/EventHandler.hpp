@@ -8,7 +8,7 @@ namespace ducta {
 namespace IO {
 
 namespace Private {
-template<class T, class E>
+template <class T, class E>
 E event_arg_of(void (T::*)(E const&));
 } // namespace Private
 
@@ -21,13 +21,16 @@ E event_arg_of(void (T::*)(E const&));
  *   EventHandler<Consumer, &Consumer::OnExact> handler{consumer};
  *   event_ref.subscribe(handler.delegate());
  */
-template<class T, auto Method>
+template <class T, auto Method>
 class EventHandler
 {
 public:
     using EventType = decltype(Private::event_arg_of(Method));
 
-    explicit EventHandler(T& consumer) noexcept : m_consumer(&consumer) {}
+    explicit EventHandler(T& consumer) noexcept
+        : m_consumer(&consumer)
+    {
+    }
 
     EventHandler(EventHandler const&) = delete;
     EventHandler& operator=(EventHandler const&) = delete;

@@ -2,9 +2,9 @@
 #define DUCTA_CORE_TYPES_TYPEREGISTRY_HPP
 
 #include "ducta/Core/Types/Integers.hpp"
-#include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/String.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 
 #include "ducta/Core/Algorithms/Format.hpp"
 
@@ -14,7 +14,7 @@ namespace ducta {
 
 namespace Private {
 
-template<class T>
+template <class T>
 constexpr StringView auto_type_name()
 {
 #if defined(__clang__) || defined(__GNUC__)
@@ -55,11 +55,7 @@ public:
         return reg;
     }
 
-    TypeId register_or_get(
-        StringView type_name,
-        TypeFingerprint fingerprint,
-        StringView file,
-        int line)
+    TypeId register_or_get(StringView type_name, TypeFingerprint fingerprint, StringView file, int line)
     {
         // LockGuard lock(m_mutex);
 
@@ -67,20 +63,24 @@ public:
         if (it != m_entries.end())
         {
             TypeRegistryEntry* existing = &it->second;
-        
+
             if (existing->fingerprint.size != fingerprint.size ||
                 existing->fingerprint.align != fingerprint.align)
             {
                 String<200> Error_msg;
-                format_to(Error_msg, "Event type name collision: '{}' first registered at {}:{} "
+                format_to(
+                    Error_msg,
+                    "Event type name collision: '{}' first registered at {}:{} "
                     "(size={}, align={}), now requested with size={}, align={} at {}:{}",
                     type_name.data(),
-                    existing->registered_at_file.data(), existing->registered_at_line,
+                    existing->registered_at_file.data(),
+                    existing->registered_at_line,
                     static_cast<unsigned long long>(existing->fingerprint.size),
                     static_cast<unsigned long long>(existing->fingerprint.align),
                     static_cast<unsigned long long>(fingerprint.size),
                     static_cast<unsigned long long>(fingerprint.align),
-                    file.data(), line);
+                    file.data(),
+                    line);
                 // Assert::fail(Error_msg);
             }
             return existing->id;
@@ -89,8 +89,7 @@ public:
         TypeId id = m_next_id++;
         m_entries.insert(
             ::ducta::pair<StringView, TypeRegistryEntry>(
-                ::ducta::move(type_name), 
-                TypeRegistryEntry{id, fingerprint, file, line}));
+                ::ducta::move(type_name), TypeRegistryEntry{id, fingerprint, file, line}));
         return id;
     }
 
@@ -115,6 +114,5 @@ private:
 } // namespace Private
 
 } // namespace ducta
-
 
 #endif // DUCTA_CORE_TYPES_TYPEREGISTRY_HPP

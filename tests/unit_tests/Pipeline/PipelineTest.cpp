@@ -1,17 +1,17 @@
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
+#include "ducta/Pipeline/Clock.hpp"
 #include "ducta/Pipeline/NodeRef.hpp"
 #include "ducta/Pipeline/Pipeline.hpp"
-#include "ducta/Pipeline/Clock.hpp"
 
-#include "ducta/Pipeline/NodeMock.hpp"
 #include "ducta/Pipeline/ClockMock.hpp"
+#include "ducta/Pipeline/NodeMock.hpp"
 #include "ducta/Pipeline/StopTokenMock.hpp"
 
 using namespace ducta;
 
-TEST(PipelineTest, base_test) 
+TEST(PipelineTest, base_test)
 {
     Pipeline::ClockMock clock_mock;
 
@@ -77,7 +77,7 @@ TEST(PipelineTest, base_test)
     pipeline.release();
 }
 
-TEST(PipelineTest, iteration_with_failed_node) 
+TEST(PipelineTest, iteration_with_failed_node)
 {
     Pipeline::ClockMock clock_mock;
 
@@ -100,8 +100,7 @@ TEST(PipelineTest, iteration_with_failed_node)
     EXPECT_CALL(first_node_mock, init()).Times(1);
     EXPECT_CALL(second_node_mock, init()).Times(1);
     EXPECT_CALL(clock_mock, now()).WillRepeatedly(::testing::Return(Chrono::TimestampUS{0}));
-    EXPECT_CALL(first_node_mock, iterate())
-        .WillOnce(::testing::Return(Unexpected<Error>{Error{}}));
+    EXPECT_CALL(first_node_mock, iterate()).WillOnce(::testing::Return(Unexpected<Error>{Error{}}));
     EXPECT_CALL(second_node_mock, iterate()).Times(0);
     EXPECT_CALL(second_node_mock, release()).Times(1);
     EXPECT_CALL(first_node_mock, release()).Times(1);

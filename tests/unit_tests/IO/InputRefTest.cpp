@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "ducta/IO/TInputMock.hpp"
 #include "ducta/IO/InputRef.hpp"
+#include "ducta/IO/TInputMock.hpp"
 
 using namespace ducta;
 using namespace ducta::IO;
 
-TEST(InputRefTests, value_input) 
+TEST(InputRefTests, value_input)
 {
     IO::TInputMock<int> input{};
 
@@ -22,12 +22,12 @@ TEST(InputRefTests, value_input)
     EXPECT_NO_THROW(input_ref.notify<int>(42));
 }
 
-TEST(InputRefTests, copy_ref) 
+TEST(InputRefTests, copy_ref)
 {
     IO::TInputMock<int> input{};
 
     IO::InputRef input_ref{input};
-    
+
     IO::InputRef input_another_ref{input_ref};
 
     EXPECT_NE(&input_ref, &input_another_ref);

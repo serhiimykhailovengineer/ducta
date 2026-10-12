@@ -7,13 +7,13 @@
 namespace ducta {
 namespace IO {
 
-
 template <typename T>
 class TInputMock
 {
 public:
     using value_type = std::decay_t<T>;
-    using storage_type = std::conditional_t<std::is_reference<T>::value, const value_type&, value_type>;
+    using storage_type =
+        std::conditional_t<std::is_reference<T>::value, const value_type&, value_type>;
 
 public:
     MOCK_METHOD(bool, ready, (), (const));

@@ -5,13 +5,13 @@
 #ifndef DUCTA_T_OUTPUT_HPP
 #define DUCTA_T_OUTPUT_HPP
 
-#include "ducta/IO/TInput.hpp"
 #include "ducta/IO/InputRef.hpp"
+#include "ducta/IO/TInput.hpp"
 
+#include "ducta/Core/TypeTraits.hpp"
+#include "ducta/Core/Types/FunctionRef.hpp"
 #include "ducta/Core/Types/TypeIndex.hpp"
 #include "ducta/Core/Types/Vector.hpp"
-#include "ducta/Core/Types/FunctionRef.hpp"
-#include "ducta/Core/TypeTraits.hpp"
 
 #include "ducta/IO/Connection.hpp"
 
@@ -21,7 +21,7 @@ namespace IO {
 /**
  * @brief Class that represents an output of a specific type. It can bind to inputs of compatible type. Write-only.
  * @tparam T The type of value this output handles. Can be a value type.
- * 
+ *
  * This class provides methods to check compatibility with types, set values, and notify inputs of new values.
  */
 template <typename T>
@@ -37,39 +37,40 @@ public:
      */
     TOutput();
 
-    /** 
+    /**
      * @brief Set the output value by const reference
      * @param value The value to set
      */
     void set(value_type const& value);
 
-    /** 
+    /**
      * @brief Set the output value by move
      * @param value The value to set
      */
     void set(value_type&& value);
 
-    /** 
+    /**
      * @brief Update the output value by applying a callback function to the current value.
-     * @param callback The function to apply to the current value. It should take a reference to the current value and modify it.
+     * @param callback The function to apply to the current value. It should take a reference to the
+     * current value and modify it.
      */
     void update(FunctionRef<void(value_type&)> callback);
 
-    /** 
+    /**
      * @brief Assignment operator to set the output value by const reference
      * @param value The value to set
      * @return Reference to this output
      */
     TOutput<T>& operator=(value_type const& value);
 
-    /** 
+    /**
      * @brief Assignment operator to set the output value by move
      * @param value The value to set
      * @return Reference to this output
      */
     TOutput<T>& operator=(value_type&& value);
 
-    /** 
+    /**
      * @brief Bind the output to an input
      * @param input The input to bind to
      * @return A Connection object that will unbind the input upon destruction
@@ -77,7 +78,7 @@ public:
     Connection bind(InputRef const& input);
 
 private:
-    /** 
+    /**
      * @brief Unbind the output from an input
      * @param input The input to unbind from
      */

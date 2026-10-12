@@ -18,7 +18,9 @@ public:
     IO::TOutput<T> result;
 
 public:
-    void init() {}
+    void init()
+    {
+    }
 
     void iterate()
     {
@@ -30,17 +32,14 @@ public:
         result = left.value() * right.value();
     }
 
-    void release() {}
+    void release()
+    {
+    }
 };
 
-} // Test
-} // ducta
+} // namespace Test
+} // namespace ducta
 
-DEFINE_NODE_INPUTS(ducta::Test::Multiplier<int>,
-    ("left", left),
-    ("right", right)
-);
+DEFINE_NODE_INPUTS(ducta::Test::Multiplier<int>, ("left", left), ("right", right));
 
-DEFINE_NODE_OUTPUTS(ducta::Test::Multiplier<int>,
-    ("result", result)
-);
+DEFINE_NODE_OUTPUTS(ducta::Test::Multiplier<int>, ("result", result));

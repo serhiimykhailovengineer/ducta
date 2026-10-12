@@ -2,8 +2,8 @@
 #define DUCTA_CORE_TYPES_EXPECTED_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/expected.h>
+#include "ducta/Core/ETLProfile.hpp"
 
 #else
 
@@ -17,7 +17,7 @@ namespace ducta {
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 
-template<class Value, class Error>
+template <class Value, class Error>
 using Expected = etl::expected<Value, Error>;
 
 template <class Error>
@@ -25,7 +25,7 @@ using Unexpected = etl::unexpected<Error>;
 
 #else
 
-template<class Value, class Error>
+template <class Value, class Error>
 using Expected = boost::system::result<Value, Error>;
 
 template <class Error>
@@ -35,7 +35,7 @@ struct Unexpected
 
     // Convert to Expected<Value,Error> for any Value.
     template <class Value>
-    operator Expected<Value, Error>() const &
+    operator Expected<Value, Error>() const&
     {
         return {boost::system::in_place_error, error};
     }
@@ -48,8 +48,6 @@ struct Unexpected
 };
 
 #endif
-
-
 
 } // namespace ducta
 

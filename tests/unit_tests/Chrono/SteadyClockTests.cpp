@@ -7,21 +7,21 @@
 using namespace ducta;
 using namespace ducta::Chrono;
 
-TEST(SteadyClockTests, epoch_test) 
+TEST(SteadyClockTests, epoch_test)
 {
     SteadyClock clock;
     auto epoch = clock.epoch();
     EXPECT_EQ(epoch, SteadyClock::Timestamp{0});
 }
 
-TEST(SteadyClockTests, now_test) 
+TEST(SteadyClockTests, now_test)
 {
     SteadyClock clock;
     auto now = clock.now();
     EXPECT_GE(now, SteadyClock::Timestamp{0});
 }
 
-TEST(SteadyClockTests, sleep_for_test) 
+TEST(SteadyClockTests, sleep_for_test)
 {
     SteadyClock clock;
     auto start = clock.now();

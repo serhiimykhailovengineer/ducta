@@ -3,15 +3,15 @@
 
 #include "ducta/Pipeline/Pipeline.hpp"
 
-#include "ducta/Core/Config.hpp"
 #include "ducta/Core/Algorithms/Adapters.hpp"
+#include "ducta/Core/Config.hpp"
 #include "ducta/Utils/Log.hpp"
 
 namespace ducta {
 namespace Pipeline {
 
 DUCTA_DECL Pipeline::Pipeline(Clock&& clock)
-: m_clock(::ducta::move(clock))
+    : m_clock(::ducta::move(clock))
 {
 }
 
@@ -22,9 +22,8 @@ DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCal
     m_trace_flush_threshold = config.trace_flush_threshold;
     m_trace_callback = trace_callback;
 
-    m_iteration_strategy = m_trace_enabled
-        ? &Pipeline::iterateWithTrace
-        : &Pipeline::iterateWithoutTrace;
+    m_iteration_strategy =
+        m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
 
     m_event_wiring.disconnect();
     m_init_order.clear();
@@ -91,7 +90,8 @@ DUCTA_DECL bool Pipeline::iterateWithoutTrace()
         }
         catch (const std::exception& e)
         {
-            DUCTA_LOG_ERROR("Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
+            DUCTA_LOG_ERROR(
+                "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
     }
@@ -137,7 +137,8 @@ DUCTA_DECL bool Pipeline::iterateWithTrace()
         catch (const std::exception& e)
         {
             m_trace_info.frame_end(m_clock.now());
-            DUCTA_LOG_ERROR("Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
+            DUCTA_LOG_ERROR(
+                "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
     }
@@ -168,8 +169,8 @@ DUCTA_DECL void Pipeline::release()
 }
 
 DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
-: m_pipeline{pipeline}
-, m_stop_token{::ducta::move(stop_token)}
+    : m_pipeline{pipeline}
+    , m_stop_token{::ducta::move(stop_token)}
 {
     m_pipeline.init();
 }

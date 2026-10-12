@@ -2,8 +2,8 @@
 #define DUCTA_CORE_TYPETRAITS_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/type_traits.h>
+#include "ducta/Core/ETLProfile.hpp"
 
 #else
 
@@ -21,7 +21,7 @@ using false_type = etl::false_type;
 
 using etl::decay;
 
-template< class T >
+template <class T>
 using decay_t = typename decay<T>::type;
 
 using etl::is_same;
@@ -31,13 +31,13 @@ using etl::is_reference;
 
 using etl::conditional_t;
 
-using etl::enable_if_t;
 using etl::enable_if;
+using etl::enable_if_t;
 
-template<class T>
+template <class T>
 using remove_cv_t = typename etl::remove_cv<T>::type;
 
-template<class T>
+template <class T>
 using remove_reference_t = typename etl::remove_reference<T>::type;
 
 #else
@@ -59,14 +59,14 @@ using std::conditional_t;
 using std::enable_if;
 using std::enable_if_t;
 
-template<class T>
+template <class T>
 using remove_cv_t = typename std::remove_cv<T>::type;
-template<class T>
+template <class T>
 using remove_reference_t = typename std::remove_reference<T>::type;
 
 #endif
 
-template< class... >
+template <class...>
 using void_t = void;
 
 } // namespace ducta

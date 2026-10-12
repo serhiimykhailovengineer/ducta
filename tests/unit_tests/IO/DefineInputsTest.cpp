@@ -9,12 +9,9 @@ struct TestNode
     ducta::IO::TInput<float> input2;
 };
 
-DEFINE_NODE_INPUTS(TestNode, 
-        ("input1", input1),
-        ("input2", input2)
-    );
+DEFINE_NODE_INPUTS(TestNode, ("input1", input1), ("input2", input2));
 
-TEST(DefineInputsTests, base_test) 
+TEST(DefineInputsTests, base_test)
 {
     TestNode node;
 

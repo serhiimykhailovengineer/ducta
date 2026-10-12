@@ -1,11 +1,14 @@
 #include <gtest/gtest.h>
 
-#include "ducta/IO/TEvent.hpp"
 #include "ducta/Core/Types/FunctionRef.hpp"
+#include "ducta/IO/TEvent.hpp"
 
 namespace {
 
-struct TestEvent { int value; };
+struct TestEvent
+{
+    int value;
+};
 
 struct Receiver
 {

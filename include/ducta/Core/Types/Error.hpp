@@ -17,7 +17,6 @@ OutputStream& operator<<(OutputStream& os, const Error& error)
     return os;
 }
 
-
 } // namespace ducta
 
 #endif // DUCTA_CORE_TYPES_ERROR_HPP

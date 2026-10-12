@@ -14,12 +14,17 @@ struct Reversed
     {
     }
 
-    auto begin() { return iterable.rbegin(); }
-    auto end() { return iterable.rend(); }
+    auto begin()
+    {
+        return iterable.rbegin();
+    }
+    auto end()
+    {
+        return iterable.rend();
+    }
 };
 
 } // namespace Adapters
 } // namespace ducta
-
 
 #endif // DUCTA_CORE_ALGORITHM_ADAPTERS_HPP

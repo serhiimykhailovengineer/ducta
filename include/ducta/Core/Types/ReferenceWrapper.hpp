@@ -2,13 +2,13 @@
 #define DUCTA_CORE_REFERENCE_WRAPPER_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/functional.h>
+#include "ducta/Core/ETLProfile.hpp"
 
 namespace ducta {
-using etl::reference_wrapper;
-using etl::ref;
 using etl::cref;
+using etl::ref;
+using etl::reference_wrapper;
 } // namespace ducta
 
 #else
@@ -16,9 +16,9 @@ using etl::cref;
 #include <functional>
 
 namespace ducta {
-using std::reference_wrapper;
-using std::ref;
 using std::cref;
+using std::ref;
+using std::reference_wrapper;
 } // namespace ducta
 
 #endif

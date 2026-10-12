@@ -1,12 +1,18 @@
 #include <gtest/gtest.h>
 
-#include "ducta/IO/TEvent.hpp"
 #include "ducta/IO/DefineEvents.hpp"
+#include "ducta/IO/TEvent.hpp"
 
 namespace {
 
-struct EvA { int v; };
-struct EvB { float v; };
+struct EvA
+{
+    int v;
+};
+struct EvB
+{
+    float v;
+};
 
 struct EmittingNode
 {
@@ -14,12 +20,17 @@ struct EmittingNode
     ducta::IO::TEvent<EvB> ev_b;
 };
 
-struct SilentNode {};
+struct SilentNode
+{
+};
 
 struct Receiver
 {
     int calls = 0;
-    void OnRaw(void*) { ++calls; }
+    void OnRaw(void*)
+    {
+        ++calls;
+    }
 };
 
 } // namespace

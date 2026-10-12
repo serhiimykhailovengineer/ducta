@@ -2,8 +2,8 @@
 #define DUCTA_CORE_TYPES_STRINGVIEW_HPP
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/string_view.h>
+#include "ducta/Core/ETLProfile.hpp"
 #else
 #include <string_view>
 #endif

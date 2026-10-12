@@ -17,11 +17,13 @@ struct AdderError
     String<100> message;
 
     explicit AdderError()
-    {}
+    {
+    }
 
     explicit AdderError(String<100> msg)
-    : message{msg}
-    {}
+        : message{msg}
+    {
+    }
 };
 
 template <class T>
@@ -33,7 +35,9 @@ public:
     IO::TOutput<T> result;
 
 public:
-    void init() {}
+    void init()
+    {
+    }
 
     Expected<bool, AdderError> iterate()
     {
@@ -46,18 +50,14 @@ public:
         return true;
     }
 
-    void release() {}
+    void release()
+    {
+    }
 };
 
-} // Test
-} // ducta
+} // namespace Test
+} // namespace ducta
 
-DEFINE_NODE_INPUTS(ducta::Test::Adder<int>,
-    ("left", left),
-    ("right", right)
-);
+DEFINE_NODE_INPUTS(ducta::Test::Adder<int>, ("left", left), ("right", right));
 
-DEFINE_NODE_OUTPUTS(ducta::Test::Adder<int>,
-    ("result", result)
-);
-
+DEFINE_NODE_OUTPUTS(ducta::Test::Adder<int>, ("result", result));

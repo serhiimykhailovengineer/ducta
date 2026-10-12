@@ -4,8 +4,8 @@
 #include "ducta/Core/Utility.hpp"
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include "ducta/Core/ETLProfile.hpp"
 #include <etl/map.h>
+#include "ducta/Core/ETLProfile.hpp"
 #else
 #include <map>
 #endif
@@ -20,10 +20,14 @@ namespace detail {
 
 // Detect etl::pair<*, *>
 template <class T>
-struct is_etl_pair : etl::false_type {};
+struct is_etl_pair : etl::false_type
+{
+};
 
 template <class A, class B>
-struct is_etl_pair<etl::pair<A, B>> : etl::true_type {};
+struct is_etl_pair<etl::pair<A, B>> : etl::true_type
+{
+};
 
 template <class... Args>
 using all_etl_pairs = etl::conjunction<is_etl_pair<etl::decay_t<Args>>...>;
@@ -39,7 +43,7 @@ template <typename K, typename V, size_t SIZE, class K1, class V1, class... Rest
 inline void map_emplace_kv(etl::map<K, V, SIZE>& map, K1&& k, V1&& v, Rest&&... rest) noexcept
 {
     // Construct value_type and forward to insert
-    map.insert(typename etl::map<K, V, SIZE>::value_type{ etl::forward<K1>(k), etl::forward<V1>(v) });
+    map.insert(typename etl::map<K, V, SIZE>::value_type{etl::forward<K1>(k), etl::forward<V1>(v)});
 
     if constexpr (sizeof...(Rest) > 0)
     {
@@ -63,7 +67,8 @@ inline void map_emplace(etl::map<K, V, SIZE>& map, Args&&... args) noexcept
     }
     else
     {
-        static_assert(sizeof...(Args) % 2 == 0, "map_emplace(K,V,...) requires an even number of arguments");
+        static_assert(
+            sizeof...(Args) % 2 == 0, "map_emplace(K,V,...) requires an even number of arguments");
         detail::map_emplace_kv<K, V, SIZE>(map, etl::forward<Args>(args)...);
     }
 }

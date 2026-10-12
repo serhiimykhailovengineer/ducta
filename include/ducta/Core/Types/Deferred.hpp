@@ -15,8 +15,8 @@ public:
 
     template <typename Func>
     Deferred(Func&& func, ValueType value)
-    : _func(::ducta::forward<Func>(func))
-    , _value(::ducta::move(value))
+        : _func(::ducta::forward<Func>(func))
+        , _value(::ducta::move(value))
     {
     }
 
@@ -27,13 +27,13 @@ public:
             _func(_value.value());
         }
     }
-    
+
     Deferred(Deferred const&) = delete;
     Deferred& operator=(Deferred const&) = delete;
 
     Deferred(Deferred&& other) noexcept
-    : _func(::ducta::move(other._func))
-    , _value(::ducta::move(other._value))
+        : _func(::ducta::move(other._func))
+        , _value(::ducta::move(other._value))
     {
         other.reset();
     }
@@ -52,7 +52,7 @@ public:
 private:
     void reset() noexcept
     {
-        _func  = {};
+        _func = {};
         _value = {};
     }
 
@@ -68,6 +68,5 @@ Deferred<ValueType> makeDeferred(FunctionRef<void(ValueType const&)> func, Value
 }
 
 } // namespace ducta
-
 
 #endif // DUCTA_CORE_TYPES_DEFERRED_HPP

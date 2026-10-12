@@ -1,8 +1,8 @@
 #ifndef DUCTA_PIPELINE_NODE_INFO_HPP
 #define DUCTA_PIPELINE_NODE_INFO_HPP
 
-#include "ducta/Pipeline/NodeRef.hpp"
 #include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Pipeline/NodeRef.hpp"
 
 namespace ducta {
 namespace Pipeline {

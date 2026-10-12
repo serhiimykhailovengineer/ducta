@@ -1,12 +1,18 @@
 #include <gtest/gtest.h>
 
-#include "ducta/IO/TEvent.hpp"
 #include "ducta/IO/EventRef.hpp"
+#include "ducta/IO/TEvent.hpp"
 
 namespace {
 
-struct EventA { int value; };
-struct EventB { float value; };
+struct EventA
+{
+    int value;
+};
+struct EventB
+{
+    float value;
+};
 
 struct Receiver
 {

@@ -1,8 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_INTEGERS_HPP
 #define DUCTA_CORE_TYPES_INTEGERS_HPP
 
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 
 namespace ducta {
 
@@ -18,7 +18,6 @@ using uint64_t = std::uint64_t;
 
 using uintptr_t = std::uintptr_t;
 using size_t = std::size_t;
-
 
 } // namespace ducta
 

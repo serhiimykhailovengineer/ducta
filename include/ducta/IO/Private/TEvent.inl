@@ -6,7 +6,7 @@
 namespace ducta {
 namespace IO {
 
-template<class T>
+template <class T>
 void TEvent<T>::operator()(EventType const& event) const
 {
     if (m_delegate)
@@ -15,13 +15,13 @@ void TEvent<T>::operator()(EventType const& event) const
     }
 }
 
-template<class T>
+template <class T>
 void TEvent<T>::subscribe(EventDelegate delegate)
 {
     m_delegate = delegate;
 }
 
-template<class T>
+template <class T>
 void TEvent<T>::unsubscribe()
 {
     m_delegate = EventDelegate{};

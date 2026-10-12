@@ -23,7 +23,5 @@ public:
     MOCK_METHOD(void, release, (), ());
 };
 
-
-
 } // namespace Pipeline
 } // namespace ducta

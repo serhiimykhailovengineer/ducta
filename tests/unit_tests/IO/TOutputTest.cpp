@@ -9,7 +9,7 @@
 
 using namespace ducta;
 
-TEST(TOutputTests, types_check) 
+TEST(TOutputTests, types_check)
 {
     {
         static_assert(std::is_same_v<IO::TOutput<int>::value_type, int>);
@@ -32,7 +32,7 @@ TEST(TOutputTests, types_check)
     }
 }
 
-TEST(TOutputTests, set_const_ref) 
+TEST(TOutputTests, set_const_ref)
 {
     IO::TOutput<int> output{};
 
@@ -40,7 +40,7 @@ TEST(TOutputTests, set_const_ref)
     EXPECT_NO_THROW(output.set(temp_value));
 }
 
-TEST(TOutputTests, set_move) 
+TEST(TOutputTests, set_move)
 {
     IO::TOutput<int> output{};
 
@@ -48,7 +48,7 @@ TEST(TOutputTests, set_move)
     EXPECT_NO_THROW(output.set(::ducta::move(temp_value)));
 }
 
-TEST(TOutputTests, assign_operator) 
+TEST(TOutputTests, assign_operator)
 {
     IO::TOutput<int> output{};
 
@@ -59,20 +59,17 @@ TEST(TOutputTests, assign_operator)
     EXPECT_NO_THROW(output = ::ducta::move(temp_value));
 }
 
-TEST(TOutputTests, update) 
+TEST(TOutputTests, update)
 {
     IO::TOutput<int> output{};
 
-        // Since we don't have direct access to the value, we will bind it to a mock input to check the updated value
+    // Since we don't have direct access to the value, we will bind it to a mock input to check the updated value
     IO::TInputMock<int> input_mock{};
     IO::InputRef input_ref{input_mock};
 
-    EXPECT_CALL(input_mock, compatible(::testing::_))
-        .WillRepeatedly(::testing::Return(true));
-    EXPECT_CALL(input_mock, notify(100))
-        .Times(1);
-    EXPECT_CALL(input_mock, notify(150))
-        .Times(1);
+    EXPECT_CALL(input_mock, compatible(::testing::_)).WillRepeatedly(::testing::Return(true));
+    EXPECT_CALL(input_mock, notify(100)).Times(1);
+    EXPECT_CALL(input_mock, notify(150)).Times(1);
 
     auto connection = output.bind(input_ref);
 
@@ -85,7 +82,7 @@ TEST(TOutputTests, update)
     output.update(add_fifty);
 }
 
-TEST(TOutputTests, bind) 
+TEST(TOutputTests, bind)
 {
     IO::TOutput<int> output{};
 
@@ -96,7 +93,7 @@ TEST(TOutputTests, bind)
         auto deferred = output.bind(input_ref);
 
         EXPECT_FALSE(input.ready());
-        
+
         int test_value = 500;
         output.set(test_value);
 
@@ -104,7 +101,7 @@ TEST(TOutputTests, bind)
         EXPECT_EQ(input.value(), 500);
         EXPECT_FALSE(input.ready());
     }
-    
+
     output.set(400);
     EXPECT_FALSE(input.ready());
 }

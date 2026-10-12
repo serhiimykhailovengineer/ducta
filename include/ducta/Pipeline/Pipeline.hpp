@@ -6,14 +6,14 @@
 #include "ducta/Pipeline/Nodes.hpp"
 #include "ducta/Pipeline/StopToken.hpp"
 
-#include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
 #include "ducta/Pipeline/Private/EventWiring.hpp"
+#include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
 
+#include "ducta/Core/Types/FunctionRef.hpp"
 #include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/Span.hpp"
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/Vector.hpp"
-#include "ducta/Core/Types/Span.hpp"
-#include "ducta/Core/Types/FunctionRef.hpp"
 
 namespace ducta {
 namespace Pipeline {
@@ -31,15 +31,18 @@ class Pipeline
 public:
     using Config = PipelineConfig;
 
-    using TraceCallback = FunctionRef<void(Span<StringView const> node_names, Span<FrameTraceInfo const> frames_info)>; 
+    using TraceCallback =
+        FunctionRef<void(Span<StringView const> node_names, Span<FrameTraceInfo const> frames_info)>;
 
 public:
     Pipeline(Clock&& clock);
-    template <typename ClockType,
-              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<ClockType>, Clock>>>
+    template <
+        typename ClockType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<ClockType>, Clock>>>
     Pipeline(ClockType& clock)
-    : Pipeline(Clock(clock))
-    {}
+        : Pipeline(Clock(clock))
+    {
+    }
 
     bool configure(Nodes& nodes, Config const& config, TraceCallback trace_callback = {});
 
@@ -73,11 +76,13 @@ class PipelineEngine
 public:
     PipelineEngine(Pipeline& pipeline, StopToken&& stop_token);
 
-    template <typename StopTokenType,
-              typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<StopTokenType>, StopToken>>>
+    template <
+        typename StopTokenType,
+        typename = ::ducta::enable_if_t<!::ducta::is_same_v<::ducta::decay_t<StopTokenType>, StopToken>>>
     PipelineEngine(Pipeline& pipeline, StopTokenType& stop_token)
-    : PipelineEngine(pipeline, StopToken(stop_token))
-    {}
+        : PipelineEngine(pipeline, StopToken(stop_token))
+    {
+    }
 
     ~PipelineEngine();
 

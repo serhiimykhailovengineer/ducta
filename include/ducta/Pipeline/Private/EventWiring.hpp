@@ -1,14 +1,14 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_EVENTWIRING_HPP
 #define DUCTA_PIPELINE_PRIVATE_EVENTWIRING_HPP
 
-#include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Clock.hpp"
+#include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
 
 #include "ducta/IO/EventRef.hpp"
 
-#include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Core/Types/TypeRegistry.hpp"
+#include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Utils/Log.hpp"
 
 namespace ducta {
@@ -39,13 +39,28 @@ public:
     class Fanout
     {
     public:
-        Fanout(IO::EventRef emitter, StringView emitter_name, size_t emitter_index,
-               Clock* clock, PipelineTraceInfo* trace)
-        : m_emitter(emitter), m_emitter_name(emitter_name), m_emitter_index(emitter_index)
-        , m_clock(clock), m_trace(trace) {}
+        Fanout(
+            IO::EventRef emitter,
+            StringView emitter_name,
+            size_t emitter_index,
+            Clock* clock,
+            PipelineTraceInfo* trace)
+            : m_emitter(emitter)
+            , m_emitter_name(emitter_name)
+            , m_emitter_index(emitter_index)
+            , m_clock(clock)
+            , m_trace(trace)
+        {
+        }
 
-        void add_sink(Sink sink) { m_sinks.push_back(sink); }
-        size_t sink_count() const { return m_sinks.size(); }
+        void add_sink(Sink sink)
+        {
+            m_sinks.push_back(sink);
+        }
+        size_t sink_count() const
+        {
+            return m_sinks.size();
+        }
 
         void dispatch(void* event)
         {
@@ -58,8 +73,9 @@ public:
 
                 if (traced)
                 {
-                    m_trace->event(EventTraceInfo{
-                        m_emitter_index, sink.index, sink.id, start, m_clock->now() - start});
+                    m_trace->event(
+                        EventTraceInfo{
+                            m_emitter_index, sink.index, sink.id, start, m_clock->now() - start});
                 }
                 if (!result)
                 {
@@ -73,7 +89,10 @@ public:
             m_emitter.subscribe(::ducta::makeFunctionRef<Fanout, &Fanout::dispatch>(*this));
         }
 
-        void unsubscribe() { m_emitter.unsubscribe(); }
+        void unsubscribe()
+        {
+            m_emitter.unsubscribe();
+        }
 
     private:
         IO::EventRef m_emitter;
@@ -109,7 +128,8 @@ public:
                     {
                         if (supported == id)
                         {
-                            fanout.add_sink(Sink{nodes[receiver_idx].node, id, nodes[receiver_idx].name, receiver_idx});
+                            fanout.add_sink(
+                                Sink{nodes[receiver_idx].node, id, nodes[receiver_idx].name, receiver_idx});
                             break;
                         }
                     }
@@ -137,12 +157,18 @@ public:
         m_fanouts.clear();
     }
 
-    size_t connection_count() const { return m_fanouts.size(); }
+    size_t connection_count() const
+    {
+        return m_fanouts.size();
+    }
 
     EventWiring() = default;
     EventWiring(EventWiring const&) = delete;
     EventWiring& operator=(EventWiring const&) = delete;
-    ~EventWiring() { disconnect(); }
+    ~EventWiring()
+    {
+        disconnect();
+    }
 
 private:
     Vector<Fanout, 50> m_fanouts;

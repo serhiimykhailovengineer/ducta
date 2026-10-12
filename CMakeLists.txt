@@ -40,6 +40,11 @@ target_link_libraries(ducta_configuration
     INTERFACE
         jsmn::jsmn
 )
+if (DUCTA_USE_EMBEDDED_BACKEND)
+    target_link_libraries(ducta_configuration INTERFACE etl::etl)
+else()
+    target_link_libraries(ducta_configuration INTERFACE fmt::fmt)
+endif()
 
 add_library(ducta_pipeline INTERFACE)
 target_include_directories(ducta_pipeline

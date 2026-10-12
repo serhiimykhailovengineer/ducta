@@ -40,6 +40,13 @@
             "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
         },
         {
+            "label": "Format All",
+            "detail": "clang-format -i every .hpp/.h/.cpp/.c/.inl in include/ and tests/",
+            "type": "shell",
+            "command": "find include tests -type f \\( -name '*.hpp' -o -name '*.h' -o -name '*.cpp' -o -name '*.c' -o -name '*.inl' \\) -print0 | xargs -0 clang-format -i --style=file",
+            "problemMatcher": []
+        },
+        {
             "label": "Clean",
             "detail": "Remove a preset's build directory",
             "type": "shell",

@@ -103,6 +103,64 @@ TEST(PropTreeTest, nested_objects_and_arrays_have_paths)
     EXPECT_EQ(taps_node.at(2).child("name").parent().parent().id(), taps_node.id());
 }
 
+TEST(PropTreeTest, path_of_deep_node_is_complete)
+{
+    // Deeper than any fixed ancestor buffer: every segment must be present
+    PropTree tree;
+    NodeId parent = tree.root().id();
+    std::string expected;
+    for (int depth = 0; depth < 40; ++depth)
+    {
+        bool const array = depth % 4 == 3;
+        auto id = array ? tree.add_array(parent, "k") : tree.add_object(parent, "k");
+        ASSERT_TRUE(id);
+        expected += expected.empty() ? "k" : ".k";
+        parent = *id;
+        if (array)
+        {
+            tree.add_integer(parent, "", 0);
+            auto element = tree.add_object(parent, "");
+            ASSERT_TRUE(element);
+            expected += "[1]";
+            parent = *element;
+            ++depth;
+        }
+    }
+
+    Path path = PropNode{tree, parent}.path();
+
+    EXPECT_EQ(std::string(path.data(), path.size()), expected);
+}
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+
+TEST(PropTreeTest, path_longer_than_capacity_keeps_its_end)
+{
+    PropTree tree;
+    NodeId parent = tree.root().id();
+    std::string const key(30, 'k');
+    for (int depth = 0; depth < 6; ++depth)
+    {
+        auto id = tree.add_object(parent, StringView{key.data(), key.size()});
+        ASSERT_TRUE(id);
+        parent = *id;
+    }
+    ASSERT_TRUE(tree.add_integer(parent, "leaf", 1));
+
+    Path path = tree.root().child(StringView{key.data(), key.size()}).path();
+    EXPECT_EQ(std::string(path.data(), path.size()), key);
+
+    PropNode leaf = PropNode{tree, parent}.child("leaf");
+    Path const leaf_path = leaf.path();
+    std::string const full(leaf_path.data(), leaf_path.size());
+    EXPECT_LE(full.size(), static_cast<size_t>(DUCTA_CONFIG_MAX_PATH_LENGTH));
+    EXPECT_EQ(full.substr(0, 3), "...");
+    EXPECT_NE(full[3], '.');
+    EXPECT_EQ(full.substr(full.size() - 5), ".leaf");
+}
+
+#endif
+
 TEST(PropTreeTest, rejects_invalid_structure)
 {
     PropTree tree;

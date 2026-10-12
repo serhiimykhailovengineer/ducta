@@ -467,7 +467,14 @@ struct ValueDecoder<T, ::ducta::enable_if_t<::ducta::is_floating_point_v<T>>>
         {
             return false;
         }
-        out = static_cast<T>(node.as_float());
+        double const value = node.as_float();
+        double const max = static_cast<double>(::ducta::numeric_limits<T>::max());
+        if (!(value <= max && value >= -max))
+        {
+            diagnostics.errorf(node, "value is out of range for destination floating-point type");
+            return false;
+        }
+        out = static_cast<T>(value);
         return true;
     }
 };

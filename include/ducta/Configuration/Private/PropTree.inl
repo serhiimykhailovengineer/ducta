@@ -169,23 +169,21 @@ DUCTA_DECL Path PropNode::path() const
         return result;
     }
 
-    // Collect ancestors (excluding the root) from this node upwards
-    Vector<NodeId, 32> chain;
+    // The path is built from this node up to the root with every segment written backwards,
+    // then reversed as a whole: no list of ancestors is needed, so any depth is supported.
+    // A path that does not fit (embedded backend) keeps its end and starts with "...".
+    constexpr StringView kEllipsis = "...";
+    size_t const capacity = result.max_size() - kEllipsis.size();
+    bool truncated = false;
+
     for (NodeId id = m_id; m_tree->entry(id).parent != kInvalidNodeId; id = m_tree->entry(id).parent)
     {
-        if (chain.size() == 32)
-        {
-            break;
-        }
-        chain.push_back(id);
-    }
-
-    for (size_t i = chain.size(); i > 0; --i)
-    {
-        NodeId id = chain[i - 1];
         auto const& entry = m_tree->entry(id);
         auto const& parent = m_tree->entry(entry.parent);
 
+        String<24> element;
+        StringView segment;
+        bool dot = false;
         if (parent.kind == NodeKind::Array)
         {
             size_t index = 0;
@@ -194,18 +192,44 @@ DUCTA_DECL Path PropNode::path() const
             {
                 ++index;
             }
-            String<24> element;
             format_to(element, "[{}]", static_cast<unsigned long long>(index));
-            Private::append(result, StringView{element.data(), element.size()});
+            segment = StringView{element.data(), element.size()};
         }
         else
         {
-            if (!result.empty())
-            {
-                Private::append(result, ".");
-            }
-            Private::append(result, StringView{entry.key.data(), entry.key.size()});
+            segment = StringView{entry.key.data(), entry.key.size()};
+            dot = parent.parent != kInvalidNodeId; // members of the root have no leading dot
         }
+
+        if (result.size() + segment.size() + (dot ? 1 : 0) > capacity)
+        {
+            truncated = true;
+            break;
+        }
+        for (size_t i = segment.size(); i > 0; --i)
+        {
+            result.push_back(segment[i - 1]);
+        }
+        if (dot)
+        {
+            result.push_back('.');
+        }
+    }
+
+    if (truncated)
+    {
+        if (!result.empty() && result[result.size() - 1] == '.')
+        {
+            result.pop_back();
+        }
+        Private::append(result, kEllipsis);
+    }
+
+    for (size_t i = 0, j = result.size(); i + 1 < j; ++i, --j)
+    {
+        char const c = result[i];
+        result[i] = result[j - 1];
+        result[j - 1] = c;
     }
     return result;
 }

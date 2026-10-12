@@ -176,7 +176,10 @@ DEFINE_CONFIG_RULES(
      !::ducta::Pipeline::Private::has_duplicates(config.order),
      "must not contain a node twice"),
     ("target_frame_duration", config.target_frame_duration.count() >= 0, "must not be negative"),
-    ("trace_flush_threshold", config.trace_flush_threshold > 0, "must be positive"));
+    ("trace_flush_threshold", config.trace_flush_threshold > 0, "must be positive"),
+    ("trace_flush_threshold",
+     config.trace_flush_threshold <= DUCTA_MAX_TRACED_FRAMES,
+     "must not exceed DUCTA_MAX_TRACED_FRAMES"));
 
 #if !defined(DUCTA_SEPARATE_COMPILATION)
 #include "ducta/Pipeline/Private/Pipeline.inl"

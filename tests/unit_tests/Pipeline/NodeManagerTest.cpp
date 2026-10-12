@@ -262,6 +262,23 @@ TYPED_TEST(NodeManagerTest, uses_given_factory)
     EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Gain' of node 'Gain'");
 }
 
+#if defined(__cpp_exceptions)
+TYPED_TEST(NodeManagerTest, throwing_constructor_keeps_no_node)
+{
+    PropTree tree = loadTree(R"({ "nodes": {
+        "a": { "type": "Counting" },
+        "b": { "type": "Throwing", "config": { "in_constructor": true } }
+    } })");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    EXPECT_THROW(manager.configure(tree, diagnostics), std::runtime_error);
+    EXPECT_EQ(manager.size(), 0u);
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+    EXPECT_FALSE(manager.nodes().get_node("a").has_value());
+}
+#endif
+
 TYPED_TEST(NodeManagerTest, over_aligned_node)
 {
     NodeManagerConfig config;
@@ -321,3 +338,68 @@ TEST(StaticNodeStorageTest, places_nodes_aligned_in_buffer)
     EXPECT_EQ(storage.size(), 0u);
     EXPECT_EQ(storage.used(), 0u);
 }
+
+#if defined(__cpp_exceptions)
+namespace {
+
+/* Gives a storage policy the NodeStorage interface, as NodeManager does */
+template <class Storage>
+class StorageAdapter final : public NodeStorage
+{
+public:
+    explicit StorageAdapter(Storage& storage)
+        : m_storage{storage}
+    {
+    }
+
+private:
+    void* allocate(size_t size, size_t align) noexcept override
+    {
+        return m_storage.allocate(size, align);
+    }
+
+    void deallocate(void* memory, size_t align) noexcept override
+    {
+        m_storage.deallocate(memory, align);
+    }
+
+    void adopt(NodeRef, void* object, size_t align, NodeDestroyFn destroy) override
+    {
+        m_storage.adopt(object, align, destroy);
+    }
+
+    Storage& m_storage;
+};
+
+} // namespace
+
+TEST(StaticNodeStorageTest, memory_of_a_throwing_constructor_is_given_back)
+{
+    StaticNodeStorage<512, 4> storage;
+    StorageAdapter<StaticNodeStorage<512, 4>> adapter{storage};
+
+    ASSERT_NE(adapter.construct<TestNodes::CountingNode>(), nullptr);
+    size_t const used = storage.used();
+
+    TestNodes::ThrowingConfig const throwing{true, false};
+    EXPECT_THROW(adapter.construct<TestNodes::ThrowingNode>(throwing), std::runtime_error);
+    EXPECT_EQ(storage.used(), used);
+    EXPECT_EQ(storage.size(), 1u);
+
+    storage.clear();
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+}
+
+#if !defined(DUCTA_USE_EMBEDDED_BACKEND)
+// A leak would be reported by LeakSanitizer
+TEST(HeapNodeStorageTest, memory_of_a_throwing_constructor_is_freed)
+{
+    HeapNodeStorage storage;
+    StorageAdapter<HeapNodeStorage> adapter{storage};
+
+    TestNodes::ThrowingConfig const throwing{true, false};
+    EXPECT_THROW(adapter.construct<TestNodes::ThrowingNode>(throwing), std::runtime_error);
+    EXPECT_EQ(storage.size(), 0u);
+}
+#endif
+#endif

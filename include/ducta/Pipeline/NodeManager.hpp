@@ -99,7 +99,8 @@ public:
      * @brief Replace all nodes by the ones described in config
      *
      * Every problem (unknown node type, configuration error, no room in Storage) is reported to
-     * diagnostics. Creation is all or nothing: on any error no node is kept.
+     * diagnostics. Creation is all or nothing: on any error no node is kept, also when a node
+     * constructor throws (the exception is passed on).
      *
      * @return true if every node was created
      */
@@ -120,7 +121,20 @@ public:
                 continue;
             }
             Slot slot{*this, name};
+#if defined(__cpp_exceptions)
+            try
+            {
+                create(slot, spec.config, diagnostics);
+            }
+            catch (...)
+            {
+                // A node constructor threw: keep the all-or-nothing guarantee
+                clear();
+                throw;
+            }
+#else
             create(slot, spec.config, diagnostics);
+#endif
         }
 
         if (diagnostics.error_count() != errors)
@@ -175,6 +189,11 @@ private:
         void* allocate(size_t size, size_t align) noexcept override
         {
             return m_manager.m_storage.allocate(size, align);
+        }
+
+        void deallocate(void* memory, size_t align) noexcept override
+        {
+            m_manager.m_storage.deallocate(memory, align);
         }
 
         void adopt(NodeRef node, void* object, size_t align, NodeDestroyFn destroy) override

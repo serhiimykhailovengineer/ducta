@@ -36,8 +36,11 @@ constexpr StringView to_string(Severity severity) noexcept
 struct Diagnostic
 {
     Severity severity{Severity::Error};
-    /* Where in the configuration source; file_name() points into the PropTree */
+    /* Line and column in the configuration source (its file_name() is empty, see source) */
     SourceLocation location;
+    /* Name of the configuration source, e.g. a file path; a copy, so that diagnostics may
+     * outlive the PropTree they were reported for */
+    SourceName source;
     Path path;
     String<100> message;
     /* Where in the C++ code the problem was reported (e.g. which config rule) */
@@ -49,9 +52,9 @@ struct Diagnostic
 template <class OutputStream>
 OutputStream& operator<<(OutputStream& os, Diagnostic const& diagnostic)
 {
-    if (diagnostic.location.file_name()[0] != '\0')
+    if (!diagnostic.source.empty())
     {
-        os << diagnostic.location.file_name() << ':';
+        os << diagnostic.source << ':';
     }
     if (diagnostic.location.valid())
     {
@@ -80,8 +83,10 @@ class Diagnostics
 public:
     using Container = Vector<Diagnostic, DUCTA_CONFIG_MAX_DIAGNOSTICS>;
 
+    /* A file name in diagnostic.location is moved to diagnostic.source (copied) */
     void add(Diagnostic diagnostic)
     {
+        detach_source(diagnostic);
         if (diagnostic.severity == Severity::Warning)
         {
             ++m_warnings;
@@ -194,6 +199,28 @@ public:
     }
 
 private:
+    /* Locations of PropNodes point into their tree: keep a copy of the name instead */
+    static void detach_source(Diagnostic& diagnostic)
+    {
+        char const* const file = diagnostic.location.file_name();
+        if (file != nullptr && file[0] != '\0')
+        {
+            StringView name{file};
+            if (diagnostic.source.empty())
+            {
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+                // Keep the trailing characters (the file name) if the path is too long
+                if (name.size() > diagnostic.source.max_size())
+                {
+                    name.remove_prefix(name.size() - diagnostic.source.max_size());
+                }
+#endif
+                diagnostic.source.assign(name.data(), name.size());
+            }
+        }
+        diagnostic.location = SourceLocation{diagnostic.location.line(), diagnostic.location.column()};
+    }
+
     static Diagnostic make(PropNode node)
     {
         Diagnostic diagnostic;

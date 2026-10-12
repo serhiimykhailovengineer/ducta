@@ -5,6 +5,7 @@
 
 #include "ducta/Core/Types/String.hpp"
 
+#include <stdexcept>
 #include <string>
 
 // Nodes shared by NodeFactoryTest and NodeManagerTest: a DECLARE_NODE name is unique in the
@@ -104,6 +105,42 @@ struct PairNode
     B second{};
 };
 
+/* Throws from its constructor or from init(), as configured */
+struct ThrowingConfig
+{
+    bool in_constructor{false};
+    bool in_init{false};
+};
+
+struct ThrowingNode
+{
+    using Config = ThrowingConfig;
+
+    explicit ThrowingNode(Config const& config)
+        : config{config}
+    {
+        if (config.in_constructor)
+        {
+            throw std::runtime_error("constructor failed");
+        }
+    }
+
+    void init()
+    {
+        if (config.in_init)
+        {
+            throw std::runtime_error("init failed");
+        }
+    }
+
+    void release()
+    {
+    }
+
+    Config config;
+    unsigned char payload[64]{};
+};
+
 /* Records init / iterate / release calls of LoggingNode: "iA" = init of node 'A' */
 inline std::string& run_log()
 {
@@ -135,12 +172,14 @@ struct LoggingNode
 } // namespace TestNodes
 
 DEFINE_CONFIG(TestNodes::GainConfig, ("gain", gain), ("label", label));
+DEFINE_CONFIG(TestNodes::ThrowingConfig, ("in_constructor", in_constructor), ("in_init", in_init));
 DEFINE_CONFIG_RULES(TestNodes::GainConfig, ("gain", config.gain > 0.0, "must be positive"));
 
 DECLARE_NODE(Gain, TestNodes::GainNode);
 DECLARE_NODE(Plain, TestNodes::PlainNode);
 DECLARE_NODE(Counting, TestNodes::CountingNode);
 DECLARE_NODE(Aligned, TestNodes::AlignedNode);
+DECLARE_NODE(Throwing, TestNodes::ThrowingNode);
 DECLARE_NODE(First, TestNodes::LoggingNode<'A'>);
 DECLARE_NODE(Second, TestNodes::LoggingNode<'B'>);
 // Template arguments may contain commas

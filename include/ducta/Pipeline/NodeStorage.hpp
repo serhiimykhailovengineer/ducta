@@ -4,6 +4,7 @@
  *
  * A storage policy is a class with
  *     void* allocate(size_t size, size_t align) noexcept;  // nullptr if it does not fit
+ *     void deallocate(void* memory, size_t align) noexcept; // undo the last allocate()
  *     void adopt(void* object, size_t align, NodeDestroyFn destroy);
  *     void clear() noexcept;                               // destroys nodes in reverse order
  *     size_t size() const noexcept;                        // number of nodes
@@ -62,7 +63,20 @@ public:
         {
             return nullptr;
         }
-        T* node = ::new (memory) T(::ducta::forward<Args>(args)...);
+        T* node = nullptr;
+#if defined(__cpp_exceptions)
+        try
+        {
+            node = ::new (memory) T(::ducta::forward<Args>(args)...);
+        }
+        catch (...)
+        {
+            deallocate(memory, alignof(T));
+            throw;
+        }
+#else
+        node = ::new (memory) T(::ducta::forward<Args>(args)...);
+#endif
         adopt(NodeRef{*node}, node, alignof(T), &Private::destroy_node<T>);
         return node;
     }
@@ -71,6 +85,8 @@ protected:
     ~NodeStorage() = default;
 
     virtual void* allocate(size_t size, size_t align) noexcept = 0;
+    /* Give back the memory of the last allocate() when the node could not be constructed */
+    virtual void deallocate(void* memory, size_t align) noexcept = 0;
     virtual void adopt(NodeRef node, void* object, size_t align, NodeDestroyFn destroy) = 0;
 };
 
@@ -104,8 +120,14 @@ public:
         {
             return nullptr;
         }
+        m_used_before_last = m_used;
         m_used = offset + size;
         return m_buffer + offset;
+    }
+
+    void deallocate(void* /*memory*/, size_t /*align*/) noexcept
+    {
+        m_used = m_used_before_last;
     }
 
     void adopt(void* object, size_t /*align*/, NodeDestroyFn destroy)
@@ -121,6 +143,7 @@ public:
             entry.destroy(entry.object);
         }
         m_used = 0;
+        m_used_before_last = 0;
     }
 
     size_t size() const noexcept
@@ -145,6 +168,7 @@ private:
     Entry m_entries[MaxNodes]{};
     size_t m_count{0};
     size_t m_used{0};
+    size_t m_used_before_last{0};
 };
 
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
@@ -168,9 +192,28 @@ public:
         return ::operator new(size, std::align_val_t{align}, std::nothrow);
     }
 
+    void deallocate(void* memory, size_t align) noexcept
+    {
+        ::operator delete(memory, std::align_val_t{align});
+    }
+
     void adopt(void* object, size_t align, NodeDestroyFn destroy)
     {
-        m_nodes.emplace_back(object, Deleter{destroy, align});
+        Deleter deleter{destroy, align};
+#if defined(__cpp_exceptions)
+        try
+        {
+            m_nodes.emplace_back(object, deleter);
+        }
+        catch (...)
+        {
+            // Not owned yet (e.g. bad_alloc of the vector): destroy and free here
+            deleter(object);
+            throw;
+        }
+#else
+        m_nodes.emplace_back(object, deleter);
+#endif
     }
 
     void clear() noexcept

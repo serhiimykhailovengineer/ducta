@@ -189,7 +189,9 @@ TEST(DecodeTest, diagnostic_location_includes_source_name)
     EXPECT_FALSE(decode<FilterConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(diagnostics[0].location, (SourceLocation{6, 16, "filter.json"}));
+    EXPECT_EQ(diagnostics[0].location, (SourceLocation{6, 16}));
+    EXPECT_EQ(
+        std::string(diagnostics[0].source.data(), diagnostics[0].source.size()), "filter.json");
 
     std::ostringstream out;
     out << diagnostics[0];

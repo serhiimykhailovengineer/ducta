@@ -363,6 +363,56 @@ TYPED_TEST(DuctaEngineTest, runs_until_stop_and_can_run_again)
     EXPECT_EQ(TestNodes::run_log(), "iArA");
 }
 
+#if defined(__cpp_exceptions)
+TYPED_TEST(DuctaEngineTest, engine_is_usable_after_a_node_throws_while_running)
+{
+    PropTree tree = loadTree(R"({
+        "nodes": { "t": { "type": "Throwing", "config": { "in_init": true } } },
+        "pipeline": { "order": ["t"] }
+    })");
+    Diagnostics diagnostics;
+    DuctaEngine<TypeParam> engine{this->clock};
+    ASSERT_TRUE(engine.configure(tree, diagnostics));
+
+    EXPECT_THROW(engine.run(StopAfter{1}), std::runtime_error);
+
+    // Not stuck in "running": it can be reconfigured and run again
+    PropTree other =
+        loadTree(R"({ "nodes": { "a": { "type": "First" } }, "pipeline": { "order": ["a"] } })");
+    ASSERT_TRUE(engine.configure(other, diagnostics)) << diagnostics.size();
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
+    EXPECT_EQ(TestNodes::run_log(), "iAArA");
+}
+#endif
+
+TYPED_TEST(DuctaEngineTest, tracing_without_callback_keeps_the_latest_frames)
+{
+    PropTree tree = loadTree(R"({
+        "nodes": { "a": { "type": "First" } },
+        "pipeline": { "order": ["a"], "should_trace_execution": true }
+    })");
+    Diagnostics diagnostics;
+    DuctaEngine<TypeParam> engine{this->clock};
+    ASSERT_TRUE(engine.configure(tree, diagnostics));
+
+    // More frames than the trace buffer holds, and nobody to flush them
+    EXPECT_EQ(engine.run(StopAfter{DUCTA_MAX_TRACED_FRAMES + 10}), EXIT_SUCCESS);
+}
+
+TYPED_TEST(DuctaEngineTest, trace_flush_threshold_must_fit_the_buffer)
+{
+    std::string const json = R"({ "nodes": { "a": { "type": "First" } }, "pipeline": { "order": ["a"], )"
+                             R"("trace_flush_threshold": )" +
+                             std::to_string(DUCTA_MAX_TRACED_FRAMES + 1) + " } }";
+    PropTree tree = loadTree(json.c_str());
+    Diagnostics diagnostics;
+    DuctaEngine<TypeParam> engine{this->clock};
+
+    EXPECT_FALSE(engine.configure(tree, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "must not exceed DUCTA_MAX_TRACED_FRAMES");
+}
+
 TYPED_TEST(DuctaEngineTest, run_without_configuration_fails)
 {
     DuctaEngine<TypeParam> engine{this->clock};

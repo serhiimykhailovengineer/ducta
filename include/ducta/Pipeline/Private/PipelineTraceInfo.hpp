@@ -56,6 +56,7 @@ public:
     {
         m_nodes = nodes;
         m_frames_info.clear();
+        m_dropped_frames = 0;
         m_current_frame_index = 0;
     }
 
@@ -63,6 +64,13 @@ public:
     {
         DUCTA_ASSERT(!m_frame_open);
 
+        /* Without a flush (no callback, or a threshold above the capacity) keep the latest
+         * frames: drop the oldest one */
+        if (m_frames_info.size() >= MAX_TRACED_FRAMES)
+        {
+            m_frames_info.erase(m_frames_info.begin());
+            ++m_dropped_frames;
+        }
         m_frames_info.emplace_back();
 
         auto& current_frame_info = m_frames_info.back();
@@ -138,8 +146,15 @@ public:
         return m_frames_info.size();
     }
 
+    /* Frames dropped because the buffer was full */
+    size_t dropped_frames() const
+    {
+        return m_dropped_frames;
+    }
+
 private:
     size_t m_current_frame_index{0};
+    size_t m_dropped_frames{0};
     bool m_frame_open{false};
 
     Span<NodeInfo const> m_nodes;

@@ -197,7 +197,21 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
     return DurationError::None;
 }
 
-/* Convert nanoseconds to ticks of Period (num / den seconds), exactly */
+constexpr int64_t gcd(int64_t a, int64_t b) noexcept
+{
+    while (b != 0)
+    {
+        int64_t const r = a % b;
+        a = b;
+        b = r;
+    }
+    return a;
+}
+
+/*
+ * Convert nanoseconds to ticks of Period (num / den seconds), exactly:
+ * ticks = nanoseconds * den / (num * 1e9), which must be a whole number
+ */
 template <class Period>
 DurationError nanoseconds_to_ticks(int64_t nanoseconds, int64_t& ticks) noexcept
 {
@@ -208,27 +222,19 @@ DurationError nanoseconds_to_ticks(int64_t nanoseconds, int64_t& ticks) noexcept
     {
         return DurationError::Range;
     }
-    if (tick_ns % den == 0)
+    // Reduce den / tick_ns: ticks = (nanoseconds / divisor) * multiplier
+    int64_t const common = gcd(den, tick_ns);
+    int64_t const multiplier = den / common;
+    int64_t const divisor = tick_ns / common;
+    if (nanoseconds % divisor != 0)
     {
-        // A tick is a whole number of nanoseconds (us, ms, s, ...)
-        tick_ns /= den;
-        if (nanoseconds % tick_ns != 0)
-        {
-            return DurationError::Precision;
-        }
-        ticks = nanoseconds / tick_ns;
-        return DurationError::None;
+        return DurationError::Precision;
     }
-    if (den % tick_ns == 0)
+    if (__builtin_mul_overflow(nanoseconds / divisor, multiplier, &ticks))
     {
-        // A tick is a fraction of a nanosecond
-        if (__builtin_mul_overflow(nanoseconds, den / tick_ns, &ticks))
-        {
-            return DurationError::Range;
-        }
-        return DurationError::None;
+        return DurationError::Range;
     }
-    return DurationError::Precision;
+    return DurationError::None;
 }
 
 template <class Period>

@@ -323,7 +323,9 @@ TEST(JsonTest, syntax_error_location_includes_source_name)
     EXPECT_FALSE(loadJson(R"({"a": [1 2]})", tree, diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(diagnostics[0].location, (SourceLocation{1, 10, "broken.json"}));
+    EXPECT_EQ(diagnostics[0].location, (SourceLocation{1, 10}));
+    EXPECT_EQ(
+        std::string(diagnostics[0].source.data(), diagnostics[0].source.size()), "broken.json");
 }
 
 TEST(JsonTest, decode_errors_point_into_json_text)
@@ -353,6 +355,24 @@ TEST(JsonTest, decode_errors_point_into_json_text)
     std::ostringstream rule_out;
     rule_out << rule_diagnostics[0];
     EXPECT_EQ(rule_out.str(), "gain.json:2:11: gain: must be positive");
+}
+
+TEST(JsonTest, diagnostics_outlive_the_tree)
+{
+    Diagnostics diagnostics;
+    {
+        PropTree tree;
+        tree.set_source_name("gain.json");
+        ASSERT_TRUE(loadJson("{\n  \"gain\": -1\n}", tree, diagnostics));
+        EXPECT_FALSE(decode<GainConfig>(tree.root(), diagnostics));
+    }
+    // The tree is gone: the diagnostic keeps its own copy of the source name
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].source), "gain.json");
+    EXPECT_STREQ(diagnostics[0].location.file_name(), "");
+    std::ostringstream out;
+    out << diagnostics[0];
+    EXPECT_EQ(out.str(), "gain.json:2:11: gain: must be positive");
 }
 
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)

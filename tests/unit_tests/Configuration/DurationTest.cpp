@@ -10,6 +10,14 @@ using namespace ducta::Configuration;
 namespace {
 
 using Microseconds = Chrono::TimestampUS;
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+template <intmax_t Num, intmax_t Den>
+using Ratio = etl::ratio<Num, Den>;
+#else
+template <intmax_t Num, intmax_t Den>
+using Ratio = std::ratio<Num, Den>;
+#endif
 using Milliseconds = Chrono::chrono::milliseconds;
 using Nanoseconds = Chrono::chrono::nanoseconds;
 
@@ -87,6 +95,21 @@ TEST(DurationTest, other_destination_types)
 {
     EXPECT_EQ(ok<Milliseconds>(R"("2s")"), Milliseconds{2000});
     EXPECT_EQ(ok<Nanoseconds>(R"("1.5us")"), Nanoseconds{1500});
+}
+
+TEST(DurationTest, fractional_nanosecond_periods)
+{
+    // A tick of 2/3 ns: "2ns" is exactly 3 ticks, "1ns" is not a whole number of ticks
+    using TwoThirdsNs = Chrono::chrono::duration<int64_t, Ratio<1, 1500000000>>;
+    EXPECT_EQ(ok<TwoThirdsNs>(R"("2ns")"), TwoThirdsNs{3});
+    EXPECT_EQ(ok<TwoThirdsNs>(R"("1us")"), TwoThirdsNs{1500});
+    Diagnostics diagnostics;
+    TwoThirdsNs value{};
+    EXPECT_FALSE(decodeDuration(R"("1ns")", value, diagnostics));
+
+    // Picoseconds: finer than a nanosecond
+    using Picoseconds = Chrono::chrono::duration<int64_t, Ratio<1, 1000000000000>>;
+    EXPECT_EQ(ok<Picoseconds>(R"("3ns")"), Picoseconds{3000});
 }
 
 TEST(DurationTest, precision_below_tick_is_an_error)

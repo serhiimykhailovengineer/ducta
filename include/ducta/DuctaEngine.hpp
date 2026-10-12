@@ -173,14 +173,25 @@ public:
             DUCTA_LOG_ERROR("DuctaEngine is not configured or already running");
             return EXIT_FAILURE;
         }
-        m_running = true;
-        int result = EXIT_SUCCESS;
+        /* Reset even when a node throws from init(), iterate() or release() */
+        struct RunningGuard
         {
-            Pipeline::PipelineEngine engine{m_pipeline, ::ducta::move(stop_token)};
-            result = engine.run();
-        }
-        m_running = false;
-        return result;
+            bool& running;
+
+            explicit RunningGuard(bool& flag) noexcept
+                : running{flag}
+            {
+                running = true;
+            }
+
+            ~RunningGuard()
+            {
+                running = false;
+            }
+        } const guard{m_running};
+
+        Pipeline::PipelineEngine engine{m_pipeline, ::ducta::move(stop_token)};
+        return engine.run();
     }
 
     bool configured() const noexcept

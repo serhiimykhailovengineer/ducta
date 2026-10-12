@@ -76,6 +76,11 @@
 // ========== tuple elem for 2-tuple: ("left", left) ==========
 #define DUCTA_TUPLE_ELEM_2_0(a, b) a
 #define DUCTA_TUPLE_ELEM_2_1(a, b) b
+
+// ========== tuple elem for 3-tuple: ("gain", config.gain > 0, "must be positive") ==========
+#define DUCTA_TUPLE_ELEM_3_0(a, b, c) a
+#define DUCTA_TUPLE_ELEM_3_1(a, b, c) b
+#define DUCTA_TUPLE_ELEM_3_2(a, b, c) c
 #define DUCTA_TUPLE_ELEM(n, i, tuple) \
     DUCTA_PP_CAT(DUCTA_PP_CAT(DUCTA_TUPLE_ELEM_, n), DUCTA_PP_CAT(_, i)) tuple
 

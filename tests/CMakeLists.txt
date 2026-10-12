@@ -11,6 +11,6 @@ add_subdirectory(int_tests)
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    DEPENDS IOTests SteadyClockTests PipelineTests IntTests
+    DEPENDS CoreTests IOTests SteadyClockTests PipelineTests ConfigurationTests IntTests
     USES_TERMINAL
 )

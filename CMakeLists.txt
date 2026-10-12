@@ -39,4 +39,10 @@ target_link_libraries(ducta_pipeline
         ducta_io
 )
 
+add_library(ducta_configuration INTERFACE)
+target_include_directories(ducta_configuration
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 add_subdirectory(tests)

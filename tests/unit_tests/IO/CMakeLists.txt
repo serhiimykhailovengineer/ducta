@@ -6,6 +6,10 @@ add_executable(${TARGET_NAME}
     InputRefTest.cpp
     TOutputTest.cpp
     OutputRefTest.cpp
+    TEventTest.cpp
+    EventRefTest.cpp
+    DefineEventsTest.cpp
+    EventHandlerTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

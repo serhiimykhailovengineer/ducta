@@ -7,6 +7,7 @@
 #include "ducta/Pipeline/StopToken.hpp"
 
 #include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
+#include "ducta/Pipeline/Private/EventWiring.hpp"
 
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/StringView.hpp"
@@ -40,7 +41,7 @@ public:
     : Pipeline(Clock(clock))
     {}
 
-    bool configure(Nodes& nodes, Config const& config, TraceCallback trace_callback = nullptr);
+    bool configure(Nodes& nodes, Config const& config, TraceCallback trace_callback = {});
 
     void init();
     bool iterate();
@@ -64,6 +65,7 @@ private:
 
     Vector<NodeInfo, 50> m_init_order;
     Vector<NodeInfo, 50> m_nodes;
+    Private::EventWiring m_event_wiring;
 };
 
 class PipelineEngine
@@ -89,6 +91,8 @@ private:
 } // namespace Pipeline
 } // namespace ducta
 
+#if !defined(DUCTA_SEPARATE_COMPILATION)
 #include "ducta/Pipeline/Private/Pipeline.inl"
+#endif
 
 #endif // DUCTA_PIPELINE_PIPELINE_HPP

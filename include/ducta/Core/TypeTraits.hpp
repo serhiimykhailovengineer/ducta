@@ -66,6 +66,9 @@ using remove_reference_t = typename std::remove_reference<T>::type;
 
 #endif
 
+template< class... >
+using void_t = void;
+
 } // namespace ducta
 
 #endif // DUCTA_CORE_TYPETRAITS_HPP

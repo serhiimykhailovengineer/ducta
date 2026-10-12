@@ -6,6 +6,9 @@
 #include "ducta/IO/TOutput.hpp"
 #include "ducta/IO/DefineInputs.hpp"
 #include "ducta/IO/DefineOutputs.hpp"
+#include "ducta/IO/TEvent.hpp"
+#include "ducta/IO/DefineEvents.hpp"
+#include "ducta/IO/EventHandler.hpp"
 
 #include "ducta/Pipeline/NodeRef.hpp"
 
@@ -321,4 +324,125 @@ TEST(NodeTests, check_result_of_custom_expected_like_iterate)
     ASSERT_TRUE(result);
     ASSERT_FALSE(*result);
     node_ref.release();
+}
+
+TEST(NodeTests, send_event_to_node_with_supported_event) 
+{
+    struct MyEvent
+    {
+        int value;
+    };
+
+    struct NodeWithSupportedEvent
+    {
+        using SupportedEvents = EventList<MyEvent>;
+
+        void init()
+        {}
+
+        void OnEvent(MyEvent const& event)
+        {
+            m_last_event_value = event.value;
+        }
+
+        void release()
+        {}
+
+        int m_last_event_value{0};
+    } node_instance;
+
+    Pipeline::NodeRef node_ref{node_instance};
+
+    node_ref.init();
+    MyEvent event{42};
+    auto result = node_ref.sendEvent(event);
+    ASSERT_TRUE(result);
+    ASSERT_TRUE(*result);
+    ASSERT_EQ(node_instance.m_last_event_value, 42);
+    node_ref.release();
+}
+
+namespace {
+
+struct PingEvent { int value; };
+
+struct EmitterNode
+{
+    ducta::IO::TEvent<PingEvent> ping;
+    void init() {}
+    void release() {}
+    void fire(int v) { ping(PingEvent{v}); }
+};
+
+struct PingReceiver
+{
+    int calls = 0;
+    int last = 0;
+    void OnRaw(void* raw)
+    {
+        ++calls;
+        last = static_cast<PingEvent const*>(raw)->value;
+    }
+};
+
+} // namespace
+
+DEFINE_NODE_EVENTS(EmitterNode, ("ping", ping));
+
+TEST(NodeTests, get_events_for_node_without_events)
+{
+    EmptyNode empty;
+    Pipeline::NodeRef node{empty};
+    EXPECT_EQ(node.get_events().size(), 0);
+}
+
+TEST(NodeTests, get_events_for_node_with_events)
+{
+    EmitterNode emitter;
+    Pipeline::NodeRef node{emitter};
+
+    auto events = node.get_events();
+    ASSERT_EQ(events.size(), 1);
+    ASSERT_TRUE(events.find("ping") != events.end());
+    EXPECT_EQ(events.find("ping")->second.type_id(), DUCTA_TYPE_ID(PingEvent));
+}
+
+TEST(NodeTests, emitted_event_reaches_subscriber_via_node_ref)
+{
+    EmitterNode emitter;
+    PingReceiver receiver;
+    Pipeline::NodeRef node{emitter};
+
+    auto events = node.get_events();
+    events.find("ping")->second.subscribe(makeFunctionRef<PingReceiver, &PingReceiver::OnRaw>(receiver));
+
+    emitter.fire(1);
+    emitter.fire(2);
+
+    EXPECT_EQ(receiver.calls, 2);
+    EXPECT_EQ(receiver.last, 2);
+}
+
+namespace {
+struct PingConsumer
+{
+    int calls = 0;
+    int last = 0;
+    void OnExact(PingEvent const& e) { ++calls; last = e.value; }
+};
+}
+
+TEST(NodeTests, emitted_event_reaches_exact_typed_handler_via_node_ref)
+{
+    EmitterNode emitter;
+    PingConsumer consumer;
+    IO::EventHandler<PingConsumer, &PingConsumer::OnExact> handler{consumer};
+    Pipeline::NodeRef node{emitter};
+
+    node.get_events().find("ping")->second.subscribe(handler.delegate());
+
+    emitter.fire(5);
+
+    EXPECT_EQ(consumer.calls, 1);
+    EXPECT_EQ(consumer.last, 5);
 }

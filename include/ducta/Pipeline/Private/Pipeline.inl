@@ -3,18 +3,19 @@
 
 #include "ducta/Pipeline/Pipeline.hpp"
 
+#include "ducta/Core/Config.hpp"
 #include "ducta/Core/Algorithms/Adapters.hpp"
 #include "ducta/Utils/Log.hpp"
 
 namespace ducta {
 namespace Pipeline {
 
-Pipeline::Pipeline(Clock&& clock)
+DUCTA_DECL Pipeline::Pipeline(Clock&& clock)
 : m_clock(::ducta::move(clock))
 {
 }
 
-bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
+DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
 {
     m_trace_enabled = config.should_trace_execution;
     m_target_frame_duration = config.target_frame_duration;
@@ -25,6 +26,7 @@ bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace
         ? &Pipeline::iterateWithTrace
         : &Pipeline::iterateWithoutTrace;
 
+    m_event_wiring.disconnect();
     m_init_order.clear();
     m_nodes.clear();
 
@@ -45,10 +47,12 @@ bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace
     }
 
     m_trace_info.configure(Span<StringView const>(config.order.data(), config.order.size()));
+
+    m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
     return true;
 }
 
-void Pipeline::init()
+DUCTA_DECL void Pipeline::init()
 {
     for (auto& node_info : m_init_order)
     {
@@ -56,12 +60,12 @@ void Pipeline::init()
     }
 }
 
-bool Pipeline::iterate()
+DUCTA_DECL bool Pipeline::iterate()
 {
     return (this->*m_iteration_strategy)();
 }
 
-bool Pipeline::iterateWithoutTrace()
+DUCTA_DECL bool Pipeline::iterateWithoutTrace()
 {
     auto const frame_start_time = m_clock.now();
 
@@ -101,7 +105,7 @@ bool Pipeline::iterateWithoutTrace()
     return true;
 }
 
-bool Pipeline::iterateWithTrace()
+DUCTA_DECL bool Pipeline::iterateWithTrace()
 {
     auto const frame_start_time = m_clock.now();
     m_trace_info.frame_start(frame_start_time);
@@ -154,27 +158,28 @@ bool Pipeline::iterateWithTrace()
     return true;
 }
 
-void Pipeline::release()
+DUCTA_DECL void Pipeline::release()
 {
     for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
     {
         node_info.node.release();
     }
+    m_event_wiring.disconnect();
 }
 
-PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
+DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
 : m_pipeline{pipeline}
 , m_stop_token{::ducta::move(stop_token)}
 {
     m_pipeline.init();
 }
 
-PipelineEngine::~PipelineEngine()
+DUCTA_DECL PipelineEngine::~PipelineEngine()
 {
     m_pipeline.release();
 }
 
-int PipelineEngine::run()
+DUCTA_DECL int PipelineEngine::run()
 {
     while (true)
     {

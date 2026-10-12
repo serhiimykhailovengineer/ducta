@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <initializer_list>
+#include <string>
 #include <vector>
 
 #include "ducta/IO/DefineEvents.hpp"
@@ -262,6 +263,10 @@ TEST_F(Fixture, emitter_without_receivers_is_noop)
 
 TEST_F(Fixture, relay_receives_and_emits_chained_events)
 {
+    if (DUCTA_MAX_EVENT_CONNECTIONS < 3)
+    {
+        GTEST_SKIP() << "the graph wires 3 event emitters";
+    }
     nodes.add_node("emitter", e);
     nodes.add_node("relay", relay);
     nodes.add_node("sink", sink);
@@ -306,6 +311,124 @@ TEST_F(Fixture, node_receives_its_own_event_if_it_has_a_handler)
     self.pong(Pong{1});
     EXPECT_EQ(self.calls, 1);
 }
+
+// ========== Capacity (embedded backend: fixed size containers) ==========
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+namespace {
+
+/* Exceeding DUCTA_MAX_EVENT_CONNECTIONS needs DUCTA_MAX_EVENT_CONNECTIONS + 2 nodes */
+constexpr size_t kTooMany = DUCTA_MAX_EVENT_CONNECTIONS + 1;
+constexpr bool kCanExceedEventCapacity = kTooMany + 1 <= DUCTA_MAX_NODES;
+
+std::string name_of(char const* prefix, size_t index)
+{
+    return std::string{prefix} + std::to_string(index);
+}
+
+void add(Pipeline::Nodes& nodes, Pipeline::Pipeline::Config& config, std::string const& name)
+{
+    config.order.push_back(Pipeline::NodeName{name.data(), name.size()});
+}
+
+std::string first_message(Configuration::Diagnostics const& diagnostics)
+{
+    return diagnostics.size() > 0
+               ? std::string{diagnostics[0].message.data(), diagnostics[0].message.size()}
+               : std::string{};
+}
+
+} // namespace
+
+TEST_F(Fixture, too_many_receivers_of_one_event_are_reported)
+{
+    if (!kCanExceedEventCapacity)
+    {
+        GTEST_SKIP() << "needs DUCTA_MAX_EVENT_CONNECTIONS + 2 <= DUCTA_MAX_NODES";
+    }
+    std::vector<PingReceiver> receivers(kTooMany);
+    Pipeline::Pipeline::Config config;
+    nodes.add_node("producer", producer);
+    add(nodes, config, "producer");
+    for (size_t i = 0; i < receivers.size(); ++i)
+    {
+        std::string const name = name_of("receiver", i);
+        nodes.add_node(StringView{name.data(), name.size()}, receivers[i]);
+        add(nodes, config, name);
+    }
+
+    Configuration::Diagnostics diagnostics;
+    EXPECT_FALSE(pipeline.configure(nodes, config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(
+        first_message(diagnostics),
+        "event 'ping' of node 'producer' has more than " +
+            std::to_string(DUCTA_MAX_EVENT_CONNECTIONS) + " receivers");
+
+    // Nothing stays connected
+    producer.ping(Ping{1});
+    for (auto const& receiver : receivers)
+    {
+        EXPECT_EQ(receiver.calls, 0);
+    }
+}
+
+TEST_F(Fixture, too_many_connected_emitters_are_reported)
+{
+    if (!kCanExceedEventCapacity)
+    {
+        GTEST_SKIP() << "needs DUCTA_MAX_EVENT_CONNECTIONS + 2 <= DUCTA_MAX_NODES";
+    }
+    std::vector<Producer> producers(kTooMany);
+    Pipeline::Pipeline::Config config;
+    for (size_t i = 0; i < producers.size(); ++i)
+    {
+        std::string const name = name_of("producer", i);
+        nodes.add_node(StringView{name.data(), name.size()}, producers[i]);
+        add(nodes, config, name);
+    }
+    nodes.add_node("receiver", r);
+    add(nodes, config, "receiver");
+
+    Configuration::Diagnostics diagnostics;
+    EXPECT_FALSE(pipeline.configure(nodes, config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    std::string const last = name_of("producer", kTooMany - 1);
+    EXPECT_EQ(
+        first_message(diagnostics),
+        "more than " + std::to_string(DUCTA_MAX_EVENT_CONNECTIONS) +
+            " connected event emitters; event 'ping' of node '" + last + "' does not fit");
+
+    producers.front().ping(Ping{1});
+    EXPECT_EQ(r.calls, 0);
+}
+
+TEST_F(Fixture, events_up_to_the_capacity_are_connected)
+{
+    if (!kCanExceedEventCapacity)
+    {
+        GTEST_SKIP() << "needs DUCTA_MAX_EVENT_CONNECTIONS + 2 <= DUCTA_MAX_NODES";
+    }
+    std::vector<PingReceiver> receivers(DUCTA_MAX_EVENT_CONNECTIONS);
+    Pipeline::Pipeline::Config config;
+    nodes.add_node("producer", producer);
+    add(nodes, config, "producer");
+    for (size_t i = 0; i < receivers.size(); ++i)
+    {
+        std::string const name = name_of("receiver", i);
+        nodes.add_node(StringView{name.data(), name.size()}, receivers[i]);
+        add(nodes, config, name);
+    }
+
+    Configuration::Diagnostics diagnostics;
+    ASSERT_TRUE(pipeline.configure(nodes, config, diagnostics)) << first_message(diagnostics);
+    producer.ping(Ping{1});
+    for (auto const& receiver : receivers)
+    {
+        EXPECT_EQ(receiver.calls, 1);
+    }
+}
+#endif
 
 namespace {
 

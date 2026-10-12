@@ -3,12 +3,16 @@
 
 #include "ducta/Core/Capacity.hpp"
 
+#include "ducta/Configuration/Diagnostics.hpp"
+
 #include "ducta/Pipeline/Clock.hpp"
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
 
 #include "ducta/IO/EventRef.hpp"
 
+#include "ducta/Core/Algorithms/Format.hpp"
+#include "ducta/Core/Types/String.hpp"
 #include "ducta/Core/Types/TypeRegistry.hpp"
 #include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Utils/Log.hpp"
@@ -16,6 +20,18 @@
 namespace ducta {
 namespace Pipeline {
 namespace Private {
+
+/* false while a fixed capacity container (embedded backend) can take another element */
+template <class Container>
+bool is_full(Container const& container) noexcept
+{
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+    return container.full();
+#else
+    (void)container;
+    return false;
+#endif
+}
 
 /*
  * Connects event emitters (DEFINE_NODE_EVENTS) with event receivers
@@ -26,6 +42,9 @@ namespace Private {
  * Every emitter (TEvent) has a single delegate slot, so each emitter gets one
  * Fanout that is subscribed to it and forwards the event to every node which
  * supports exactly that event type.
+ *
+ * With the embedded backend at most DUCTA_MAX_EVENT_CONNECTIONS emitters are wired, each to at
+ * most DUCTA_MAX_EVENT_CONNECTIONS receivers; a graph needing more is rejected by connect().
  */
 class EventWiring
 {
@@ -55,9 +74,15 @@ public:
         {
         }
 
-        void add_sink(Sink sink)
+        /* false if the sink does not fit */
+        bool add_sink(Sink sink)
         {
+            if (is_full(m_sinks))
+            {
+                return false;
+            }
             m_sinks.push_back(sink);
+            return true;
         }
         size_t sink_count() const
         {
@@ -109,11 +134,14 @@ public:
      * @param nodes  nodes in pipeline order (the index is the index used in the trace)
      * @param clock  used for timestamps of traced events (may be null)
      * @param trace  trace sink, null when tracing is disabled
+     * @param diagnostics  receives the problems; null: they are logged
+     * @return false (nothing connected) if the events exceed DUCTA_MAX_EVENT_CONNECTIONS
      */
-    void connect(
+    bool connect(
         Vector<NodeInfo, DUCTA_MAX_NODES>& nodes,
         Clock* clock = nullptr,
-        PipelineTraceInfo* trace = nullptr)
+        PipelineTraceInfo* trace = nullptr,
+        Configuration::Diagnostics* diagnostics = nullptr)
     {
         disconnect();
 
@@ -133,14 +161,36 @@ public:
                     {
                         if (supported == id)
                         {
-                            fanout.add_sink(
-                                Sink{nodes[receiver_idx].node, id, nodes[receiver_idx].name, receiver_idx});
+                            if (!fanout.add_sink(Sink{
+                                    nodes[receiver_idx].node, id, nodes[receiver_idx].name, receiver_idx}))
+                            {
+                                String<100> text;
+                                format_to(
+                                    text,
+                                    "event '{}' of node '{}' has more than {} receivers",
+                                    event.first,
+                                    nodes[emitter_idx].name,
+                                    static_cast<unsigned long long>(DUCTA_MAX_EVENT_CONNECTIONS));
+                                return fail(diagnostics, text);
+                            }
                             break;
                         }
                     }
                 }
                 if (fanout.sink_count() > 0)
                 {
+                    if (is_full(m_fanouts))
+                    {
+                        String<100> text;
+                        format_to(
+                            text,
+                            "more than {} connected event emitters; event '{}' of node '{}' does "
+                            "not fit",
+                            static_cast<unsigned long long>(DUCTA_MAX_EVENT_CONNECTIONS),
+                            event.first,
+                            nodes[emitter_idx].name);
+                        return fail(diagnostics, text);
+                    }
                     m_fanouts.push_back(::ducta::move(fanout));
                 }
             }
@@ -151,6 +201,7 @@ public:
         {
             fanout.subscribe();
         }
+        return true;
     }
 
     void disconnect()
@@ -176,6 +227,21 @@ public:
     }
 
 private:
+    /* Report a capacity problem and drop what was built so far; always false */
+    bool fail(Configuration::Diagnostics* diagnostics, String<100> const& text)
+    {
+        m_fanouts.clear();
+        if (diagnostics != nullptr)
+        {
+            diagnostics->error(Configuration::PropNode{}, StringView{text.data(), text.size()});
+        }
+        else
+        {
+            DUCTA_LOG_ERROR("{}", StringView{text.data(), text.size()});
+        }
+        return false;
+    }
+
     Vector<Fanout, DUCTA_MAX_EVENT_CONNECTIONS> m_fanouts;
 };
 

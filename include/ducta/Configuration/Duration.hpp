@@ -18,6 +18,7 @@
 
 #include "ducta/Chrono/Chrono.hpp"
 
+#include "ducta/Core/CheckedMath.hpp"
 #include "ducta/Core/Limits.hpp"
 #include "ducta/Core/Types/Integers.hpp"
 #include "ducta/Core/Types/StringView.hpp"
@@ -123,8 +124,7 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
         bool digits = false;
         while (i < n && is_digit(text[i]))
         {
-            if (__builtin_mul_overflow(integer, 10, &integer) ||
-                __builtin_add_overflow(integer, text[i] - '0', &integer))
+            if (!checked_mul(integer, 10, integer) || !checked_add(integer, text[i] - '0', integer))
             {
                 return DurationError::Range;
             }
@@ -172,8 +172,7 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
         // integer * unit + fraction * unit / scale, exactly
         int64_t part = 0;
         int64_t fraction_ns = 0;
-        if (__builtin_mul_overflow(integer, unit_ns, &part) ||
-            __builtin_mul_overflow(fraction, unit_ns, &fraction_ns))
+        if (!checked_mul(integer, unit_ns, part) || !checked_mul(fraction, unit_ns, fraction_ns))
         {
             return DurationError::Range;
         }
@@ -181,8 +180,7 @@ inline DurationError parse_duration_ns(StringView text, int64_t& out, StringView
         {
             return DurationError::Precision;
         }
-        if (__builtin_add_overflow(part, fraction_ns / fraction_scale, &part) ||
-            __builtin_add_overflow(total, part, &total))
+        if (!checked_add(part, fraction_ns / fraction_scale, part) || !checked_add(total, part, total))
         {
             return DurationError::Range;
         }
@@ -218,7 +216,7 @@ DurationError nanoseconds_to_ticks(int64_t nanoseconds, int64_t& ticks) noexcept
     constexpr int64_t num = static_cast<int64_t>(Period::num);
     constexpr int64_t den = static_cast<int64_t>(Period::den);
     int64_t tick_ns = 0;
-    if (__builtin_mul_overflow(num, int64_t{1000000000}, &tick_ns))
+    if (!checked_mul(num, int64_t{1000000000}, tick_ns))
     {
         return DurationError::Range;
     }
@@ -230,7 +228,7 @@ DurationError nanoseconds_to_ticks(int64_t nanoseconds, int64_t& ticks) noexcept
     {
         return DurationError::Precision;
     }
-    if (__builtin_mul_overflow(nanoseconds / divisor, multiplier, &ticks))
+    if (!checked_mul(nanoseconds / divisor, multiplier, ticks))
     {
         return DurationError::Range;
     }

@@ -2,6 +2,7 @@ set(TARGET_NAME CoreTests)
 
 add_executable(${TARGET_NAME}
     SourceLocationTest.cpp
+    CheckedMathTest.cpp
 )
 
 set(BACKEND_LIBS)

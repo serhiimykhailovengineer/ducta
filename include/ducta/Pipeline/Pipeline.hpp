@@ -71,7 +71,8 @@ public:
      *        config.connections; nodes must outlive the configuration (or the next clear())
      *
      * Every problem (PipelineConfig rules, unknown node or port, incompatible types, an input
-     * connected twice) is reported to diagnostics. On any error nothing is configured.
+     * connected twice, events beyond DUCTA_MAX_EVENT_CONNECTIONS) is reported to diagnostics.
+     * On any error nothing is configured.
      *
      * @return true if the pipeline is ready to run
      */

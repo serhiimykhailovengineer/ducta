@@ -139,7 +139,12 @@ DUCTA_DECL bool Pipeline::configure(
         m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
 
     m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
-    m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
+    if (!m_event_wiring.connect(
+            m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr, &diagnostics))
+    {
+        clear();
+        return false;
+    }
     return true;
 }
 
@@ -168,7 +173,8 @@ DUCTA_DECL void Pipeline::clear()
 
 DUCTA_DECL void Pipeline::init()
 {
-    // release() disconnects the events: connect them again, so that every run delivers them
+    // release() disconnects the events: connect them again, so that every run delivers them.
+    // The same nodes were connected by configure(), so this fits the capacities too.
     m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
 
     size_t initialized = 0;

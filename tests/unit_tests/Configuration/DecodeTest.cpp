@@ -14,9 +14,9 @@ using namespace ducta::Configuration;
 namespace {
 
 template <class StringType>
-std::string str(StringType const& s)
+StringView str(StringType const& s)
 {
-    return std::string(s.data(), s.size());
+    return StringView{s.data(), s.size()};
 }
 
 struct FilterConfig
@@ -404,7 +404,7 @@ TEST(DecodeTest, embedded_long_source_name_keeps_its_end)
 
     tree.set_source_name(StringView{name.data(), name.size()});
 
-    std::string stored = str(tree.source_name());
+    StringView stored = tree.source_name();
     EXPECT_EQ(stored.size(), static_cast<size_t>(DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH));
     EXPECT_EQ(stored.substr(stored.size() - 12), "/filter.json");
 }

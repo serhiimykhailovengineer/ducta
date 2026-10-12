@@ -34,7 +34,8 @@
         static bool decode(                                                            \
             ::ducta::Configuration::PropNode node,                                     \
             Config& config,                                                            \
-            ::ducta::Configuration::Diagnostics& diagnostics)                          \
+            ::ducta::Configuration::Diagnostics& diagnostics,                          \
+            ::ducta::StringView ignored = {})                                          \
         {                                                                              \
             ::ducta::Configuration::Private::ObjectDecoder decoder{node, diagnostics}; \
             if (!decoder.valid())                                                      \
@@ -44,7 +45,7 @@
             DUCTA_FOR_EACH_I(DUCTA_CONFIG_FIELD_DECODE, config, __VA_ARGS__)           \
             ::ducta::StringView const names[] = {                                      \
                 DUCTA_FOR_EACH_I(DUCTA_CONFIG_FIELD_NAME, config, __VA_ARGS__)};       \
-            decoder.reject_unknown(names);                                             \
+            decoder.reject_unknown(names, ignored);                                    \
             return decoder.ok();                                                       \
         }                                                                              \
     };
@@ -72,6 +73,48 @@
             (void)config;                                                                        \
             DUCTA_FOR_EACH_I(DUCTA_CONFIG_RULE_CHECK, config, __VA_ARGS__)                       \
         }                                                                                        \
+    };
+
+#define DUCTA_CONFIG_VARIANT_CASE(variant, i, elem)                                 \
+    if (decoder.tag() == ::ducta::StringView{DUCTA_TUPLE_ELEM(2, 0, elem)})         \
+    {                                                                               \
+        return decoder.template alternative<DUCTA_TUPLE_ELEM(2, 1, elem)>(variant); \
+    }
+
+#define DUCTA_CONFIG_VARIANT_NAME(variant, i, elem) \
+    DUCTA_COMMA_IF(i)::ducta::StringView            \
+    {                                               \
+        DUCTA_TUPLE_ELEM(2, 0, elem)                \
+    }
+
+// Macro to decode a Variant of DEFINE_CONFIG structs selected by a tag member:
+//   using FilterConfig = ducta::Variant<LowPassConfig, HighPassConfig>;
+//   DEFINE_CONFIG_VARIANT(FilterConfig, "type", ("lowpass", LowPassConfig), ("highpass", HighPassConfig));
+// decodes { "type": "lowpass", "cutoff": 100 } as LowPassConfig (the tag is not a field of
+// the alternative). Variants without this macro are decoded by the kind of the value.
+#define DEFINE_CONFIG_VARIANT(VariantType, TagKey, ...)                            \
+    template <>                                                                    \
+    struct ducta::Configuration::ConfigTraits<DUCTA_PP_UNPAREN((VariantType))>     \
+    {                                                                              \
+        using Config = DUCTA_PP_UNPAREN((VariantType));                            \
+        static bool decode(                                                        \
+            ::ducta::Configuration::PropNode node,                                 \
+            Config& config,                                                        \
+            ::ducta::Configuration::Diagnostics& diagnostics,                      \
+            ::ducta::StringView ignored = {})                                      \
+        {                                                                          \
+            (void)ignored;                                                         \
+            ::ducta::Configuration::Private::TaggedVariantDecoder decoder{         \
+                node, ::ducta::StringView{TagKey}, diagnostics};                   \
+            if (!decoder.valid())                                                  \
+            {                                                                      \
+                return false;                                                      \
+            }                                                                      \
+            DUCTA_FOR_EACH_I(DUCTA_CONFIG_VARIANT_CASE, config, __VA_ARGS__)       \
+            ::ducta::StringView const names[] = {                                  \
+                DUCTA_FOR_EACH_I(DUCTA_CONFIG_VARIANT_NAME, config, __VA_ARGS__)}; \
+            return decoder.reject_unknown_tag(names);                              \
+        }                                                                          \
     };
 
 #endif // DUCTA_CONFIGURATION_DEFINE_CONFIG_HPP

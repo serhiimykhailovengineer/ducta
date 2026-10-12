@@ -3,6 +3,8 @@ set(TARGET_NAME ConfigurationTests)
 add_executable(${TARGET_NAME}
     PropTreeTest.cpp
     DecodeTest.cpp
+    VariantTest.cpp
+    ContainersTest.cpp
 )
 
 set(BACKEND_LIBS)

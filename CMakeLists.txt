@@ -29,6 +29,12 @@ target_include_directories(ducta_io
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+add_library(ducta_configuration INTERFACE)
+target_include_directories(ducta_configuration
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 add_library(ducta_pipeline INTERFACE)
 target_include_directories(ducta_pipeline
     INTERFACE
@@ -37,12 +43,7 @@ target_include_directories(ducta_pipeline
 target_link_libraries(ducta_pipeline
     INTERFACE
         ducta_io
-)
-
-add_library(ducta_configuration INTERFACE)
-target_include_directories(ducta_configuration
-    INTERFACE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ducta_configuration
 )
 
 add_subdirectory(tests)

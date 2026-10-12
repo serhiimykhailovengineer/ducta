@@ -10,9 +10,9 @@ using namespace ducta::Configuration;
 namespace {
 
 template <class StringType>
-std::string str(StringType const& s)
+StringView str(StringType const& s)
 {
-    return std::string(s.data(), s.size());
+    return StringView{s.data(), s.size()};
 }
 
 } // namespace
@@ -69,7 +69,8 @@ TEST(PropTreeTest, keeps_insertion_order)
     std::string keys;
     for (PropNode child : tree.root())
     {
-        keys += str(child.key());
+        StringView key = child.key();
+        keys.append(key.data(), key.size());
     }
     EXPECT_EQ(keys, "cab");
     EXPECT_EQ(str(tree.root().at(1).key()), "a");

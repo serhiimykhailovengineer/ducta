@@ -18,6 +18,8 @@ else()
     find_package(fmt REQUIRED)
 endif()
 
+find_package(jsmn REQUIRED)
+
 find_package(GTest REQUIRED)
 
 enable_testing()
@@ -29,6 +31,21 @@ target_include_directories(ducta_io
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+add_library(ducta_configuration INTERFACE)
+target_include_directories(ducta_configuration
+    INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(ducta_configuration
+    INTERFACE
+        jsmn::jsmn
+)
+if (DUCTA_USE_EMBEDDED_BACKEND)
+    target_link_libraries(ducta_configuration INTERFACE etl::etl)
+else()
+    target_link_libraries(ducta_configuration INTERFACE fmt::fmt)
+endif()
+
 add_library(ducta_pipeline INTERFACE)
 target_include_directories(ducta_pipeline
     INTERFACE
@@ -37,6 +54,7 @@ target_include_directories(ducta_pipeline
 target_link_libraries(ducta_pipeline
     INTERFACE
         ducta_io
+        ducta_configuration
 )
 
 add_subdirectory(tests)

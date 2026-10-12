@@ -40,6 +40,10 @@ using remove_cv_t = typename etl::remove_cv<T>::type;
 template <class T>
 using remove_reference_t = typename etl::remove_reference<T>::type;
 
+using etl::is_floating_point_v;
+using etl::is_integral_v;
+using etl::is_signed_v;
+
 #else
 
 using true_type = std::true_type;
@@ -63,6 +67,10 @@ template <class T>
 using remove_cv_t = typename std::remove_cv<T>::type;
 template <class T>
 using remove_reference_t = typename std::remove_reference<T>::type;
+
+using std::is_floating_point_v;
+using std::is_integral_v;
+using std::is_signed_v;
 
 #endif
 

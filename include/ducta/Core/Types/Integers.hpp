@@ -16,6 +16,8 @@ using uint16_t = std::uint16_t;
 using uint32_t = std::uint32_t;
 using uint64_t = std::uint64_t;
 
+using uint_least32_t = std::uint_least32_t;
+
 using uintptr_t = std::uintptr_t;
 using size_t = std::size_t;
 

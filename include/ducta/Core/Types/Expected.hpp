@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_EXPECTED_HPP
 #define DUCTA_CORE_TYPES_EXPECTED_HPP
 
+#include "ducta/Core/Utility.hpp"
+
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/expected.h>
 #include "ducta/Core/ETLProfile.hpp"

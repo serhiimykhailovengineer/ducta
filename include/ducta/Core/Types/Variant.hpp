@@ -15,6 +15,10 @@ namespace ducta {
 template <class... Types>
 using Variant = etl::variant<Types...>;
 
+using etl::get;
+using etl::get_if;
+using etl::holds_alternative;
+
 template <class Visitor, class... Variants>
 constexpr decltype(auto) visit(Visitor&& v, Variants&&... values)
 {
@@ -25,6 +29,10 @@ constexpr decltype(auto) visit(Visitor&& v, Variants&&... values)
 
 template <class... Types>
 using Variant = std::variant<Types...>;
+
+using std::get;
+using std::get_if;
+using std::holds_alternative;
 
 template <class Visitor, class... Variants>
 constexpr decltype(auto) visit(Visitor&& v, Variants&&... values)

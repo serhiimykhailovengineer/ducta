@@ -67,6 +67,8 @@
                 "unit_tests/Pipeline/PipelineTests",
                 "unit_tests/IO/IOTests",
                 "unit_tests/Chrono/SteadyClockTests",
+                "unit_tests/Configuration/ConfigurationTests",
+                "unit_tests/Core/CoreTests",
                 "int_tests/IntTests"
             ],
             "default": "unit_tests/Pipeline/PipelineTests"

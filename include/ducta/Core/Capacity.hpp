@@ -40,6 +40,16 @@
 #define DUCTA_MAX_NODE_PORTS 25
 #endif
 
+// Maximum length of an input / output / event name of a node (characters)
+#ifndef DUCTA_MAX_PORT_NAME_LENGTH
+#define DUCTA_MAX_PORT_NAME_LENGTH 32
+#endif
+
+// Maximum number of output -> input connections of a pipeline (PipelineConfig::connections)
+#ifndef DUCTA_MAX_CONNECTIONS
+#define DUCTA_MAX_CONNECTIONS 50
+#endif
+
 // Maximum number of inputs connected to one output
 #ifndef DUCTA_MAX_OUTPUT_CONNECTIONS
 #define DUCTA_MAX_OUTPUT_CONNECTIONS 50

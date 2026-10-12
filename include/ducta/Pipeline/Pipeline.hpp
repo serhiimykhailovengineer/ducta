@@ -6,7 +6,10 @@
 #include "ducta/Configuration/DefineConfig.hpp"
 #include "ducta/Configuration/Duration.hpp"
 
+#include "ducta/IO/Connection.hpp"
+
 #include "ducta/Pipeline/Clock.hpp"
+#include "ducta/Pipeline/Connections.hpp"
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Nodes.hpp"
 #include "ducta/Pipeline/StopToken.hpp"
@@ -24,13 +27,19 @@ namespace ducta {
 namespace Pipeline {
 
 /*
- * @brief How the nodes are run; decoded from e.g.
- *   { "order": ["Adder", "Gain"], "target_frame_duration": "1ms" }
+ * @brief How the nodes are run and connected; decoded from e.g.
+ *   {
+ *     "order": ["source", "gain"],
+ *     "connections": [{ "source.out": ["gain.in"] }],
+ *     "target_frame_duration": "1ms"
+ *   }
  */
 struct PipelineConfig
 {
     /* Names of the nodes in execution order (also the order of init(); release() is reversed) */
     Vector<NodeName, DUCTA_MAX_NODES> order;
+    /* Output -> input connections made by configure() (see Connections.hpp) */
+    PortLinks connections;
     /* Minimal duration of one iteration; 0 runs as fast as possible */
     Chrono::TimestampUS target_frame_duration{0};
     bool should_trace_execution{false};
@@ -56,7 +65,26 @@ public:
     {
     }
 
+    /*
+     * @brief Run the nodes of config.order and connect the outputs and inputs of
+     *        config.connections; nodes must outlive the configuration (or the next clear())
+     *
+     * Every problem (unknown node or port, incompatible types, an input connected twice) is
+     * reported to diagnostics. On any error nothing is configured.
+     *
+     * @return true if the pipeline is ready to run
+     */
+    bool configure(
+        Nodes& nodes,
+        Config const& config,
+        Configuration::Diagnostics& diagnostics,
+        TraceCallback trace_callback = {});
+
+    /* As above; problems are logged */
     bool configure(Nodes& nodes, Config const& config, TraceCallback trace_callback = {});
+
+    /* Disconnect everything and forget the nodes */
+    void clear();
 
     void init();
     bool iterate();
@@ -80,6 +108,7 @@ private:
 
     Vector<NodeInfo, DUCTA_MAX_NODES> m_init_order;
     Vector<NodeInfo, DUCTA_MAX_NODES> m_nodes;
+    Vector<IO::Connection, DUCTA_MAX_CONNECTIONS> m_connections;
     Private::EventWiring m_event_wiring;
 };
 
@@ -111,6 +140,7 @@ private:
 DEFINE_CONFIG(
     ducta::Pipeline::PipelineConfig,
     ("order", order),
+    ("connections", connections),
     ("target_frame_duration", target_frame_duration),
     ("should_trace_execution", should_trace_execution),
     ("trace_flush_threshold", trace_flush_threshold));

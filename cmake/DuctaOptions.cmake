@@ -23,6 +23,8 @@ ducta_capacity_option(DUCTA_MAX_NODES 50 "Maximum number of nodes in a pipeline"
 ducta_capacity_option(DUCTA_MAX_NODE_TYPES 50 "Maximum number of node types registered with DECLARE_NODE")
 ducta_capacity_option(DUCTA_NODE_STORAGE_BYTES 4096 "Size in bytes of the default static node storage (embedded backend)")
 ducta_capacity_option(DUCTA_MAX_NODE_PORTS 25 "Maximum number of inputs, outputs and events of one node (each)")
+ducta_capacity_option(DUCTA_MAX_PORT_NAME_LENGTH 32 "Maximum length of an input / output / event name (characters)")
+ducta_capacity_option(DUCTA_MAX_CONNECTIONS 50 "Maximum number of output -> input connections of a pipeline")
 ducta_capacity_option(DUCTA_MAX_OUTPUT_CONNECTIONS 50 "Maximum number of inputs connected to one output")
 ducta_capacity_option(DUCTA_MAX_EVENT_CONNECTIONS 50 "Maximum number of wired event emitters, and of receivers of one emitter")
 ducta_capacity_option(DUCTA_MAX_EVENT_TYPES 50 "Maximum number of distinct event types")

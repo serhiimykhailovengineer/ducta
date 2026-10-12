@@ -15,19 +15,16 @@ DUCTA_DECL Pipeline::Pipeline(Clock&& clock)
 {
 }
 
-DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
+DUCTA_DECL bool Pipeline::configure(
+    Nodes& nodes,
+    Config const& config,
+    Configuration::Diagnostics& diagnostics,
+    TraceCallback trace_callback)
 {
-    m_trace_enabled = config.should_trace_execution;
-    m_target_frame_duration = config.target_frame_duration;
-    m_trace_flush_threshold = config.trace_flush_threshold;
-    m_trace_callback = trace_callback;
+    using Configuration::PropNode;
 
-    m_iteration_strategy =
-        m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
-
-    m_event_wiring.disconnect();
-    m_init_order.clear();
-    m_nodes.clear();
+    clear();
+    size_t const errors = diagnostics.error_count();
 
     for (auto const& name : config.order)
     {
@@ -39,18 +36,130 @@ DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCal
         }
         else
         {
-            DUCTA_LOG_ERROR("Node not found: {}", node_name);
-            m_init_order.clear();
-            m_nodes.clear();
-            m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
-            return false;
+            diagnostics.errorf(PropNode{}, "unknown node '{}' in pipeline order", node_name);
         }
     }
 
-    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
+    Vector<size_t, DUCTA_MAX_CONNECTIONS> connected;
+    for (size_t i = 0; i < config.connections.size(); ++i)
+    {
+        PortLink const& link = config.connections[i];
+        StringView const output_node{link.output.node.data(), link.output.node.size()};
+        StringView const output_name{link.output.name.data(), link.output.name.size()};
+        StringView const input_node{link.input.node.data(), link.input.node.size()};
+        StringView const input_name{link.input.name.data(), link.input.name.size()};
 
+        auto source = nodes.get_node(output_node);
+        auto target = nodes.get_node(input_node);
+        if (!source || !target)
+        {
+            diagnostics.errorf(
+                PropNode{}, "unknown node '{}' in connections", !source ? output_node : input_node);
+            continue;
+        }
+
+        auto outputs = source->node.get_outputs();
+        auto output = outputs.find(output_name);
+        if (output == outputs.end())
+        {
+            diagnostics.errorf(PropNode{}, "node '{}' has no output '{}'", output_node, output_name);
+            continue;
+        }
+        auto inputs = target->node.get_inputs();
+        auto input = inputs.find(input_name);
+        if (input == inputs.end())
+        {
+            diagnostics.errorf(PropNode{}, "node '{}' has no input '{}'", input_node, input_name);
+            continue;
+        }
+
+        /* Only the connections actually made count: a rejected one reports its own problem */
+        size_t fan_out = 0;
+        bool connected_twice = false;
+        for (size_t j : connected)
+        {
+            PortLink const& previous = config.connections[j];
+            if (previous.output.node == link.output.node && previous.output.name == link.output.name)
+            {
+                ++fan_out;
+            }
+            if (previous.input.node == link.input.node && previous.input.name == link.input.name)
+            {
+                connected_twice = true;
+            }
+        }
+        if (connected_twice)
+        {
+            diagnostics.errorf(
+                PropNode{}, "input '{}.{}' is connected more than once", input_node, input_name);
+            continue;
+        }
+        if (fan_out >= DUCTA_MAX_OUTPUT_CONNECTIONS)
+        {
+            diagnostics.errorf(
+                PropNode{},
+                "output '{}.{}' is connected to more than {} inputs",
+                output_node,
+                output_name,
+                static_cast<unsigned long long>(DUCTA_MAX_OUTPUT_CONNECTIONS));
+            continue;
+        }
+
+        IO::Connection connection = IO::bind(output->second, input->second);
+        if (!connection)
+        {
+            diagnostics.errorf(
+                PropNode{},
+                "cannot connect '{}.{}' to '{}.{}': incompatible types",
+                output_node,
+                output_name,
+                input_node,
+                input_name);
+            continue;
+        }
+        m_connections.push_back(::ducta::move(connection));
+        connected.push_back(i);
+    }
+
+    if (diagnostics.error_count() != errors)
+    {
+        clear();
+        return false;
+    }
+
+    m_trace_enabled = config.should_trace_execution;
+    m_target_frame_duration = config.target_frame_duration;
+    m_trace_flush_threshold = config.trace_flush_threshold;
+    m_trace_callback = trace_callback;
+    m_iteration_strategy =
+        m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
+
+    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
     m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
     return true;
+}
+
+DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
+{
+    Configuration::Diagnostics diagnostics;
+    bool const ok = configure(nodes, config, diagnostics, trace_callback);
+    for (auto const& diagnostic : diagnostics)
+    {
+        DUCTA_LOG_ERROR("{}", StringView{diagnostic.message.data(), diagnostic.message.size()});
+    }
+    return ok;
+}
+
+DUCTA_DECL void Pipeline::clear()
+{
+    m_event_wiring.disconnect();
+    m_connections.clear();
+    m_init_order.clear();
+    m_nodes.clear();
+    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
+    m_trace_enabled = false;
+    m_trace_callback = {};
+    m_iteration_strategy = &Pipeline::iterateWithoutTrace;
 }
 
 DUCTA_DECL void Pipeline::init()

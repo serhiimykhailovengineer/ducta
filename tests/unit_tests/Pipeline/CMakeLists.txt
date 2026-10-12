@@ -7,6 +7,7 @@ add_executable(${TARGET_NAME}
     NodeFactoryTest.cpp
     NodeManagerTest.cpp
     DuctaEngineTest.cpp
+    ConnectionsTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

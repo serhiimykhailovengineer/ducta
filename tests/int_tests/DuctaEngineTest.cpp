@@ -97,41 +97,42 @@ std::string describe(Diagnostics const& diagnostics)
     return out.str();
 }
 
-/* Wires node outputs to node inputs (and to the test's own inputs) after configure() */
-class Wiring
+/* The test's own input, connected to an output of a node to read results */
+class Probe
 {
 public:
-    explicit Wiring(Pipeline::Nodes& nodes)
+    explicit Probe(Pipeline::Nodes& nodes)
         : m_nodes{nodes}
     {
     }
 
-    void connect(char const* from, char const* output, char const* to, char const* input)
+    void connect(char const* node, char const* output)
     {
-        auto source = m_nodes.get_node(from);
-        auto target = m_nodes.get_node(to);
-        ASSERT_TRUE(source.has_value()) << from;
-        ASSERT_TRUE(target.has_value()) << to;
-        m_connections.push_back(
-            IO::bind(source->node.get_outputs().at(output), target->node.get_inputs().at(input)));
+        auto source = m_nodes.get_node(node);
+        ASSERT_TRUE(source.has_value()) << node;
+        m_connection = IO::bind(source->node.get_outputs().at(output), IO::InputRef{m_input});
     }
 
-    void connect(char const* from, char const* output, IO::TInput<int>& probe)
+    /* The connection must be dropped before the node is destroyed (reconfigure / engine) */
+    void disconnect()
     {
-        auto source = m_nodes.get_node(from);
-        ASSERT_TRUE(source.has_value()) << from;
-        m_connections.push_back(IO::bind(source->node.get_outputs().at(output), IO::InputRef{probe}));
+        m_connection = IO::Connection{};
     }
 
-    /* Connections must be dropped before the nodes are destroyed (reconfigure / engine) */
-    void clear()
+    bool ready() const
     {
-        m_connections.clear();
+        return m_input.ready();
+    }
+
+    int value()
+    {
+        return m_input.value();
     }
 
 private:
     Pipeline::Nodes& m_nodes;
-    std::vector<IO::Connection> m_connections;
+    IO::TInput<int> m_input;
+    IO::Connection m_connection;
 };
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
@@ -159,10 +160,9 @@ protected:
     EngineClock clock;
     PropTree tree;
     Diagnostics diagnostics;
-    // Destroyed in reverse order: the connections go first, then the probe, then the nodes
+    // Destroyed in reverse order: the probe (and its connection) before the nodes
     DuctaEngine<TestStorage> engine{clock};
-    IO::TInput<int> result;
-    Wiring wiring{engine.nodes()};
+    Probe result{engine.nodes()};
 };
 
 TEST_F(DuctaEngineIntegration, arithmetic_graph)
@@ -177,21 +177,85 @@ TEST_F(DuctaEngineIntegration, arithmetic_graph)
             "mul":   { "type": "Multiply" },
             "x10":   { "type": "Scale", "config": { "factor": 10 } }
         },
-        "pipeline": { "order": ["two", "three", "four", "sum", "mul", "x10"] }
+        "pipeline": {
+            "order": ["two", "three", "four", "sum", "mul", "x10"],
+            "connections": [
+                { "two.out": ["sum.left"] },
+                { "three.out": ["sum.right"] },
+                { "sum.result": ["mul.left"] },
+                { "four.out": ["mul.right"] },
+                { "mul.result": ["x10.in"] }
+            ]
+        }
     })"))
         << describe(diagnostics);
     EXPECT_TRUE(diagnostics.empty()) << describe(diagnostics);
 
-    wiring.connect("two", "out", "sum", "left");
-    wiring.connect("three", "out", "sum", "right");
-    wiring.connect("sum", "result", "mul", "left");
-    wiring.connect("four", "out", "mul", "right");
-    wiring.connect("mul", "result", "x10", "in");
-    wiring.connect("x10", "out", result);
+    result.connect("x10", "out");
 
     EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
     ASSERT_TRUE(result.ready());
     EXPECT_EQ(result.value(), 200);
+}
+
+TEST_F(DuctaEngineIntegration, one_output_feeds_several_inputs)
+{
+    // a -> b.left, a -> c.in, c -> b.right: 3 + 3 * 2 = 9
+    ASSERT_TRUE(configure(R"({
+        "nodes": {
+            "a": { "type": "Constant", "config": { "value": 3 } },
+            "b": { "type": "Add" },
+            "c": { "type": "Scale", "config": { "factor": 2 } }
+        },
+        "pipeline": {
+            "order": ["a", "c", "b"],
+            "connections": [{ "a.out": ["b.left", "c.in"] }, { "c.out": ["b.right"] }]
+        }
+    })"))
+        << describe(diagnostics);
+
+    result.connect("b", "result");
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
+    ASSERT_TRUE(result.ready());
+    EXPECT_EQ(result.value(), 9);
+}
+
+TEST_F(DuctaEngineIntegration, connection_problems_are_reported)
+{
+    EXPECT_FALSE(configure(R"({
+        "nodes": {
+            "a": { "type": "Constant", "config": { "value": 3 } },
+            "b": { "type": "Scale", "config": { "factor": 2 } }
+        },
+        "pipeline": {
+            "order": ["a", "b"],
+            "connections": [{ "a.value": ["b.in"] }, { "a.out": ["b.input", "ghost.in"] }]
+        }
+    })"));
+
+    EXPECT_FALSE(engine.configured());
+    EXPECT_EQ(engine.node_manager().size(), 0u);
+    std::string const report = describe(diagnostics);
+    EXPECT_EQ(diagnostics.error_count(), 3u) << report;
+    EXPECT_NE(report.find("node 'a' has no output 'value'"), std::string::npos) << report;
+    EXPECT_NE(report.find("node 'b' has no input 'input'"), std::string::npos) << report;
+    EXPECT_NE(report.find("unknown node 'ghost' in connections"), std::string::npos) << report;
+}
+
+TEST_F(DuctaEngineIntegration, invalid_connection_syntax_points_to_the_file)
+{
+    EXPECT_FALSE(configure(R"({
+        "nodes": { "a": { "type": "Constant" } },
+        "pipeline": {
+            "order": ["a"],
+            "connections": [{ "aout": ["b.in"] }]
+        }
+    })"));
+
+    ASSERT_EQ(diagnostics.size(), 1u) << describe(diagnostics);
+    EXPECT_EQ(str(diagnostics[0].message), "invalid output 'aout' (expected \"<node>.<output>\")");
+    EXPECT_EQ(str(diagnostics[0].path), "pipeline.connections[0].aout");
+    EXPECT_EQ(diagnostics[0].location.line(), 5u);
 }
 
 TEST_F(DuctaEngineIntegration, instances_of_one_type_with_same_and_different_configs)
@@ -204,14 +268,18 @@ TEST_F(DuctaEngineIntegration, instances_of_one_type_with_same_and_different_con
             "double_b": { "type": "Scale", "config": { "factor": 2 } },
             "triple":   { "type": "Scale", "config": { "factor": 3 } }
         },
-        "pipeline": { "order": ["five", "double_a", "double_b", "triple"] }
+        "pipeline": {
+            "order": ["five", "double_a", "double_b", "triple"],
+            "connections": [
+                { "five.out": "double_a.in" },
+                { "double_a.out": "double_b.in" },
+                { "double_b.out": "triple.in" }
+            ]
+        }
     })"))
         << describe(diagnostics);
 
-    wiring.connect("five", "out", "double_a", "in");
-    wiring.connect("double_a", "out", "double_b", "in");
-    wiring.connect("double_b", "out", "triple", "in");
-    wiring.connect("triple", "out", result);
+    result.connect("triple", "out");
 
     EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
     ASSERT_TRUE(result.ready());
@@ -226,12 +294,11 @@ TEST_F(DuctaEngineIntegration, order_defines_data_flow_within_one_iteration)
             "seven": { "type": "Constant", "config": { "value": 7 } },
             "x2":    { "type": "Scale", "config": { "factor": 2 } }
         },
-        "pipeline": { "order": ["x2", "seven"] }
+        "pipeline": { "order": ["x2", "seven"], "connections": [{ "seven.out": ["x2.in"] }] }
     })"))
         << describe(diagnostics);
 
-    wiring.connect("seven", "out", "x2", "in");
-    wiring.connect("x2", "out", result);
+    result.connect("x2", "out");
 
     EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
     EXPECT_FALSE(result.ready());
@@ -249,7 +316,7 @@ TEST_F(DuctaEngineIntegration, node_stops_the_pipeline)
     })"))
         << describe(diagnostics);
 
-    wiring.connect("countdown", "count", result);
+    result.connect("countdown", "count");
 
     EXPECT_EQ(engine.run(NeverStop{}), EXIT_SUCCESS);
     ASSERT_TRUE(result.ready());
@@ -270,7 +337,7 @@ TEST_F(DuctaEngineIntegration, events_between_configured_instances)
     })"))
         << describe(diagnostics);
 
-    wiring.connect("sum", "total", result);
+    result.connect("sum", "total");
 
     EXPECT_EQ(engine.run(StopAfter{3}), EXIT_SUCCESS);
     ASSERT_TRUE(result.ready());
@@ -296,29 +363,29 @@ TEST_F(DuctaEngineIntegration, reconfigure_with_another_graph)
             "one": { "type": "Constant", "config": { "value": 1 } },
             "x5":  { "type": "Scale", "config": { "factor": 5 } }
         },
-        "pipeline": { "order": ["one", "x5"] }
+        "pipeline": { "order": ["one", "x5"], "connections": [{ "one.out": ["x5.in"] }] }
     })"))
         << describe(diagnostics);
-    wiring.connect("one", "out", "x5", "in");
-    wiring.connect("x5", "out", result);
+    result.connect("x5", "out");
     EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
     EXPECT_EQ(result.value(), 5);
 
     // The old nodes are destroyed by configure(): drop their connections first
-    wiring.clear();
+    result.disconnect();
     ASSERT_TRUE(configure(R"({
         "nodes": {
             "two":   { "type": "Constant", "config": { "value": 2 } },
             "three": { "type": "Constant", "config": { "value": 3 } },
             "sum":   { "type": "Add" }
         },
-        "pipeline": { "order": ["two", "three", "sum"] }
+        "pipeline": {
+            "order": ["two", "three", "sum"],
+            "connections": [{ "two.out": ["sum.left"] }, { "three.out": ["sum.right"] }]
+        }
     })"))
         << describe(diagnostics);
     EXPECT_FALSE(engine.nodes().get_node("x5").has_value());
-    wiring.connect("two", "out", "sum", "left");
-    wiring.connect("three", "out", "sum", "right");
-    wiring.connect("sum", "result", result);
+    result.connect("sum", "result");
 
     EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
     EXPECT_EQ(result.value(), 5);
@@ -382,7 +449,7 @@ TEST_F(DuctaEngineIntegration, configuration_from_file)
         "x7":   { "type": "Scale", "config": { "factor": 7 } },
         "fast": { "type": "Scale", "config": { "factor": -1 } }
     },
-    "pipeline": { "order": ["six", "x7"], "target_frame_duration": "1ms" }
+    "pipeline": { "order": ["six", "x7"], "connections": [{ "six.out": ["x7.in"] }], "target_frame_duration": "1ms" }
 })";
     }
 
@@ -399,8 +466,7 @@ TEST_F(DuctaEngineIntegration, configuration_from_file)
             ":5:46: nodes.fast.config: warning: node 'fast' is not in pipeline order and never "
             "runs");
 
-    wiring.connect("six", "out", "x7", "in");
-    wiring.connect("x7", "out", result);
+    result.connect("x7", "out");
     EXPECT_EQ(engine.run(StopAfter{2}), EXIT_SUCCESS);
     EXPECT_EQ(result.value(), 42);
     EXPECT_EQ(clock.slept(), Chrono::TimestampUS{2000});

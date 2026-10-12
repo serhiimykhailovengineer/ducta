@@ -131,17 +131,6 @@ public:
             return false;
         }
 
-        bool order_ok = true;
-        for (Pipeline::NodeName const& name : config.pipeline.order)
-        {
-            StringView const view{name.data(), name.size()};
-            if (!m_node_manager.nodes().get_node(view))
-            {
-                diagnostics.errorf(
-                    Configuration::PropNode{}, "unknown node '{}' in pipeline order", view);
-                order_ok = false;
-            }
-        }
         for (auto const& entry : config.nodes)
         {
             StringView const name{entry.first.data(), entry.first.size()};
@@ -152,7 +141,7 @@ public:
             }
         }
 
-        if (!order_ok || !m_pipeline.configure(m_node_manager.nodes(), config.pipeline, trace_callback))
+        if (!m_pipeline.configure(m_node_manager.nodes(), config.pipeline, diagnostics, trace_callback))
         {
             clear();
             return false;
@@ -207,7 +196,7 @@ public:
             return;
         }
         m_configured = false;
-        m_pipeline.configure(m_empty_nodes, Pipeline::Pipeline::Config{});
+        m_pipeline.clear();
         m_node_manager.clear();
     }
 
@@ -240,7 +229,6 @@ private:
     /* Declaration order matters: the pipeline is destroyed (and disconnected from the nodes)
      * before the nodes */
     Pipeline::NodeManager<Storage> m_node_manager;
-    Pipeline::Nodes m_empty_nodes;
     Pipeline::Pipeline m_pipeline;
     bool m_configured{false};
     bool m_running{false};

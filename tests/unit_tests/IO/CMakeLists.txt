@@ -34,3 +34,5 @@ target_link_libraries(${TARGET_NAME}
         ducta_io
         ducta_io_mocks
 )
+
+gtest_discover_tests(${TARGET_NAME})

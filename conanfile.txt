@@ -7,6 +7,3 @@ etl/20.45.0
 [generators]
 CMakeDeps
 CMakeToolchain
-
-[layout]
-cmake_layout

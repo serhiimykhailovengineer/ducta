@@ -1,7 +1,31 @@
 #!/bin/bash
+# Installs Conan dependencies and configures CMake for the given backend(s).
+#
+# Usage: ./project/configure.sh [std|etl|std-debug|etl-debug|all]   (default: std)
+#
+# Afterwards everything is driven by CMake presets
+# (<preset> = std | etl | std-debug | etl-debug):
+#   cmake --build --preset <preset>                  # build
+#   ctest --preset <preset>                          # run tests
+#   cmake --build --preset <preset> --target check   # build + run tests
+#   cmake --workflow --preset <preset>               # configure + build + test
 
-BUILD_FOLDER=build
-BUILD_TYPE=Release
+set -e
 
-conan install . --output-folder=$BUILD_FOLDER/$BUILD_TYPE --build=missing
-cmake -S . -B $BUILD_FOLDER/$BUILD_TYPE -DCMAKE_TOOLCHAIN_FILE=$BUILD_FOLDER/$BUILD_TYPE/build/Release/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+cd "$(dirname "$0")/.."
+
+PRESET=${1:-std}
+case "$PRESET" in
+    std|etl|std-debug|etl-debug) PRESETS=("$PRESET") ;;
+    all) PRESETS=(std etl std-debug etl-debug) ;;
+    *) echo "Unknown preset '$PRESET' (expected: std, etl, std-debug, etl-debug, all)" >&2; exit 1 ;;
+esac
+
+# Dependencies are shared by all presets and installed once into build/conan.
+# Debug presets link against the Release dependencies.
+conan install . --output-folder=build/conan --build=missing -s build_type=Release \
+    -c tools.cmake.cmaketoolchain:user_presets=
+
+for p in "${PRESETS[@]}"; do
+    cmake --preset "$p" --fresh
+done

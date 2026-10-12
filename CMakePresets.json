@@ -1,0 +1,179 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "toolchainFile": "${sourceDir}/build/conan/conan_toolchain.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_POLICY_DEFAULT_CMP0091": "NEW",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "std",
+            "displayName": "Standard backend (Boost + fmt)",
+            "inherits": "base",
+            "cacheVariables": {
+                "USE_EMBEDDED_BACKEND": "OFF"
+            }
+        },
+        {
+            "name": "etl",
+            "displayName": "Embedded backend (ETL)",
+            "inherits": "base",
+            "cacheVariables": {
+                "USE_EMBEDDED_BACKEND": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "hidden": true,
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_MAP_IMPORTED_CONFIG_DEBUG": "Debug;Release"
+            }
+        },
+        {
+            "name": "std-debug",
+            "displayName": "Standard backend (Boost + fmt), Debug",
+            "inherits": [
+                "debug",
+                "std"
+            ]
+        },
+        {
+            "name": "etl-debug",
+            "displayName": "Embedded backend (ETL), Debug",
+            "inherits": [
+                "debug",
+                "etl"
+            ]
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "std",
+            "configurePreset": "std"
+        },
+        {
+            "name": "etl",
+            "configurePreset": "etl"
+        },
+        {
+            "name": "std-debug",
+            "configurePreset": "std-debug"
+        },
+        {
+            "name": "etl-debug",
+            "configurePreset": "etl-debug"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "std",
+            "configurePreset": "std",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "etl",
+            "configurePreset": "etl",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "std-debug",
+            "configurePreset": "std-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "etl-debug",
+            "configurePreset": "etl-debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "std",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "std"
+                },
+                {
+                    "type": "build",
+                    "name": "std"
+                },
+                {
+                    "type": "test",
+                    "name": "std"
+                }
+            ]
+        },
+        {
+            "name": "etl",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "etl"
+                },
+                {
+                    "type": "build",
+                    "name": "etl"
+                },
+                {
+                    "type": "test",
+                    "name": "etl"
+                }
+            ]
+        },
+        {
+            "name": "std-debug",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "std-debug"
+                },
+                {
+                    "type": "build",
+                    "name": "std-debug"
+                },
+                {
+                    "type": "test",
+                    "name": "std-debug"
+                }
+            ]
+        },
+        {
+            "name": "etl-debug",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "etl-debug"
+                },
+                {
+                    "type": "build",
+                    "name": "etl-debug"
+                },
+                {
+                    "type": "test",
+                    "name": "etl-debug"
+                }
+            ]
+        }
+    ]
+}

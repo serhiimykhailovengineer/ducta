@@ -28,3 +28,5 @@ target_link_libraries(${TARGET_NAME}
         ducta_io
         ducta_pipeline
 )
+
+gtest_discover_tests(${TARGET_NAME})

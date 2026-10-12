@@ -1,0 +1,88 @@
+{
+    // Build / test tasks driven by CMake presets (see CMakePresets.json).
+    // Run "Configure" once before the first build.
+    //   Cmd/Ctrl+Shift+B          -> Build
+    //   "Tasks: Run Test Task"    -> Test
+    "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}"
+    },
+    "tasks": [
+        {
+            "label": "Configure",
+            "detail": "Install Conan dependencies and configure CMake",
+            "type": "shell",
+            "command": "./project/configure.sh ${input:configurePreset}",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build",
+            "detail": "cmake --build --preset <preset>",
+            "type": "shell",
+            "command": "cmake --build --preset ${input:preset}",
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            "label": "Test",
+            "detail": "ctest --preset <preset> -R <filter>",
+            "type": "shell",
+            "command": "ctest --preset ${input:preset} -R '${input:testFilter}'",
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build and Test",
+            "detail": "cmake --build --preset <preset> --target check",
+            "type": "shell",
+            "command": "cmake --build --preset ${input:preset} --target check",
+            "group": "test",
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            "label": "Clean",
+            "detail": "Remove a preset's build directory",
+            "type": "shell",
+            "command": "rm -rf build/${input:preset}",
+            "problemMatcher": []
+        },
+        {
+            "label": "Build std-debug",
+            "detail": "Used as preLaunchTask by launch.json",
+            "type": "shell",
+            "command": "cmake --build --preset std-debug",
+            "group": "build",
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        },
+        {
+            "label": "Build etl-debug",
+            "detail": "Used as preLaunchTask by launch.json",
+            "type": "shell",
+            "command": "cmake --build --preset etl-debug",
+            "group": "build",
+            "problemMatcher": { "base": "$gcc", "fileLocation": "absolute" }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "preset",
+            "type": "pickString",
+            "description": "CMake preset",
+            "options": ["std-debug", "etl-debug", "std", "etl"],
+            "default": "std-debug"
+        },
+        {
+            "id": "configurePreset",
+            "type": "pickString",
+            "description": "CMake preset to configure",
+            "options": ["all", "std-debug", "etl-debug", "std", "etl"],
+            "default": "all"
+        },
+        {
+            "id": "testFilter",
+            "type": "promptString",
+            "description": "Test name regex (empty = all tests)",
+            "default": ""
+        }
+    ]
+}

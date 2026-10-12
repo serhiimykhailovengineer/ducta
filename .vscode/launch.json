@@ -1,0 +1,88 @@
+{
+    // Debug test executables built by the Debug presets (build/<preset>/tests/...).
+    // macOS uses lldb, Linux uses gdb (selected automatically via "osx"/"linux").
+    //   Launch: builds the preset first, then runs the chosen test executable.
+    //   Attach: pick a running process; choose the matching executable for symbols.
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch test (std-debug)",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "Build std-debug",
+            "program": "${workspaceFolder}/build/std-debug/tests/${input:testExecutable}",
+            "args": ["--gtest_filter=${input:gtestFilter}"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "osx": { "MIMode": "lldb" },
+            "linux": {
+                "MIMode": "gdb",
+                "setupCommands": [
+                    { "description": "Enable pretty-printing", "text": "-enable-pretty-printing", "ignoreFailures": true }
+                ]
+            }
+        },
+        {
+            "name": "Launch test (etl-debug)",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask": "Build etl-debug",
+            "program": "${workspaceFolder}/build/etl-debug/tests/${input:testExecutable}",
+            "args": ["--gtest_filter=${input:gtestFilter}"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "osx": { "MIMode": "lldb" },
+            "linux": {
+                "MIMode": "gdb",
+                "setupCommands": [
+                    { "description": "Enable pretty-printing", "text": "-enable-pretty-printing", "ignoreFailures": true }
+                ]
+            }
+        },
+        {
+            "name": "Attach to process",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/build/${input:debugPreset}/tests/${input:testExecutable}",
+            "processId": "${command:pickProcess}",
+            "osx": { "MIMode": "lldb" },
+            "linux": {
+                "MIMode": "gdb",
+                "setupCommands": [
+                    { "description": "Enable pretty-printing", "text": "-enable-pretty-printing", "ignoreFailures": true }
+                ]
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testExecutable",
+            "type": "pickString",
+            "description": "Test executable",
+            "options": [
+                "unit_tests/Pipeline/PipelineTests",
+                "unit_tests/IO/IOTests",
+                "unit_tests/Chrono/SteadyClockTests",
+                "int_tests/IntTests"
+            ],
+            "default": "unit_tests/Pipeline/PipelineTests"
+        },
+        {
+            "id": "gtestFilter",
+            "type": "promptString",
+            "description": "GoogleTest filter (e.g. PipelineTest.*)",
+            "default": "*"
+        },
+        {
+            "id": "debugPreset",
+            "type": "pickString",
+            "description": "Build preset the process was built with",
+            "options": ["std-debug", "etl-debug"],
+            "default": "std-debug"
+        }
+    ]
+}

@@ -20,6 +20,9 @@ endif()
 
 find_package(GTest REQUIRED)
 
+enable_testing()
+include(GoogleTest)
+
 add_library(ducta_io INTERFACE)
 target_include_directories(ducta_io
     INTERFACE

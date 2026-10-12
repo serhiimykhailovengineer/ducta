@@ -264,8 +264,11 @@ constexpr StringView tick_name() noexcept
 
 } // namespace Private
 
+/* Durations with a signed integral representation (all the standard ones) */
 template <class Rep, class Period>
-struct ValueDecoder<Chrono::chrono::duration<Rep, Period>>
+struct ValueDecoder<
+    Chrono::chrono::duration<Rep, Period>,
+    ::ducta::enable_if_t<::ducta::is_integral_v<Rep>&& ::ducta::is_signed_v<Rep>>>
 {
     using Duration = Chrono::chrono::duration<Rep, Period>;
 

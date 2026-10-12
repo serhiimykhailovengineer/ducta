@@ -125,12 +125,18 @@ public:
         }
         clear();
 
-        if (!Configuration::validate(Configuration::PropNode{}, config.pipeline, diagnostics) ||
-            !m_node_manager.configure(Pipeline::NodeManagerConfig{config.nodes}, diagnostics))
+        // config.pipeline is validated by Pipeline::configure
+        if (!m_node_manager.configure(Pipeline::NodeManagerConfig{config.nodes}, diagnostics))
         {
             return false;
         }
 
+        if (!m_pipeline.configure(m_node_manager.nodes(), config.pipeline, diagnostics, trace_callback))
+        {
+            clear();
+            return false;
+        }
+        // Only for a pipeline that will run: nodes it never runs are probably a mistake
         for (auto const& entry : config.nodes)
         {
             StringView const name{entry.first.data(), entry.first.size()};
@@ -141,11 +147,6 @@ public:
             }
         }
 
-        if (!m_pipeline.configure(m_node_manager.nodes(), config.pipeline, diagnostics, trace_callback))
-        {
-            clear();
-            return false;
-        }
         m_configured = true;
         return true;
     }

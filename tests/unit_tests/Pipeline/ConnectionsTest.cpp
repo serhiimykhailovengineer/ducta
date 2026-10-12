@@ -258,6 +258,27 @@ TEST_F(PipelineConnectionsTest, all_problems_are_reported_and_nothing_is_connect
     EXPECT_FALSE(sink.in1.ready());
 }
 
+TEST_F(PipelineConnectionsTest, configure_applies_the_config_rules)
+{
+    Pipeline::Pipeline::Config empty;
+    EXPECT_FALSE(pipeline.configure(nodes, empty, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "must not be empty");
+
+    diagnostics.clear();
+    config.order.push_back(Pipeline::NodeName{"src"});
+    EXPECT_FALSE(pipeline.configure(nodes, config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "must not contain a node twice");
+
+    diagnostics.clear();
+    config.order.pop_back();
+    config.trace_flush_threshold = DUCTA_MAX_TRACED_FRAMES + 1;
+    EXPECT_FALSE(pipeline.configure(nodes, config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "must not exceed DUCTA_MAX_TRACED_FRAMES");
+}
+
 TEST_F(PipelineConnectionsTest, unknown_node_in_order)
 {
     config.order.push_back(Pipeline::NodeName{"ghost"});

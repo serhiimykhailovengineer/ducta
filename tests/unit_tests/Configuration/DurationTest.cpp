@@ -112,6 +112,15 @@ TEST(DurationTest, fractional_nanosecond_periods)
     EXPECT_EQ(ok<Picoseconds>(R"("3ns")"), Picoseconds{3000});
 }
 
+TEST(DurationTest, only_signed_integral_representations_are_decoded)
+{
+    EXPECT_TRUE(Configuration::Private::has_value_decoder<Microseconds>::value);
+    EXPECT_FALSE((Configuration::Private::has_value_decoder<
+                  Chrono::chrono::duration<unsigned int, Ratio<1, 1000>>>::value));
+    EXPECT_FALSE((
+        Configuration::Private::has_value_decoder<Chrono::chrono::duration<double, Ratio<1, 1>>>::value));
+}
+
 TEST(DurationTest, precision_below_tick_is_an_error)
 {
     EXPECT_EQ(error(R"("1.5us")"), "duration '1.5us' is not a whole number of 1us");

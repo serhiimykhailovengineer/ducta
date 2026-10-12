@@ -43,8 +43,9 @@ struct PipelineConfig
     /* Minimal duration of one iteration; 0 runs as fast as possible */
     Chrono::TimestampUS target_frame_duration{0};
     bool should_trace_execution{false};
-    /* Traced frames collected before they are passed to the trace callback */
-    size_t trace_flush_threshold{100};
+    /* Traced frames collected before they are passed to the trace callback; at most
+     * DUCTA_MAX_TRACED_FRAMES (the default fits any configured capacity) */
+    size_t trace_flush_threshold{DUCTA_MAX_TRACED_FRAMES < 100 ? DUCTA_MAX_TRACED_FRAMES : 100};
 };
 
 class Pipeline
@@ -69,8 +70,8 @@ public:
      * @brief Run the nodes of config.order and connect the outputs and inputs of
      *        config.connections; nodes must outlive the configuration (or the next clear())
      *
-     * Every problem (unknown node or port, incompatible types, an input connected twice) is
-     * reported to diagnostics. On any error nothing is configured.
+     * Every problem (PipelineConfig rules, unknown node or port, incompatible types, an input
+     * connected twice) is reported to diagnostics. On any error nothing is configured.
      *
      * @return true if the pipeline is ready to run
      */

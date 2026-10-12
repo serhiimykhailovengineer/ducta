@@ -24,6 +24,10 @@ DUCTA_DECL bool Pipeline::configure(
     using Configuration::PropNode;
 
     clear();
+    if (!Configuration::validate(PropNode{}, config, diagnostics))
+    {
+        return false;
+    }
     size_t const errors = diagnostics.error_count();
 
     for (auto const& name : config.order)
@@ -164,10 +168,32 @@ DUCTA_DECL void Pipeline::clear()
 
 DUCTA_DECL void Pipeline::init()
 {
-    for (auto& node_info : m_init_order)
+    // release() disconnects the events: connect them again, so that every run delivers them
+    m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
+
+    size_t initialized = 0;
+#if defined(__cpp_exceptions)
+    try
     {
-        node_info.node.init();
+#endif
+        for (auto& node_info : m_init_order)
+        {
+            node_info.node.init();
+            ++initialized;
+        }
+#if defined(__cpp_exceptions)
     }
+    catch (...)
+    {
+        // Release the nodes initialised so far, in reverse order, then pass the error on
+        while (initialized > 0)
+        {
+            m_init_order[--initialized].node.release();
+        }
+        m_event_wiring.disconnect();
+        throw;
+    }
+#endif
 }
 
 DUCTA_DECL bool Pipeline::iterate()

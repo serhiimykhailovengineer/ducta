@@ -413,6 +413,41 @@ TYPED_TEST(DuctaEngineTest, trace_flush_threshold_must_fit_the_buffer)
     EXPECT_EQ(str(diagnostics[0].message), "must not exceed DUCTA_MAX_TRACED_FRAMES");
 }
 
+#if defined(__cpp_exceptions)
+TYPED_TEST(DuctaEngineTest, nodes_initialised_before_a_failing_init_are_released)
+{
+    PropTree tree = loadTree(R"({
+        "nodes": {
+            "a": { "type": "First" },
+            "b": { "type": "Second" },
+            "t": { "type": "Throwing", "config": { "in_init": true } }
+        },
+        "pipeline": { "order": ["a", "b", "t"] }
+    })");
+    Diagnostics diagnostics;
+    DuctaEngine<TypeParam> engine{this->clock};
+    ASSERT_TRUE(engine.configure(tree, diagnostics));
+
+    EXPECT_THROW(engine.run(StopAfter{1}), std::runtime_error);
+    EXPECT_EQ(TestNodes::run_log(), "iAiBrBrA");
+}
+#endif
+
+TYPED_TEST(DuctaEngineTest, default_trace_flush_threshold_is_valid)
+{
+    EXPECT_LE(
+        Pipeline::PipelineConfig{}.trace_flush_threshold,
+        static_cast<size_t>(DUCTA_MAX_TRACED_FRAMES));
+
+    PropTree tree = loadTree(R"({
+        "nodes": { "a": { "type": "First" } },
+        "pipeline": { "order": ["a"], "should_trace_execution": true }
+    })");
+    Diagnostics diagnostics;
+    DuctaEngine<TypeParam> engine{this->clock};
+    EXPECT_TRUE(engine.configure(tree, diagnostics));
+}
+
 TYPED_TEST(DuctaEngineTest, run_without_configuration_fails)
 {
     DuctaEngine<TypeParam> engine{this->clock};

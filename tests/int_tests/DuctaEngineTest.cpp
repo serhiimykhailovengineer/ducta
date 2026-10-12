@@ -149,7 +149,7 @@ using TestStorage = Pipeline::HeapNodeStorage;
 class DuctaEngineIntegration : public ::testing::Test
 {
 protected:
-    /* The tree is a member: diagnostics point to its source name, so it must outlive them */
+    /* Loads json into the fixture's tree (kept to look at it after a failure) and configures */
     bool configure(char const* json)
     {
         tree.clear();
@@ -342,6 +342,11 @@ TEST_F(DuctaEngineIntegration, events_between_configured_instances)
     EXPECT_EQ(engine.run(StopAfter{3}), EXIT_SUCCESS);
     ASSERT_TRUE(result.ready());
     EXPECT_EQ(result.value(), 33);
+
+    // A second run delivers the events again (release() of the first run disconnected them)
+    EXPECT_EQ(engine.run(StopAfter{2}), EXIT_SUCCESS);
+    ASSERT_TRUE(result.ready());
+    EXPECT_EQ(result.value(), 22);
 }
 
 TEST_F(DuctaEngineIntegration, frame_duration_from_configuration)

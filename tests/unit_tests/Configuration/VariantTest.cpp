@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <string>
+
 #include "ducta/Configuration/Configuration.hpp"
 #include "ducta/Core/Types/Optional.hpp"
 #include "ducta/Core/Types/String.hpp"
@@ -113,7 +115,9 @@ TEST(VariantTest, unmatched_kind_lists_accepted_kinds)
     EXPECT_FALSE(decode<ValueConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(diagnostics[0].location, (SourceLocation{2, 12, "values.json"}));
+    EXPECT_EQ(diagnostics[0].location, (SourceLocation{2, 12}));
+    EXPECT_EQ(
+        std::string(diagnostics[0].source.data(), diagnostics[0].source.size()), "values.json");
     EXPECT_EQ(str(diagnostics[0].path), "value");
     EXPECT_EQ(str(diagnostics[0].message), "expected integer or string, got bool");
 }
@@ -168,16 +172,17 @@ TEST(VariantTest, struct_alternative_is_decoded_from_object)
     EXPECT_DOUBLE_EQ(get<GainConfig>(config->source).gain, 0.5);
 }
 
-TEST(VariantTest, errors_of_selected_alternative_are_reported)
+TEST(VariantTest, warnings_of_selected_alternative_are_reported)
 {
     PropTree tree;
     auto source = tree.add_object(tree.root().id(), "source", {2, 13});
     tree.add_float(*source, "gian", 0.5, {2, 15});
     Diagnostics diagnostics;
 
-    EXPECT_FALSE(decode<SourceConfig>(tree.root(), diagnostics));
+    EXPECT_TRUE(decode<SourceConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
     EXPECT_EQ(str(diagnostics[0].path), "source.gian");
     EXPECT_EQ(str(diagnostics[0].message), "unknown field 'gian'");
 }
@@ -234,7 +239,8 @@ TEST(VariantTest, unknown_tag_is_reported_at_tag_value)
     EXPECT_FALSE(decode<StageConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(diagnostics[0].location, (SourceLocation{2, 23, "stage.json"}));
+    EXPECT_EQ(diagnostics[0].location, (SourceLocation{2, 23}));
+    EXPECT_EQ(std::string(diagnostics[0].source.data(), diagnostics[0].source.size()), "stage.json");
     EXPECT_EQ(str(diagnostics[0].path), "filter.type");
     EXPECT_EQ(str(diagnostics[0].message), "unknown type 'bandpass' (expected lowpass, highpass)");
 }
@@ -247,7 +253,8 @@ TEST(VariantTest, rules_of_selected_alternative_are_applied)
     EXPECT_FALSE(decode<StageConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(diagnostics[0].location, (SourceLocation{2, 43, "stage.json"}));
+    EXPECT_EQ(diagnostics[0].location, (SourceLocation{2, 43}));
+    EXPECT_EQ(std::string(diagnostics[0].source.data(), diagnostics[0].source.size()), "stage.json");
     EXPECT_EQ(str(diagnostics[0].path), "filter.cutoff");
     EXPECT_EQ(str(diagnostics[0].message), "must be positive");
 }
@@ -259,9 +266,10 @@ TEST(VariantTest, fields_of_other_alternative_are_unknown)
     tree.add_integer(filter.id(), "order", 4, {2, 55});
     Diagnostics diagnostics;
 
-    EXPECT_FALSE(decode<StageConfig>(tree.root(), diagnostics));
+    EXPECT_TRUE(decode<StageConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
     EXPECT_EQ(str(diagnostics[0].path), "filter.order");
     EXPECT_EQ(str(diagnostics[0].message), "unknown field 'order'");
 }

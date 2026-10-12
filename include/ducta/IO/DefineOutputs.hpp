@@ -6,6 +6,8 @@
 #ifndef DUCTA_DEFINE_OUTPUTS_HPP
 #define DUCTA_DEFINE_OUTPUTS_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/IO/OutputRef.hpp"
 
 #include "ducta/Core/Preprocessor.hpp"
@@ -27,16 +29,17 @@
     DUCTA_FOR_EACH_I(DUCTA_NODE_OUTPUTS_ELEM, node, __VA_ARGS__)
 
 // 3) Main macro to define outputs for a node type
-#define DEFINE_NODE_OUTPUTS(NodeType, ...)                                                   \
-    template <>                                                                              \
-    struct ducta::IO::NodeOutputsTraits<DUCTA_PP_UNPAREN((NodeType))>                        \
-    {                                                                                        \
-        using Node = DUCTA_PP_UNPAREN((NodeType));                                           \
-        static ::ducta::Map<::ducta::StringView, ::ducta::IO::OutputRef, 25> get(Node& node) \
-        {                                                                                    \
-            return ::ducta::makeMap<::ducta::StringView, ::ducta::IO::OutputRef, 25>(        \
-                DUCTA_NODE_OUTPUTS_INIT(node, __VA_ARGS__));                                 \
-        }                                                                                    \
+#define DEFINE_NODE_OUTPUTS(NodeType, ...)                                                              \
+    template <>                                                                                         \
+    struct ducta::IO::NodeOutputsTraits<DUCTA_PP_UNPAREN((NodeType))>                                   \
+    {                                                                                                   \
+        using Node = DUCTA_PP_UNPAREN((NodeType));                                                      \
+        static ::ducta::Map<::ducta::StringView, ::ducta::IO::OutputRef, DUCTA_MAX_NODE_PORTS> get(     \
+            Node& node)                                                                                 \
+        {                                                                                               \
+            return ::ducta::makeMap<::ducta::StringView, ::ducta::IO::OutputRef, DUCTA_MAX_NODE_PORTS>( \
+                DUCTA_NODE_OUTPUTS_INIT(node, __VA_ARGS__));                                            \
+        }                                                                                               \
     };
 
 #endif // DUCTA_DEFINE_OUTPUTS_HPP

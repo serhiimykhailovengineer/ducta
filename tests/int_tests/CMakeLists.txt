@@ -4,6 +4,7 @@ add_executable(${TARGET_NAME}
     IOSizeTest.cpp
     ValueIOTest.cpp
     PipelineTest.cpp
+    DuctaEngineTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

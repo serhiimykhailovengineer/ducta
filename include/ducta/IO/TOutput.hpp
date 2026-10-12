@@ -5,6 +5,8 @@
 #ifndef DUCTA_T_OUTPUT_HPP
 #define DUCTA_T_OUTPUT_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/TInput.hpp"
 
@@ -73,9 +75,16 @@ public:
     /**
      * @brief Bind the output to an input
      * @param input The input to bind to
-     * @return A Connection object that will unbind the input upon destruction
+     * @return A Connection object that will unbind the input upon destruction, or an empty
+     *         Connection (false) if the types are incompatible or the output is full()
      */
     Connection bind(InputRef const& input);
+
+    /**
+     * @brief Whether no further input can be bound (embedded backend: at most
+     *        DUCTA_MAX_OUTPUT_CONNECTIONS inputs); always false with the standard backend
+     */
+    bool full() const noexcept;
 
 private:
     /**
@@ -86,7 +95,7 @@ private:
 
 private:
     value_type _value;
-    ::ducta::Vector<InputRef, 50> _inputs;
+    ::ducta::Vector<InputRef, DUCTA_MAX_OUTPUT_CONNECTIONS> _inputs;
 };
 
 template <typename T>

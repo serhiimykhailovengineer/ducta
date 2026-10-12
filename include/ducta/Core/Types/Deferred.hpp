@@ -38,15 +38,26 @@ public:
         other.reset();
     }
 
+    /* Runs the pending function first (like unique_ptr::reset), then takes over other's */
     Deferred& operator=(Deferred&& other) noexcept
     {
         if (this != &other)
         {
+            if (_func)
+            {
+                _func(_value.value());
+            }
             _func = ::ducta::move(other._func);
             _value = ::ducta::move(other._value);
             other.reset();
         }
         return *this;
+    }
+
+    /* false for a default constructed (or moved from) Deferred: nothing to run */
+    explicit operator bool() const noexcept
+    {
+        return static_cast<bool>(_func);
     }
 
 private:

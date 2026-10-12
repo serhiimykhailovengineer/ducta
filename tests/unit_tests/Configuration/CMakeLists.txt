@@ -6,6 +6,7 @@ add_executable(${TARGET_NAME}
     VariantTest.cpp
     ContainersTest.cpp
     JsonTest.cpp
+    DurationTest.cpp
 )
 
 set(BACKEND_LIBS)

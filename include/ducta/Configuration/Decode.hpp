@@ -337,7 +337,7 @@ public:
     /* Report object members that do not correspond to any field (typos, stale keys);
      * ignored is a key handled by the caller (the tag of a tagged variant) */
     template <size_t N>
-    void reject_unknown(StringView const (&names)[N], StringView ignored = {})
+    void warn_unknown(StringView const (&names)[N], StringView ignored = {})
     {
         for (PropNode child : m_node)
         {
@@ -352,8 +352,8 @@ public:
             }
             if (!known)
             {
-                m_diagnostics.errorf(child, "unknown field '{}'", child.key());
-                m_ok = false;
+                /* Unknown fields are ignored: a warning, decoding still succeeds */
+                m_diagnostics.warningf(child, "unknown field '{}'", child.key());
             }
         }
     }
@@ -372,6 +372,21 @@ private:
 } // namespace Private
 
 // ========== Built-in value decoders ==========
+
+/*
+ * A PropNode member keeps the raw subtree (any kind) to be decoded later, e.g. the
+ * configuration of a node whose type is known only at run time. The handle points into the
+ * PropTree, which must outlive it.
+ */
+template <>
+struct ValueDecoder<PropNode>
+{
+    static bool decode(PropNode node, PropNode& out, Diagnostics& /*diagnostics*/)
+    {
+        out = node;
+        return true;
+    }
+};
 
 template <>
 struct ValueDecoder<bool>

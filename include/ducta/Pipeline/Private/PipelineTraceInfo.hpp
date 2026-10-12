@@ -1,8 +1,11 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_PIPELINETRACEINFO_HPP
 #define DUCTA_PIPELINE_PRIVATE_PIPELINETRACEINFO_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Chrono/Chrono.hpp"
 #include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Pipeline/NodeInfo.hpp"
 
 #include "ducta/Core/Assert.hpp"
 #include "ducta/Core/Types/Span.hpp"
@@ -14,9 +17,9 @@ namespace ducta {
 namespace Pipeline {
 
 /* Capacities of the trace buffers (fixed-size containers on the embedded backend). */
-constexpr size_t MAX_TRACED_NODES = 50;
-constexpr size_t MAX_TRACED_EVENTS_PER_FRAME = 100;
-constexpr size_t MAX_TRACED_FRAMES = 100;
+constexpr size_t MAX_TRACED_NODES = DUCTA_MAX_NODES;
+constexpr size_t MAX_TRACED_EVENTS_PER_FRAME = DUCTA_MAX_TRACED_EVENTS_PER_FRAME;
+constexpr size_t MAX_TRACED_FRAMES = DUCTA_MAX_TRACED_FRAMES;
 
 /*
  * One delivery of an event to one receiver.
@@ -48,22 +51,32 @@ namespace Private {
 class PipelineTraceInfo
 {
 public:
-    void configure(Span<StringView const> const& node_names)
+    /* nodes: the traced nodes in pipeline order; they must outlive the trace configuration */
+    void configure(Span<NodeInfo const> const& nodes)
     {
-        m_node_names = node_names;
+        m_nodes = nodes;
         m_frames_info.clear();
+        m_dropped_frames = 0;
         m_current_frame_index = 0;
+        m_frame_open = false;
     }
 
     void frame_start(Chrono::TimestampUS ts)
     {
         DUCTA_ASSERT(!m_frame_open);
 
+        /* Without a flush (no callback, or a threshold above the capacity) keep the latest
+         * frames: drop the oldest one */
+        if (m_frames_info.size() >= MAX_TRACED_FRAMES)
+        {
+            m_frames_info.erase(m_frames_info.begin());
+            ++m_dropped_frames;
+        }
         m_frames_info.emplace_back();
 
         auto& current_frame_info = m_frames_info.back();
         current_frame_info.frame_index = m_current_frame_index++;
-        current_frame_info.nodes_durations.resize(m_node_names.size(), Chrono::TimestampUS{0});
+        current_frame_info.nodes_durations.resize(m_nodes.size(), Chrono::TimestampUS{0});
         current_frame_info.frame_start = ts;
         current_frame_info.events.clear();
 
@@ -85,7 +98,7 @@ public:
 
         auto& current_frame_info = m_frames_info.back();
 
-        DUCTA_ASSERT(node_index < m_node_names.size());
+        DUCTA_ASSERT(node_index < m_nodes.size());
         current_frame_info.nodes_durations[node_index] = ts;
     }
 
@@ -118,7 +131,14 @@ public:
             return;
         }
 
-        callback(m_node_names, Span<FrameTraceInfo const>(m_frames_info.data(), m_frames_info.size()));
+        Vector<StringView, MAX_TRACED_NODES> node_names;
+        for (NodeInfo const& node : m_nodes)
+        {
+            node_names.push_back(node.name);
+        }
+        callback(
+            Span<StringView const>(node_names.data(), node_names.size()),
+            Span<FrameTraceInfo const>(m_frames_info.data(), m_frames_info.size()));
         m_frames_info.clear();
     }
 
@@ -127,11 +147,18 @@ public:
         return m_frames_info.size();
     }
 
+    /* Frames dropped because the buffer was full */
+    size_t dropped_frames() const
+    {
+        return m_dropped_frames;
+    }
+
 private:
     size_t m_current_frame_index{0};
+    size_t m_dropped_frames{0};
     bool m_frame_open{false};
 
-    Span<StringView const> m_node_names;
+    Span<NodeInfo const> m_nodes;
     Vector<FrameTraceInfo, MAX_TRACED_FRAMES> m_frames_info;
 };
 

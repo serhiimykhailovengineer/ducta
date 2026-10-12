@@ -70,7 +70,7 @@ TEST(PipelineTest, base_test)
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
     Pipeline::Pipeline::Config config{};
-    config.order = makeVector<StringView, 50>("add", "mul", "div", "sub");
+    config.order = makeVector<Pipeline::NodeName, DUCTA_MAX_NODES>("add", "mul", "div", "sub");
 
     pipeline.configure(nodes, config);
 
@@ -143,7 +143,7 @@ TEST(PipelineTest, pipeline_with_failed_iteration)
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
     Pipeline::Pipeline::Config config{};
-    config.order = makeVector<StringView, 50>("add", "sub");
+    config.order = makeVector<Pipeline::NodeName, DUCTA_MAX_NODES>("add", "sub");
 
     pipeline.configure(nodes, config);
 

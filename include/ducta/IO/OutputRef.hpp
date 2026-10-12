@@ -6,6 +6,8 @@
 #ifndef DUCTA_IO_OUTPUT_REF_HPP
 #define DUCTA_IO_OUTPUT_REF_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/IO/InputRef.hpp"
 
 #include "ducta/Core/Types/Map.hpp"
@@ -27,6 +29,7 @@ private:
     {
         Connection (*do_bind)(void*, InputRef&);
         TypeIndex (*type_id)(void*);
+        bool (*is_full)(void const*);
     };
 
     template <class T>
@@ -38,6 +41,9 @@ private:
             },
             +[](void* obj) -> TypeIndex {
                 return ::ducta::type_id<T>();
+            },
+            +[](void const* obj) -> bool {
+                return static_cast<T const*>(obj)->full();
             }};
         return vt;
     }
@@ -68,6 +74,14 @@ public:
     }
 
     /**
+     * @brief Whether no further input can be bound to the output (see TOutput::full)
+     */
+    bool full() const
+    {
+        return m_vtable->is_full(m_output_object);
+    }
+
+    /**
      * @brief Equality operator for OutputRef
      * @param lhs Left-hand side OutputRef
      * @param rhs Right-hand side OutputRef
@@ -92,7 +106,7 @@ inline Connection bind(OutputRef output, InputRef input)
 template <typename Node>
 struct NodeOutputsTraits
 {
-    static Map<StringView, IO::OutputRef, 25> get(Node& node)
+    static Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> get(Node& node)
     {
         return {};
     }

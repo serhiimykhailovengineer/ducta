@@ -25,7 +25,7 @@
 
 // Main macro to define configuration fields of a struct:
 //   DEFINE_CONFIG(GainConfig, ("gain", gain), ("name", name));
-// Missing fields keep their default value, unknown keys are reported as errors.
+// Missing fields keep their default value, unknown keys are ignored and reported as warnings.
 #define DEFINE_CONFIG(ConfigType, ...)                                                 \
     template <>                                                                        \
     struct ducta::Configuration::ConfigTraits<DUCTA_PP_UNPAREN((ConfigType))>          \
@@ -45,7 +45,7 @@
             DUCTA_FOR_EACH_I(DUCTA_CONFIG_FIELD_DECODE, config, __VA_ARGS__)           \
             ::ducta::StringView const names[] = {                                      \
                 DUCTA_FOR_EACH_I(DUCTA_CONFIG_FIELD_NAME, config, __VA_ARGS__)};       \
-            decoder.reject_unknown(names, ignored);                                    \
+            decoder.warn_unknown(names, ignored);                                      \
             return decoder.ok();                                                       \
         }                                                                              \
     };

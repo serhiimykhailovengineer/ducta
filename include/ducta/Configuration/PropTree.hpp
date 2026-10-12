@@ -1,6 +1,8 @@
 #ifndef DUCTA_CONFIGURATION_PROP_TREE_HPP
 #define DUCTA_CONFIGURATION_PROP_TREE_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Core/SourceLocation.hpp"
 
 #include "ducta/Core/Config.hpp"
@@ -10,27 +12,6 @@
 #include "ducta/Core/Types/String.hpp"
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/Vector.hpp"
-
-// Capacities of the embedded backend (the standard backend grows dynamically).
-#ifndef DUCTA_CONFIG_MAX_NODES
-#define DUCTA_CONFIG_MAX_NODES 128
-#endif
-
-#ifndef DUCTA_CONFIG_MAX_KEY_LENGTH
-#define DUCTA_CONFIG_MAX_KEY_LENGTH 32
-#endif
-
-#ifndef DUCTA_CONFIG_MAX_STRING_LENGTH
-#define DUCTA_CONFIG_MAX_STRING_LENGTH 64
-#endif
-
-#ifndef DUCTA_CONFIG_MAX_PATH_LENGTH
-#define DUCTA_CONFIG_MAX_PATH_LENGTH 128
-#endif
-
-#ifndef DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH
-#define DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH 64
-#endif
 
 namespace ducta {
 namespace Configuration {

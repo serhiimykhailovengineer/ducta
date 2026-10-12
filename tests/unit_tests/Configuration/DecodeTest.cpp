@@ -189,7 +189,9 @@ TEST(DecodeTest, diagnostic_location_includes_source_name)
     EXPECT_FALSE(decode<FilterConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(diagnostics[0].location, (SourceLocation{6, 16, "filter.json"}));
+    EXPECT_EQ(diagnostics[0].location, (SourceLocation{6, 16}));
+    EXPECT_EQ(
+        std::string(diagnostics[0].source.data(), diagnostics[0].source.size()), "filter.json");
 
     std::ostringstream out;
     out << diagnostics[0];
@@ -211,17 +213,40 @@ TEST(DecodeTest, out_of_range_integer_is_reported)
     EXPECT_EQ(config.channels, 1);
 }
 
-TEST(DecodeTest, unknown_field_is_reported)
+TEST(DecodeTest, unknown_field_is_a_warning)
 {
     PropTree tree = makeFilterTree();
     tree.add_float(tree.root().id(), "gian", 2.0, {6, 3});
     Diagnostics diagnostics;
 
-    EXPECT_FALSE(decode<FilterConfig>(tree.root(), diagnostics));
+    EXPECT_TRUE(decode<FilterConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
     EXPECT_EQ(diagnostics[0].location, (SourceLocation{6, 3}));
     EXPECT_EQ(str(diagnostics[0].message), "unknown field 'gian'");
+    EXPECT_FALSE(diagnostics.has_errors());
+    EXPECT_EQ(diagnostics.warning_count(), 1u);
+    EXPECT_EQ(diagnostics.error_count(), 0u);
+
+    std::ostringstream out;
+    out << diagnostics[0];
+    EXPECT_EQ(out.str(), "6:3: gian: warning: unknown field 'gian'");
+}
+
+TEST(DecodeTest, every_unknown_field_is_reported_and_clear_resets_counts)
+{
+    PropTree tree = makeFilterTree();
+    tree.add_float(tree.root().id(), "gian", 2.0, {6, 3});
+    tree.add_string(tree.root().id(), "extra", "x", {7, 3});
+    Diagnostics diagnostics;
+
+    EXPECT_TRUE(decode<FilterConfig>(tree.root(), diagnostics));
+    EXPECT_EQ(diagnostics.warning_count(), 2u);
+
+    diagnostics.clear();
+    EXPECT_EQ(diagnostics.warning_count(), 0u);
+    EXPECT_TRUE(diagnostics.empty());
 }
 
 TEST(DecodeTest, configuration_must_be_an_object)

@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_NODES_HPP
 #define DUCTA_PIPELINE_NODES_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/Optional.hpp"
 #include "ducta/Core/Types/String.hpp"
@@ -11,7 +13,7 @@
 namespace ducta {
 namespace Pipeline {
 
-using NodeName = ::ducta::String<50>;
+using NodeName = ::ducta::String<DUCTA_MAX_NODE_NAME_LENGTH>;
 
 class Nodes
 {
@@ -42,7 +44,7 @@ public:
     }
 
 private:
-    ::ducta::Map<NodeName, NodeRef, 50> m_nodes;
+    ::ducta::Map<NodeName, NodeRef, DUCTA_MAX_NODES> m_nodes;
 };
 
 } // namespace Pipeline

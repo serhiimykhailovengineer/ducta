@@ -3,6 +3,10 @@
 
 #include "ducta/Pipeline/Pipeline.hpp"
 
+#if defined(__cpp_exceptions)
+#include <exception>
+#endif
+
 #include "ducta/Core/Algorithms/Adapters.hpp"
 #include "ducta/Core/Config.hpp"
 #include "ducta/Utils/Log.hpp"
@@ -15,48 +19,187 @@ DUCTA_DECL Pipeline::Pipeline(Clock&& clock)
 {
 }
 
-DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
+DUCTA_DECL bool Pipeline::configure(
+    Nodes& nodes,
+    Config const& config,
+    Configuration::Diagnostics& diagnostics,
+    TraceCallback trace_callback)
 {
-    m_trace_enabled = config.should_trace_execution;
-    m_target_frame_duration = config.target_frame_duration;
-    m_trace_flush_threshold = config.trace_flush_threshold;
-    m_trace_callback = trace_callback;
+    using Configuration::PropNode;
 
-    m_iteration_strategy =
-        m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
-
-    m_event_wiring.disconnect();
-    m_init_order.clear();
-    m_nodes.clear();
+    clear();
+    if (!Configuration::validate(PropNode{}, config, diagnostics))
+    {
+        return false;
+    }
+    size_t const errors = diagnostics.error_count();
 
     for (auto const& name : config.order)
     {
-        if (auto node_info = nodes.get_node(name))
+        StringView const node_name{name.data(), name.size()};
+        if (auto node_info = nodes.get_node(node_name))
         {
             m_init_order.emplace_back(*node_info);
             m_nodes.emplace_back(*node_info);
         }
         else
         {
-            DUCTA_LOG_ERROR("Node not found: {}", name);
-            m_init_order.clear();
-            m_nodes.clear();
-            return false;
+            diagnostics.errorf(PropNode{}, "unknown node '{}' in pipeline order", node_name);
         }
     }
 
-    m_trace_info.configure(Span<StringView const>(config.order.data(), config.order.size()));
+    Vector<size_t, DUCTA_MAX_CONNECTIONS> connected;
+    for (size_t i = 0; i < config.connections.size(); ++i)
+    {
+        PortLink const& link = config.connections[i];
+        StringView const output_node{link.output.node.data(), link.output.node.size()};
+        StringView const output_name{link.output.name.data(), link.output.name.size()};
+        StringView const input_node{link.input.node.data(), link.input.node.size()};
+        StringView const input_name{link.input.name.data(), link.input.name.size()};
 
-    m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
+        auto source = nodes.get_node(output_node);
+        auto target = nodes.get_node(input_node);
+        if (!source || !target)
+        {
+            diagnostics.errorf(
+                PropNode{}, "unknown node '{}' in connections", !source ? output_node : input_node);
+            continue;
+        }
+
+        auto outputs = source->node.get_outputs();
+        auto output = outputs.find(output_name);
+        if (output == outputs.end())
+        {
+            diagnostics.errorf(PropNode{}, "node '{}' has no output '{}'", output_node, output_name);
+            continue;
+        }
+        auto inputs = target->node.get_inputs();
+        auto input = inputs.find(input_name);
+        if (input == inputs.end())
+        {
+            diagnostics.errorf(PropNode{}, "node '{}' has no input '{}'", input_node, input_name);
+            continue;
+        }
+
+        /* Only the connections actually made count: a rejected one reports its own problem */
+        bool connected_twice = false;
+        for (size_t j : connected)
+        {
+            PortLink const& previous = config.connections[j];
+            if (previous.input.node == link.input.node && previous.input.name == link.input.name)
+            {
+                connected_twice = true;
+            }
+        }
+        if (connected_twice)
+        {
+            diagnostics.errorf(
+                PropNode{}, "input '{}.{}' is connected more than once", input_node, input_name);
+            continue;
+        }
+        /* Asks the output itself, so inputs bound to it outside the configuration count too */
+        if (output->second.full())
+        {
+            diagnostics.errorf(
+                PropNode{},
+                "output '{}.{}' is connected to more than {} inputs",
+                output_node,
+                output_name,
+                static_cast<unsigned long long>(DUCTA_MAX_OUTPUT_CONNECTIONS));
+            continue;
+        }
+
+        IO::Connection connection = IO::bind(output->second, input->second);
+        if (!connection)
+        {
+            diagnostics.errorf(
+                PropNode{},
+                "cannot connect '{}.{}' to '{}.{}': incompatible types",
+                output_node,
+                output_name,
+                input_node,
+                input_name);
+            continue;
+        }
+        m_connections.push_back(::ducta::move(connection));
+        connected.push_back(i);
+    }
+
+    if (diagnostics.error_count() != errors)
+    {
+        clear();
+        return false;
+    }
+
+    m_trace_enabled = config.should_trace_execution;
+    m_target_frame_duration = config.target_frame_duration;
+    m_trace_flush_threshold = config.trace_flush_threshold;
+    m_trace_callback = trace_callback;
+    m_iteration_strategy =
+        m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
+
+    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
+    if (!m_event_wiring.connect(
+            m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr, &diagnostics))
+    {
+        clear();
+        return false;
+    }
     return true;
+}
+
+DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCallback trace_callback)
+{
+    Configuration::Diagnostics diagnostics;
+    bool const ok = configure(nodes, config, diagnostics, trace_callback);
+    for (auto const& diagnostic : diagnostics)
+    {
+        DUCTA_LOG_ERROR("{}", StringView{diagnostic.message.data(), diagnostic.message.size()});
+    }
+    return ok;
+}
+
+DUCTA_DECL void Pipeline::clear()
+{
+    m_event_wiring.disconnect();
+    m_connections.clear();
+    m_init_order.clear();
+    m_nodes.clear();
+    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
+    m_trace_enabled = false;
+    m_trace_callback = {};
+    m_iteration_strategy = &Pipeline::iterateWithoutTrace;
 }
 
 DUCTA_DECL void Pipeline::init()
 {
-    for (auto& node_info : m_init_order)
+    // release() disconnects the events: connect them again, so that every run delivers them.
+    // The same nodes were connected by configure(), so this fits the capacities too.
+    m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
+
+    size_t initialized = 0;
+#if defined(__cpp_exceptions)
+    try
     {
-        node_info.node.init();
+#endif
+        for (auto& node_info : m_init_order)
+        {
+            node_info.node.init();
+            ++initialized;
+        }
+#if defined(__cpp_exceptions)
     }
+    catch (...)
+    {
+        // Release the nodes initialised so far, in reverse order, then pass the error on
+        while (initialized > 0)
+        {
+            m_init_order[--initialized].node.release();
+        }
+        m_event_wiring.disconnect();
+        throw;
+    }
+#endif
 }
 
 DUCTA_DECL bool Pipeline::iterate()
@@ -141,6 +284,12 @@ DUCTA_DECL bool Pipeline::iterateWithTrace()
                 "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
+        catch (...)
+        {
+            // Close the frame before passing the exception on, or the next frame_start() fails
+            m_trace_info.frame_end(m_clock.now());
+            throw;
+        }
     }
 
     m_trace_info.frame_end(m_clock.now());
@@ -161,11 +310,35 @@ DUCTA_DECL bool Pipeline::iterateWithTrace()
 
 DUCTA_DECL void Pipeline::release()
 {
+#if defined(__cpp_exceptions)
+    // Every node is released even if one throws; the first exception is passed on afterwards
+    std::exception_ptr first_error;
+    for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
+    {
+        try
+        {
+            node_info.node.release();
+        }
+        catch (...)
+        {
+            if (!first_error)
+            {
+                first_error = std::current_exception();
+            }
+        }
+    }
+    m_event_wiring.disconnect();
+    if (first_error)
+    {
+        std::rethrow_exception(first_error);
+    }
+#else
     for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
     {
         node_info.node.release();
     }
     m_event_wiring.disconnect();
+#endif
 }
 
 DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
@@ -177,7 +350,23 @@ DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_t
 
 DUCTA_DECL PipelineEngine::~PipelineEngine()
 {
+#if defined(__cpp_exceptions)
+    // A destructor must not throw: an exception from a node's release() is logged
+    try
+    {
+        m_pipeline.release();
+    }
+    catch (std::exception const& e)
+    {
+        DUCTA_LOG_ERROR("Exception during release of the pipeline, what(): {}", e.what());
+    }
+    catch (...)
+    {
+        DUCTA_LOG_ERROR("Exception during release of the pipeline");
+    }
+#else
     m_pipeline.release();
+#endif
 }
 
 DUCTA_DECL int PipelineEngine::run()

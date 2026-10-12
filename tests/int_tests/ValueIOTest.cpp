@@ -27,9 +27,9 @@ public:
     } outputs;
 
 public:
-    Map<StringView, IO::InputRef, 25> get_inputs()
+    Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> get_inputs()
     {
-        Map<StringView, IO::InputRef, 25> inputs_ref;
+        Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> inputs_ref;
 
         inputs_ref.insert(
             ::ducta::make_pair<StringView, IO::InputRef>("left", IO::InputRef{inputs.left}));
@@ -38,9 +38,9 @@ public:
         return inputs_ref;
     }
 
-    Map<StringView, IO::OutputRef, 25> get_outputs()
+    Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> get_outputs()
     {
-        Map<StringView, IO::OutputRef, 25> outputs_ref;
+        Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> outputs_ref;
 
         outputs_ref.insert(
             ::ducta::make_pair<StringView, IO::OutputRef>("result", IO::OutputRef{outputs.result}));

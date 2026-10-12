@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_NODEREF_HPP
 #define DUCTA_PIPELINE_NODEREF_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/IO/EventRef.hpp"
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
@@ -31,11 +33,11 @@ private:
         void (*init)(void*);
         Expected<bool, Error> (*iterate)(void*, Chrono::TimestampUS);
         void (*release)(void*);
-        Map<StringView, IO::InputRef, 25> (*get_inputs)(void*);
-        Map<StringView, IO::OutputRef, 25> (*get_outputs)(void*);
-        Map<StringView, IO::EventRef, 25> (*get_events)(void*);
+        Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> (*get_inputs)(void*);
+        Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> (*get_outputs)(void*);
+        Map<StringView, IO::EventRef, DUCTA_MAX_NODE_PORTS> (*get_events)(void*);
 
-        Vector<::ducta::Private::TypeId, 25> (*get_event_ids)(void*);
+        Vector<::ducta::Private::TypeId, DUCTA_MAX_NODE_PORTS> (*get_event_ids)(void*);
         Expected<bool, Error> (*send_event)(void*, ::ducta::Private::TypeId, void*);
     };
 
@@ -54,24 +56,24 @@ private:
             +[](void* obj) {
                 static_cast<T*>(obj)->release();
             },
-            +[](void* obj) -> Map<StringView, IO::InputRef, 25> {
+            +[](void* obj) -> Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> {
                 using NodeType = ::ducta::decay_t<T>;
                 NodeType& node = *static_cast<NodeType*>(obj);
                 return IO::NodeInputsTraits<NodeType>::get(node);
             },
-            +[](void* obj) -> Map<StringView, IO::OutputRef, 25> {
+            +[](void* obj) -> Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> {
                 using NodeType = ::ducta::decay_t<T>;
                 NodeType& node = *static_cast<NodeType*>(obj);
                 return IO::NodeOutputsTraits<NodeType>::get(node);
             },
-            +[](void* obj) -> Map<StringView, IO::EventRef, 25> {
+            +[](void* obj) -> Map<StringView, IO::EventRef, DUCTA_MAX_NODE_PORTS> {
                 using NodeType = ::ducta::decay_t<T>;
                 NodeType& node = *static_cast<NodeType*>(obj);
                 return IO::NodeEventsTraits<NodeType>::get(node);
             },
-            +[](void*) -> Vector<::ducta::Private::TypeId, 25> {
+            +[](void*) -> Vector<::ducta::Private::TypeId, DUCTA_MAX_NODE_PORTS> {
                 using NodeType = ::ducta::decay_t<T>;
-                Vector<::ducta::Private::TypeId, 25> ids;
+                Vector<::ducta::Private::TypeId, DUCTA_MAX_NODE_PORTS> ids;
                 for (auto id : Private::event_ids_of(typename SupportedEventsOf<NodeType>::type{}))
                 {
                     ids.push_back(id);
@@ -158,7 +160,7 @@ public:
     /*
      * @brief Get type ids of events the node can receive (its SupportedEvents)
      */
-    Vector<::ducta::Private::TypeId, 25> get_supported_event_ids()
+    Vector<::ducta::Private::TypeId, DUCTA_MAX_NODE_PORTS> get_supported_event_ids()
     {
         return m_vtable->get_event_ids(m_node_obj);
     }
@@ -167,7 +169,7 @@ public:
      * @brief Get the inputs of the node
      * @return A map of input names to InputRef objects
      */
-    Map<StringView, IO::InputRef, 25> get_inputs()
+    Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> get_inputs()
     {
         return m_vtable->get_inputs(m_node_obj);
     }
@@ -176,7 +178,7 @@ public:
      * @brief Get the outputs of the node
      * @return A map of output names to OutputRef objects
      */
-    Map<StringView, IO::OutputRef, 25> get_outputs()
+    Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> get_outputs()
     {
         return m_vtable->get_outputs(m_node_obj);
     }
@@ -184,7 +186,7 @@ public:
     /*
      * @brief Get the events (emitters) of the node
      */
-    Map<StringView, IO::EventRef, 25> get_events()
+    Map<StringView, IO::EventRef, DUCTA_MAX_NODE_PORTS> get_events()
     {
         return m_vtable->get_events(m_node_obj);
     }

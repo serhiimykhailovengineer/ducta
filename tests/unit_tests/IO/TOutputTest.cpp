@@ -79,9 +79,10 @@ TEST(TOutputTests, update)
     int temp_value = 100;
     output.set(temp_value);
 
-    output.update([](int& value) {
+    auto add_fifty = [](int& value) {
         value += 50;
-    });
+    };
+    output.update(add_fifty);
 }
 
 TEST(TOutputTests, bind) 

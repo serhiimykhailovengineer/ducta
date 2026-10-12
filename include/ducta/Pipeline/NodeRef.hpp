@@ -3,6 +3,7 @@
 
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/OutputRef.hpp"
+#include "ducta/IO/EventRef.hpp"
 
 #include "ducta/Pipeline/Private/NodeIterate.hpp"
 
@@ -10,8 +11,12 @@
 #include "ducta/Core/Types/Error.hpp"
 
 #include "ducta/Core/Types/Map.hpp"
+#include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/TypeTraits.hpp"
+
+#include "ducta/Core/Types/TypeRegistry.hpp"
+#include "ducta/Pipeline/Private/EventHelper.hpp"
 
 #include "ducta/Chrono/Chrono.hpp"
 
@@ -21,12 +26,17 @@ namespace Pipeline {
 class NodeRef
 {
 private:
+
     struct VTable {
         void (*init)(void*);
         Expected<bool, Error> (*iterate)(void*, Chrono::TimestampUS);
         void (*release)(void*);
         Map<StringView, IO::InputRef, 25> (*get_inputs)(void*);
         Map<StringView, IO::OutputRef, 25> (*get_outputs)(void*);
+        Map<StringView, IO::EventRef, 25> (*get_events)(void*);
+
+        Vector<::ducta::Private::TypeId, 25> (*get_event_ids)(void*);
+        Expected<bool, Error> (*send_event)(void*, ::ducta::Private::TypeId, void*);
     };
 
     template<class T>
@@ -53,6 +63,27 @@ private:
                 using NodeType = ::ducta::decay_t<T>;
                 NodeType& node = *static_cast<NodeType*>(obj);
                 return IO::NodeOutputsTraits<NodeType>::get(node);
+            },
+            +[](void* obj) -> Map<StringView, IO::EventRef, 25> {
+                using NodeType = ::ducta::decay_t<T>;
+                NodeType& node = *static_cast<NodeType*>(obj);
+                return IO::NodeEventsTraits<NodeType>::get(node);
+            },
+            +[](void*) -> Vector<::ducta::Private::TypeId, 25> {
+                using NodeType = ::ducta::decay_t<T>;
+                Vector<::ducta::Private::TypeId, 25> ids;
+                for (auto id : Private::event_ids_of(typename SupportedEventsOf<NodeType>::type{}))
+                {
+                    ids.push_back(id);
+                }
+                return ids;
+            },
+            +[](void* obj, ::ducta::Private::TypeId id, void* event) -> Expected<bool, Error> {
+                using NodeType = ::ducta::decay_t<T>;
+                NodeType& node = *static_cast<NodeType*>(obj);
+                static const auto table = Private::make_event_table<NodeType>(
+                    typename SupportedEventsOf<NodeType>::type{});
+                return Private::call_event(&node, id, event, table);
             }
         };
         return vt;
@@ -100,6 +131,41 @@ public:
     }
 
     /*
+     * @brief Send an event to the node
+     * @tparam EventType The type of the event
+     * @param event The event to send
+     * @return Expected<bool, Error>: true if the event was handled successfully, 
+     *                                       false if the event was not handled, or an Error if handling failed
+    */
+    template<class EventType>
+    Expected<bool, Error> sendEvent(EventType const& event)
+    {
+        return m_vtable->send_event(
+            m_node_obj,
+            DUCTA_TYPE_ID(EventType),
+            const_cast<void*>(static_cast<const void*>(&event))
+        );
+    }
+
+    /*
+     * @brief Send an already type-erased event to the node
+     * @param id Type id of the event (DUCTA_TYPE_ID(EventType))
+     * @param event Pointer to the event object of that exact type
+    */
+    Expected<bool, Error> sendEventRaw(::ducta::Private::TypeId id, void* event)
+    {
+        return m_vtable->send_event(m_node_obj, id, event);
+    }
+
+    /*
+     * @brief Get type ids of events the node can receive (its SupportedEvents)
+    */
+    Vector<::ducta::Private::TypeId, 25> get_supported_event_ids()
+    {
+        return m_vtable->get_event_ids(m_node_obj);
+    }
+
+    /*
      * @brief Get the inputs of the node
      * @return A map of input names to InputRef objects
     */
@@ -115,6 +181,14 @@ public:
     Map<StringView, IO::OutputRef, 25> get_outputs()
     {
         return m_vtable->get_outputs(m_node_obj);
+    }
+
+    /*
+     * @brief Get the events (emitters) of the node
+    */
+    Map<StringView, IO::EventRef, 25> get_events()
+    {
+        return m_vtable->get_events(m_node_obj);
     }
 
 private:

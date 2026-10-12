@@ -32,7 +32,7 @@ TEST(PipelineTest, base_test)
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
     Pipeline::Pipeline::Config config{};
-    config.order = makeVector<StringView>("node_1", "node_2", "node_3", "node_4");
+    config.order = makeVector<StringView, 50>("node_1", "node_2", "node_3", "node_4");
 
     pipeline.configure(nodes, config);
 
@@ -93,7 +93,7 @@ TEST(PipelineTest, iteration_with_failed_node)
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
     Pipeline::Pipeline::Config config{};
-    config.order = makeVector<StringView>("first", "second");
+    config.order = makeVector<StringView, 50>("first", "second");
 
     ASSERT_TRUE(pipeline.configure(nodes, config));
 
@@ -133,7 +133,7 @@ TEST(PipelineTest, pipeline_execution_stop_token)
     Pipeline::Pipeline pipeline{Pipeline::Clock{clock_mock}};
 
     Pipeline::Pipeline::Config config{};
-    config.order = makeVector<StringView>("first", "second");
+    config.order = makeVector<StringView, 50>("first", "second");
 
     ASSERT_TRUE(pipeline.configure(nodes, config));
 

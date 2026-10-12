@@ -23,6 +23,15 @@ Vector<T, sizeof...(Args)> makeVector(Args&&... args)
     return vec;
 }
 
+template <typename T, const size_t MAX_SIZE, class... Args>
+Vector<T, MAX_SIZE> makeVector(Args&&... args)
+{
+    static_assert(sizeof...(Args) <= MAX_SIZE, "Too many elements for vector capacity");
+    Vector<T, MAX_SIZE> vec;
+    (vec.push_back(::ducta::forward<Args>(args)), ...);
+    return vec;
+}
+
 template< class InputIt, class T >
 InputIt find(InputIt first, InputIt last, T const& value )
 {
@@ -56,6 +65,13 @@ template <typename T, class... Args>
 Vector<T> makeVector(Args&&... args)
 {
     return Vector<T>{::ducta::forward<Args>(args)...};
+}
+
+template <typename T, const size_t MAX_SIZE, class... Args>
+Vector<T, MAX_SIZE> makeVector(Args&&... args)
+{
+    static_assert(sizeof...(Args) <= MAX_SIZE, "Too many elements for vector capacity");
+    return Vector<T, MAX_SIZE>{::ducta::forward<Args>(args)...};
 }
 
 template <typename T, const size_t MAX_SIZE = 0>

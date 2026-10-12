@@ -4,6 +4,8 @@ add_executable(${TARGET_NAME}
     NodeTests.cpp
     PipelineTest.cpp
     EventWiringTest.cpp
+    NodeFactoryTest.cpp
+    NodeManagerTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

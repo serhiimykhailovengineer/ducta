@@ -18,12 +18,26 @@
 namespace ducta {
 namespace Configuration {
 
+enum class Severity : uint8_t
+{
+    /* The configuration cannot be used (decoding fails) */
+    Error,
+    /* Suspicious but harmless (e.g. an unknown field, which is ignored) */
+    Warning
+};
+
+constexpr StringView to_string(Severity severity) noexcept
+{
+    return severity == Severity::Warning ? StringView{"warning"} : StringView{"error"};
+}
+
 /*
  * @brief A problem found in a configuration that was loaded successfully,
- *        e.g. a wrong value type, a value out of range or an unknown field
+ *        e.g. a wrong value type, a value out of range (errors) or an unknown field (warning)
  */
 struct Diagnostic
 {
+    Severity severity{Severity::Error};
     /* Where in the configuration source; file_name() points into the PropTree */
     SourceLocation location;
     Path path;
@@ -32,7 +46,8 @@ struct Diagnostic
     SourceLocation origin;
 };
 
-/* Prints "file:line:column: path: message" (unknown parts are omitted) */
+/* Prints "file:line:column: path: message" (unknown parts are omitted),
+ * warnings are prefixed with "warning: " */
 template <class OutputStream>
 OutputStream& operator<<(OutputStream& os, Diagnostic const& diagnostic)
 {
@@ -48,6 +63,10 @@ OutputStream& operator<<(OutputStream& os, Diagnostic const& diagnostic)
     {
         os << diagnostic.path << ": ";
     }
+    if (diagnostic.severity == Severity::Warning)
+    {
+        os << "warning: ";
+    }
     os << diagnostic.message;
     return os;
 }
@@ -55,7 +74,8 @@ OutputStream& operator<<(OutputStream& os, Diagnostic const& diagnostic)
 /*
  * @brief Collects every configuration problem instead of stopping at the first one
  * @note With the embedded backend at most DUCTA_CONFIG_MAX_DIAGNOSTICS are kept;
- *       the rest are counted in dropped().
+ *       the rest are counted in dropped(). error_count() / warning_count() count all
+ *       reported diagnostics, dropped ones included.
  */
 class Diagnostics
 {
@@ -64,6 +84,14 @@ public:
 
     void add(Diagnostic diagnostic)
     {
+        if (diagnostic.severity == Severity::Warning)
+        {
+            ++m_warnings;
+        }
+        else
+        {
+            ++m_errors;
+        }
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
         if (m_items.full())
         {
@@ -93,9 +121,44 @@ public:
         add(::ducta::move(diagnostic));
     }
 
+    /* Report a harmless problem at the location of node */
+    void warning(PropNode node, StringView message, SourceLocation origin = SourceLocation::current())
+    {
+        Diagnostic diagnostic = make(node);
+        diagnostic.severity = Severity::Warning;
+        diagnostic.origin = origin;
+        diagnostic.message.assign(message.data(), message.size());
+        add(::ducta::move(diagnostic));
+    }
+
+    template <class... Args>
+    void warningf(PropNode node, format_string<Args...> fmt, Args&&... args)
+    {
+        Diagnostic diagnostic = make(node);
+        diagnostic.severity = Severity::Warning;
+        format_to(diagnostic.message, fmt, ::ducta::forward<Args>(args)...);
+        add(::ducta::move(diagnostic));
+    }
+
+    /* No diagnostics at all (neither errors nor warnings) */
     bool empty() const noexcept
     {
         return m_items.empty() && m_dropped == 0;
+    }
+
+    bool has_errors() const noexcept
+    {
+        return m_errors != 0;
+    }
+
+    size_t error_count() const noexcept
+    {
+        return m_errors;
+    }
+
+    size_t warning_count() const noexcept
+    {
+        return m_warnings;
     }
 
     size_t size() const noexcept
@@ -128,6 +191,8 @@ public:
     {
         m_items.clear();
         m_dropped = 0;
+        m_errors = 0;
+        m_warnings = 0;
     }
 
 private:
@@ -142,6 +207,8 @@ private:
 private:
     Container m_items;
     size_t m_dropped{0};
+    size_t m_errors{0};
+    size_t m_warnings{0};
 };
 
 } // namespace Configuration

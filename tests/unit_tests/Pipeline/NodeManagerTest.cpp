@@ -1,0 +1,281 @@
+#include <gtest/gtest.h>
+
+#include <string>
+
+#include "ducta/Configuration/Configuration.hpp"
+#include "ducta/Pipeline/NodeManager.hpp"
+
+#include "TestNodes.hpp"
+
+using namespace ducta;
+using namespace ducta::Configuration;
+using namespace ducta::Pipeline;
+
+namespace {
+
+PropTree loadTree(char const* text)
+{
+    PropTree tree;
+    Diagnostics diagnostics;
+    EXPECT_TRUE(loadJson(text, tree, diagnostics)) << text;
+    return tree;
+}
+
+template <class StringType>
+std::string str(StringType const& s)
+{
+    return std::string{s.data(), s.size()};
+}
+
+void add(NodeManagerConfig& config, char const* type, PropNode node = {})
+{
+    config.nodes.insert(::ducta::pair<NodeName const, PropNode>(NodeName{type}, node));
+}
+
+/* Large enough for every test node */
+using SmallStatic = StaticNodeStorage<512, 8>;
+
+} // namespace
+
+// Runs every test with the static storage and, on the standard backend, with the heap storage
+template <class Storage>
+class NodeManagerTest : public ::testing::Test
+{
+protected:
+    void SetUp() override
+    {
+        TestNodes::CountingNode::alive = 0;
+        TestNodes::GainNode::last_gain = 0.0;
+    }
+};
+
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+using Storages = ::testing::Types<SmallStatic>;
+#else
+using Storages = ::testing::Types<SmallStatic, HeapNodeStorage>;
+#endif
+TYPED_TEST_SUITE(NodeManagerTest, Storages);
+
+TYPED_TEST(NodeManagerTest, configure_from_prop_tree)
+{
+    PropTree tree =
+        loadTree(R"({ "nodes": { "Gain": { "gain": 2.5, "label": "amp" }, "Plain": {} } })");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(tree, diagnostics));
+
+    EXPECT_TRUE(diagnostics.empty());
+    EXPECT_EQ(manager.size(), 2u);
+    EXPECT_DOUBLE_EQ(TestNodes::GainNode::last_gain, 2.5);
+
+    auto gain = manager.nodes().get_node("Gain");
+    ASSERT_TRUE(gain.has_value());
+    gain->node.init();
+    gain->node.release();
+    EXPECT_TRUE(manager.nodes().get_node("Plain").has_value());
+}
+
+TYPED_TEST(NodeManagerTest, configure_from_config)
+{
+    PropTree tree = loadTree(R"({ "gain": 4.0 })");
+    NodeManagerConfig config;
+    add(config, "Gain", tree.root());
+    add(config, "Counting");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(config, diagnostics));
+
+    EXPECT_TRUE(diagnostics.empty());
+    EXPECT_EQ(manager.size(), 2u);
+    EXPECT_DOUBLE_EQ(TestNodes::GainNode::last_gain, 4.0);
+    EXPECT_EQ(TestNodes::CountingNode::alive, 1);
+}
+
+TYPED_TEST(NodeManagerTest, missing_node_config_uses_defaults)
+{
+    NodeManagerConfig config;
+    add(config, "Gain");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(config, diagnostics));
+    EXPECT_DOUBLE_EQ(TestNodes::GainNode::last_gain, 1.0);
+}
+
+TYPED_TEST(NodeManagerTest, unknown_parameters_are_warnings)
+{
+    PropTree tree = loadTree(
+        "{ \"nodes\": {\n  \"Gain\": { \"gain\": 2.0, \"extra\": 1 },\n"
+        "  \"Plain\": { \"value\": 3 } } }");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(tree, diagnostics));
+
+    EXPECT_EQ(manager.size(), 2u);
+    EXPECT_FALSE(diagnostics.has_errors());
+    ASSERT_EQ(diagnostics.size(), 2u);
+    EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
+    EXPECT_EQ(str(diagnostics[0].path), "nodes.Gain.extra");
+    EXPECT_EQ(diagnostics[0].location.line(), 2u);
+    EXPECT_EQ(diagnostics[1].severity, Severity::Warning);
+    EXPECT_EQ(str(diagnostics[1].path), "nodes.Plain");
+    EXPECT_EQ(
+        str(diagnostics[1].message), "node type takes no configuration, parameters are ignored");
+}
+
+TYPED_TEST(NodeManagerTest, unknown_type_fails_and_keeps_no_node)
+{
+    PropTree tree = loadTree("{ \"nodes\": {\n  \"Counting\": {},\n  \"Nope\": {} } }");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    EXPECT_FALSE(manager.configure(tree, diagnostics));
+
+    EXPECT_EQ(manager.size(), 0u);
+    EXPECT_FALSE(manager.nodes().get_node("Counting").has_value());
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Nope'");
+    EXPECT_EQ(diagnostics[0].location.line(), 3u);
+}
+
+TYPED_TEST(NodeManagerTest, config_errors_fail_and_keep_no_node)
+{
+    PropTree tree =
+        loadTree("{ \"nodes\": {\n  \"Counting\": {},\n  \"Gain\": { \"gain\": 0 } } }");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    EXPECT_FALSE(manager.configure(tree, diagnostics));
+
+    EXPECT_EQ(manager.size(), 0u);
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].path), "nodes.Gain.gain");
+    EXPECT_EQ(str(diagnostics[0].message), "must be positive");
+}
+
+TYPED_TEST(NodeManagerTest, invalid_manager_config_is_reported)
+{
+    PropTree tree = loadTree(R"({ "nodes": [1, 2] })");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    EXPECT_FALSE(manager.configure(tree, diagnostics));
+    EXPECT_TRUE(diagnostics.has_errors());
+    EXPECT_EQ(manager.size(), 0u);
+}
+
+TYPED_TEST(NodeManagerTest, reconfigure_replaces_nodes)
+{
+    NodeManagerConfig first;
+    add(first, "Counting");
+    NodeManagerConfig second;
+    add(second, "Plain");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(first, diagnostics));
+    EXPECT_EQ(TestNodes::CountingNode::alive, 1);
+
+    ASSERT_TRUE(manager.configure(second, diagnostics));
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+    EXPECT_EQ(manager.size(), 1u);
+    EXPECT_FALSE(manager.nodes().get_node("Counting").has_value());
+    EXPECT_TRUE(manager.nodes().get_node("Plain").has_value());
+
+    manager.clear();
+    EXPECT_EQ(manager.size(), 0u);
+    EXPECT_FALSE(manager.nodes().get_node("Plain").has_value());
+}
+
+TYPED_TEST(NodeManagerTest, destructor_destroys_nodes)
+{
+    NodeManagerConfig config;
+    add(config, "Counting");
+    Diagnostics diagnostics;
+    {
+        NodeManager<TypeParam> manager;
+        ASSERT_TRUE(manager.configure(config, diagnostics));
+        EXPECT_EQ(TestNodes::CountingNode::alive, 1);
+    }
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+}
+
+TYPED_TEST(NodeManagerTest, uses_given_factory)
+{
+    NodeFactory factory;
+    factory.register_type<TestNodes::PlainNode>("Only");
+    NodeManagerConfig config;
+    add(config, "Only");
+    add(config, "Gain");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager{factory};
+
+    EXPECT_FALSE(manager.configure(config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Gain'");
+}
+
+TYPED_TEST(NodeManagerTest, over_aligned_node)
+{
+    NodeManagerConfig config;
+    add(config, "Plain");
+    add(config, "Aligned");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(config, diagnostics));
+    EXPECT_EQ(manager.size(), 2u);
+}
+
+TEST(StaticNodeStorageTest, full_storage_is_reported)
+{
+    NodeManagerConfig config;
+    add(config, "Counting");
+    add(config, "Plain");
+    Diagnostics diagnostics;
+    TestNodes::CountingNode::alive = 0;
+
+    NodeManager<StaticNodeStorage<64, 1>> manager;
+    EXPECT_FALSE(manager.configure(config, diagnostics));
+
+    EXPECT_EQ(manager.size(), 0u);
+    EXPECT_EQ(TestNodes::CountingNode::alive, 0);
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "not enough node storage");
+}
+
+TEST(StaticNodeStorageTest, too_small_buffer_is_reported)
+{
+    NodeManagerConfig config;
+    add(config, "Gain");
+    Diagnostics diagnostics;
+
+    NodeManager<StaticNodeStorage<sizeof(TestNodes::GainNode) - 1, 4>> manager;
+    EXPECT_FALSE(manager.configure(config, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "not enough node storage");
+}
+
+TEST(StaticNodeStorageTest, places_nodes_aligned_in_buffer)
+{
+    StaticNodeStorage<256, 4> storage;
+
+    void* first = storage.allocate(3, 1);
+    ASSERT_NE(first, nullptr);
+    storage.adopt(first, 1, &Pipeline::Private::destroy_node<unsigned char>);
+
+    void* second = storage.allocate(8, 64);
+    ASSERT_NE(second, nullptr);
+    EXPECT_EQ(reinterpret_cast<uintptr_t>(second) % 64, 0u);
+    storage.adopt(second, 64, &Pipeline::Private::destroy_node<unsigned char>);
+
+    EXPECT_EQ(storage.size(), 2u);
+    storage.clear();
+    EXPECT_EQ(storage.size(), 0u);
+    EXPECT_EQ(storage.used(), 0u);
+}

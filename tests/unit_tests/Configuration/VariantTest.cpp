@@ -168,16 +168,17 @@ TEST(VariantTest, struct_alternative_is_decoded_from_object)
     EXPECT_DOUBLE_EQ(get<GainConfig>(config->source).gain, 0.5);
 }
 
-TEST(VariantTest, errors_of_selected_alternative_are_reported)
+TEST(VariantTest, warnings_of_selected_alternative_are_reported)
 {
     PropTree tree;
     auto source = tree.add_object(tree.root().id(), "source", {2, 13});
     tree.add_float(*source, "gian", 0.5, {2, 15});
     Diagnostics diagnostics;
 
-    EXPECT_FALSE(decode<SourceConfig>(tree.root(), diagnostics));
+    EXPECT_TRUE(decode<SourceConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
     EXPECT_EQ(str(diagnostics[0].path), "source.gian");
     EXPECT_EQ(str(diagnostics[0].message), "unknown field 'gian'");
 }
@@ -259,9 +260,10 @@ TEST(VariantTest, fields_of_other_alternative_are_unknown)
     tree.add_integer(filter.id(), "order", 4, {2, 55});
     Diagnostics diagnostics;
 
-    EXPECT_FALSE(decode<StageConfig>(tree.root(), diagnostics));
+    EXPECT_TRUE(decode<StageConfig>(tree.root(), diagnostics));
 
     ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
     EXPECT_EQ(str(diagnostics[0].path), "filter.order");
     EXPECT_EQ(str(diagnostics[0].message), "unknown field 'order'");
 }

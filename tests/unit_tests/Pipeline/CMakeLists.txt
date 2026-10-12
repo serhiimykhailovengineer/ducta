@@ -6,6 +6,7 @@ add_executable(${TARGET_NAME}
     EventWiringTest.cpp
     NodeFactoryTest.cpp
     NodeManagerTest.cpp
+    DuctaEngineTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

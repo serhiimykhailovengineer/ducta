@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_TYPEREGISTRY_HPP
 #define DUCTA_CORE_TYPES_TYPEREGISTRY_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Core/Types/Integers.hpp"
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/String.hpp"
@@ -108,7 +110,7 @@ public:
 
 private:
     // Mutex m_mutex;
-    Map<StringView, TypeRegistryEntry, 50> m_entries;
+    Map<StringView, TypeRegistryEntry, DUCTA_MAX_EVENT_TYPES> m_entries;
     TypeId m_next_id = 1;
 };
 } // namespace Private

@@ -1,6 +1,8 @@
 #ifndef DUCTA_EVENT_REF_HPP
 #define DUCTA_EVENT_REF_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Types/FunctionRef.hpp"
 #include "ducta/Core/Types/Map.hpp"
@@ -72,7 +74,7 @@ private:
 template <typename Node>
 struct NodeEventsTraits
 {
-    static ::ducta::Map<::ducta::StringView, EventRef, 25> get(Node&)
+    static ::ducta::Map<::ducta::StringView, EventRef, DUCTA_MAX_NODE_PORTS> get(Node&)
     {
         return {};
     }

@@ -6,6 +6,8 @@
 #ifndef DUCTA_IO_OUTPUT_REF_HPP
 #define DUCTA_IO_OUTPUT_REF_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/IO/InputRef.hpp"
 
 #include "ducta/Core/Types/Map.hpp"
@@ -92,7 +94,7 @@ inline Connection bind(OutputRef output, InputRef input)
 template <typename Node>
 struct NodeOutputsTraits
 {
-    static Map<StringView, IO::OutputRef, 25> get(Node& node)
+    static Map<StringView, IO::OutputRef, DUCTA_MAX_NODE_PORTS> get(Node& node)
     {
         return {};
     }

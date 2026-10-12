@@ -6,6 +6,8 @@
 #ifndef DUCTA_T_INPUT_REF_HPP
 #define DUCTA_T_INPUT_REF_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Core/Types/Map.hpp"
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/TypeIndex.hpp"
@@ -152,7 +154,7 @@ InputT* cast(InputRef input)
 template <typename Node>
 struct NodeInputsTraits
 {
-    static Map<StringView, IO::InputRef, 25> get(Node& node)
+    static Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> get(Node& node)
     {
         return {};
     }

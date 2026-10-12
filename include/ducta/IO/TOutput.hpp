@@ -5,6 +5,8 @@
 #ifndef DUCTA_T_OUTPUT_HPP
 #define DUCTA_T_OUTPUT_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/IO/InputRef.hpp"
 #include "ducta/IO/TInput.hpp"
 
@@ -86,7 +88,7 @@ private:
 
 private:
     value_type _value;
-    ::ducta::Vector<InputRef, 50> _inputs;
+    ::ducta::Vector<InputRef, DUCTA_MAX_OUTPUT_CONNECTIONS> _inputs;
 };
 
 template <typename T>

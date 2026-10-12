@@ -6,6 +6,8 @@
 #ifndef DUCTA_PIPELINE_NODE_MANAGER_HPP
 #define DUCTA_PIPELINE_NODE_MANAGER_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Configuration/Decode.hpp"
 #include "ducta/Configuration/DefineConfig.hpp"
 #include "ducta/Configuration/Diagnostics.hpp"
@@ -18,34 +20,38 @@
 #include "ducta/Pipeline/NodeStorage.hpp"
 #include "ducta/Pipeline/Nodes.hpp"
 
-// Maximum number of nodes in one NodeManager configuration
-#ifndef DUCTA_MAX_NODE_INSTANCES
-#define DUCTA_MAX_NODE_INSTANCES 50
-#endif
-
-// Buffer size of the default StaticNodeStorage (embedded backend)
-#ifndef DUCTA_NODE_STORAGE_BYTES
-#define DUCTA_NODE_STORAGE_BYTES 4096
-#endif
-
 namespace ducta {
 namespace Pipeline {
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-using DefaultNodeStorage = StaticNodeStorage<DUCTA_NODE_STORAGE_BYTES, DUCTA_MAX_NODE_INSTANCES>;
+using DefaultNodeStorage = StaticNodeStorage<DUCTA_NODE_STORAGE_BYTES, DUCTA_MAX_NODES>;
 #else
 using DefaultNodeStorage = HeapNodeStorage;
 #endif
 
 /*
- * @brief Nodes to create: node type name (DECLARE_NODE) -> its configuration
- *
- * Decoded from { "nodes": { "Gain": { "gain": 2.0 }, "Adder": {} } }. A node is registered
- * in Nodes under its type name. An invalid PropNode means "no configuration" (defaults).
+ * @brief One node to create: its type and its configuration
+ *   { "type": "Gain", "config": { "gain": 2.0 } }
  */
+struct NodeSpec
+{
+    /* Type name given to DECLARE_NODE */
+    NodeName type;
+    /* Configuration of the node; an invalid PropNode (no "config") means defaults */
+    Configuration::PropNode config;
+};
+
+/*
+ * @brief Nodes to create: instance name -> its type and configuration
+ * @note A node is registered in Nodes under its instance name, so several instances of one
+ *       type can be created, with the same or different configurations.
+ */
+using NodeConfigs = Map<NodeName, NodeSpec, DUCTA_MAX_NODES>;
+
+/* Decoded from { "nodes": { "left": { "type": "Gain", "config": { "gain": 2.0 } } } } */
 struct NodeManagerConfig
 {
-    Map<NodeName, Configuration::PropNode, DUCTA_MAX_NODE_INSTANCES> nodes;
+    NodeConfigs nodes;
 };
 
 /*
@@ -104,15 +110,17 @@ public:
 
         for (auto const& entry : config.nodes)
         {
-            StringView const type{entry.first.data(), entry.first.size()};
+            StringView const name{entry.first.data(), entry.first.size()};
+            NodeSpec const& spec = entry.second;
+            StringView const type{spec.type.data(), spec.type.size()};
             CreateNodeFn create = m_factory->find(type);
             if (create == nullptr)
             {
-                diagnostics.errorf(entry.second, "unknown node type '{}'", type);
+                diagnostics.errorf(spec.config, "unknown node type '{}' of node '{}'", type, name);
                 continue;
             }
-            Slot slot{*this, type};
-            create(slot, entry.second, diagnostics);
+            Slot slot{*this, name};
+            create(slot, spec.config, diagnostics);
         }
 
         if (diagnostics.error_count() != errors)
@@ -188,6 +196,17 @@ private:
 
 } // namespace Pipeline
 } // namespace ducta
+
+DEFINE_CONFIG(ducta::Pipeline::NodeSpec, ("type", type), ("config", config));
+
+template <>
+struct ducta::Configuration::ConfigRules<ducta::Pipeline::NodeSpec>
+{
+    static void validate(ducta::Pipeline::NodeSpec const& /*spec*/, ::ducta::Configuration::Validator& validator)
+    {
+        validator.require("type");
+    }
+};
 
 DEFINE_CONFIG(ducta::Pipeline::NodeManagerConfig, ("nodes", nodes));
 

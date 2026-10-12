@@ -1,6 +1,8 @@
 #ifndef DUCTA_CONFIGURATION_DIAGNOSTICS_HPP
 #define DUCTA_CONFIGURATION_DIAGNOSTICS_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Configuration/PropTree.hpp"
 
 #include "ducta/Core/Algorithms/Format.hpp"
@@ -10,10 +12,6 @@
 #include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Core/Utility.hpp"
-
-#ifndef DUCTA_CONFIG_MAX_DIAGNOSTICS
-#define DUCTA_CONFIG_MAX_DIAGNOSTICS 16
-#endif
 
 namespace ducta {
 namespace Configuration {

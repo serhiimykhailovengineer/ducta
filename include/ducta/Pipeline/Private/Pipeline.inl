@@ -31,21 +31,23 @@ DUCTA_DECL bool Pipeline::configure(Nodes& nodes, Config const& config, TraceCal
 
     for (auto const& name : config.order)
     {
-        if (auto node_info = nodes.get_node(name))
+        StringView const node_name{name.data(), name.size()};
+        if (auto node_info = nodes.get_node(node_name))
         {
             m_init_order.emplace_back(*node_info);
             m_nodes.emplace_back(*node_info);
         }
         else
         {
-            DUCTA_LOG_ERROR("Node not found: {}", name);
+            DUCTA_LOG_ERROR("Node not found: {}", node_name);
             m_init_order.clear();
             m_nodes.clear();
+            m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
             return false;
         }
     }
 
-    m_trace_info.configure(Span<StringView const>(config.order.data(), config.order.size()));
+    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
 
     m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
     return true;

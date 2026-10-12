@@ -180,7 +180,8 @@ struct Fixture : ::testing::Test
     bool configure(std::initializer_list<StringView> order)
     {
         Pipeline::Pipeline::Config config{};
-        for (auto name : order) config.order.push_back(name);
+        for (auto name : order)
+            config.order.push_back(Pipeline::NodeName{name.data(), name.size()});
         return pipeline.configure(nodes, config);
     }
 };

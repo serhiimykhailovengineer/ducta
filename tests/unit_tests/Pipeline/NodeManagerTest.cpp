@@ -27,9 +27,10 @@ std::string str(StringType const& s)
     return std::string{s.data(), s.size()};
 }
 
-void add(NodeManagerConfig& config, char const* type, PropNode node = {})
+void add(NodeManagerConfig& config, char const* name, char const* type, PropNode node = {})
 {
-    config.nodes.insert(::ducta::pair<NodeName const, PropNode>(NodeName{type}, node));
+    config.nodes.insert(
+        ::ducta::pair<NodeName const, NodeSpec>(NodeName{name}, NodeSpec{NodeName{type}, node}));
 }
 
 /* Large enough for every test node */
@@ -59,7 +60,8 @@ TYPED_TEST_SUITE(NodeManagerTest, Storages);
 TYPED_TEST(NodeManagerTest, configure_from_prop_tree)
 {
     PropTree tree =
-        loadTree(R"({ "nodes": { "Gain": { "gain": 2.5, "label": "amp" }, "Plain": {} } })");
+        loadTree(R"({ "nodes": { "Gain": { "type": "Gain", "config": { "gain": 2.5, "label": "amp" } },
+                                 "Plain": { "type": "Plain" } } })");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -80,8 +82,8 @@ TYPED_TEST(NodeManagerTest, configure_from_config)
 {
     PropTree tree = loadTree(R"({ "gain": 4.0 })");
     NodeManagerConfig config;
-    add(config, "Gain", tree.root());
-    add(config, "Counting");
+    add(config, "Gain", "Gain", tree.root());
+    add(config, "Counting", "Counting");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -93,10 +95,46 @@ TYPED_TEST(NodeManagerTest, configure_from_config)
     EXPECT_EQ(TestNodes::CountingNode::alive, 1);
 }
 
+TYPED_TEST(NodeManagerTest, several_instances_of_one_type)
+{
+    PropTree tree = loadTree(R"({ "nodes": {
+        "left":   { "type": "Counting" },
+        "right":  { "type": "Counting" },
+        "loud":   { "type": "Gain", "config": { "gain": 4.0 } },
+        "quiet":  { "type": "Gain", "config": { "gain": 0.5 } },
+        "quiet2": { "type": "Gain", "config": { "gain": 0.5 } }
+    } })");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    ASSERT_TRUE(manager.configure(tree, diagnostics));
+    EXPECT_TRUE(diagnostics.empty());
+    EXPECT_EQ(manager.size(), 5u);
+    EXPECT_EQ(TestNodes::CountingNode::alive, 2);
+    for (char const* name : {"left", "right", "loud", "quiet", "quiet2"})
+    {
+        EXPECT_TRUE(manager.nodes().get_node(name).has_value()) << name;
+    }
+    EXPECT_FALSE(manager.nodes().get_node("Gain").has_value());
+}
+
+TYPED_TEST(NodeManagerTest, type_is_required)
+{
+    PropTree tree = loadTree("{ \"nodes\": {\n  \"amp\": { \"config\": { \"gain\": 2.0 } } } }");
+    Diagnostics diagnostics;
+    NodeManager<TypeParam> manager;
+
+    EXPECT_FALSE(manager.configure(tree, diagnostics));
+    ASSERT_EQ(diagnostics.size(), 1u);
+    EXPECT_EQ(str(diagnostics[0].message), "missing required field 'type'");
+    EXPECT_EQ(str(diagnostics[0].path), "nodes.amp");
+    EXPECT_EQ(diagnostics[0].location.line(), 2u);
+}
+
 TYPED_TEST(NodeManagerTest, missing_node_config_uses_defaults)
 {
     NodeManagerConfig config;
-    add(config, "Gain");
+    add(config, "Gain", "Gain");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -107,8 +145,9 @@ TYPED_TEST(NodeManagerTest, missing_node_config_uses_defaults)
 TYPED_TEST(NodeManagerTest, unknown_parameters_are_warnings)
 {
     PropTree tree = loadTree(
-        "{ \"nodes\": {\n  \"Gain\": { \"gain\": 2.0, \"extra\": 1 },\n"
-        "  \"Plain\": { \"value\": 3 } } }");
+        "{ \"nodes\": {\n  \"Gain\": { \"type\": \"Gain\", \"config\": { \"gain\": 2.0, \"extra\": "
+        "1 } },\n"
+        "  \"Plain\": { \"type\": \"Plain\", \"config\": { \"value\": 3 } } } }");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -118,17 +157,19 @@ TYPED_TEST(NodeManagerTest, unknown_parameters_are_warnings)
     EXPECT_FALSE(diagnostics.has_errors());
     ASSERT_EQ(diagnostics.size(), 2u);
     EXPECT_EQ(diagnostics[0].severity, Severity::Warning);
-    EXPECT_EQ(str(diagnostics[0].path), "nodes.Gain.extra");
+    EXPECT_EQ(str(diagnostics[0].path), "nodes.Gain.config.extra");
     EXPECT_EQ(diagnostics[0].location.line(), 2u);
     EXPECT_EQ(diagnostics[1].severity, Severity::Warning);
-    EXPECT_EQ(str(diagnostics[1].path), "nodes.Plain");
+    EXPECT_EQ(str(diagnostics[1].path), "nodes.Plain.config");
     EXPECT_EQ(
         str(diagnostics[1].message), "node type takes no configuration, parameters are ignored");
 }
 
 TYPED_TEST(NodeManagerTest, unknown_type_fails_and_keeps_no_node)
 {
-    PropTree tree = loadTree("{ \"nodes\": {\n  \"Counting\": {},\n  \"Nope\": {} } }");
+    PropTree tree = loadTree(
+        "{ \"nodes\": {\n  \"Counting\": { \"type\": \"Counting\" },\n"
+        "  \"Nope\": { \"type\": \"Nope\", \"config\": {} } } }");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -138,14 +179,15 @@ TYPED_TEST(NodeManagerTest, unknown_type_fails_and_keeps_no_node)
     EXPECT_FALSE(manager.nodes().get_node("Counting").has_value());
     EXPECT_EQ(TestNodes::CountingNode::alive, 0);
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Nope'");
+    EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Nope' of node 'Nope'");
     EXPECT_EQ(diagnostics[0].location.line(), 3u);
 }
 
 TYPED_TEST(NodeManagerTest, config_errors_fail_and_keep_no_node)
 {
-    PropTree tree =
-        loadTree("{ \"nodes\": {\n  \"Counting\": {},\n  \"Gain\": { \"gain\": 0 } } }");
+    PropTree tree = loadTree(
+        "{ \"nodes\": {\n  \"Counting\": { \"type\": \"Counting\" },\n"
+        "  \"Gain\": { \"type\": \"Gain\", \"config\": { \"gain\": 0 } } } }");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -154,7 +196,7 @@ TYPED_TEST(NodeManagerTest, config_errors_fail_and_keep_no_node)
     EXPECT_EQ(manager.size(), 0u);
     EXPECT_EQ(TestNodes::CountingNode::alive, 0);
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(str(diagnostics[0].path), "nodes.Gain.gain");
+    EXPECT_EQ(str(diagnostics[0].path), "nodes.Gain.config.gain");
     EXPECT_EQ(str(diagnostics[0].message), "must be positive");
 }
 
@@ -172,9 +214,9 @@ TYPED_TEST(NodeManagerTest, invalid_manager_config_is_reported)
 TYPED_TEST(NodeManagerTest, reconfigure_replaces_nodes)
 {
     NodeManagerConfig first;
-    add(first, "Counting");
+    add(first, "Counting", "Counting");
     NodeManagerConfig second;
-    add(second, "Plain");
+    add(second, "Plain", "Plain");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -195,7 +237,7 @@ TYPED_TEST(NodeManagerTest, reconfigure_replaces_nodes)
 TYPED_TEST(NodeManagerTest, destructor_destroys_nodes)
 {
     NodeManagerConfig config;
-    add(config, "Counting");
+    add(config, "Counting", "Counting");
     Diagnostics diagnostics;
     {
         NodeManager<TypeParam> manager;
@@ -210,21 +252,21 @@ TYPED_TEST(NodeManagerTest, uses_given_factory)
     NodeFactory factory;
     factory.register_type<TestNodes::PlainNode>("Only");
     NodeManagerConfig config;
-    add(config, "Only");
-    add(config, "Gain");
+    add(config, "Only", "Only");
+    add(config, "Gain", "Gain");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager{factory};
 
     EXPECT_FALSE(manager.configure(config, diagnostics));
     ASSERT_EQ(diagnostics.size(), 1u);
-    EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Gain'");
+    EXPECT_EQ(str(diagnostics[0].message), "unknown node type 'Gain' of node 'Gain'");
 }
 
 TYPED_TEST(NodeManagerTest, over_aligned_node)
 {
     NodeManagerConfig config;
-    add(config, "Plain");
-    add(config, "Aligned");
+    add(config, "Plain", "Plain");
+    add(config, "Aligned", "Aligned");
     Diagnostics diagnostics;
     NodeManager<TypeParam> manager;
 
@@ -235,8 +277,8 @@ TYPED_TEST(NodeManagerTest, over_aligned_node)
 TEST(StaticNodeStorageTest, full_storage_is_reported)
 {
     NodeManagerConfig config;
-    add(config, "Counting");
-    add(config, "Plain");
+    add(config, "Counting", "Counting");
+    add(config, "Plain", "Plain");
     Diagnostics diagnostics;
     TestNodes::CountingNode::alive = 0;
 
@@ -252,7 +294,7 @@ TEST(StaticNodeStorageTest, full_storage_is_reported)
 TEST(StaticNodeStorageTest, too_small_buffer_is_reported)
 {
     NodeManagerConfig config;
-    add(config, "Gain");
+    add(config, "Gain", "Gain");
     Diagnostics diagnostics;
 
     NodeManager<StaticNodeStorage<sizeof(TestNodes::GainNode) - 1, 4>> manager;

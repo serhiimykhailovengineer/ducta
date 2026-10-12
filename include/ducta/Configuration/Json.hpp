@@ -1,17 +1,14 @@
 #ifndef DUCTA_CONFIGURATION_JSON_HPP
 #define DUCTA_CONFIGURATION_JSON_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Configuration/Diagnostics.hpp"
 #include "ducta/Configuration/PropTree.hpp"
 
 #include "ducta/Core/Config.hpp"
 #include "ducta/Core/Types/Integers.hpp"
 #include "ducta/Core/Types/StringView.hpp"
-
-// Capacity of the embedded backend: JSON tokens of one document (values and keys)
-#ifndef DUCTA_CONFIG_MAX_JSON_TOKENS
-#define DUCTA_CONFIG_MAX_JSON_TOKENS (2 * DUCTA_CONFIG_MAX_NODES)
-#endif
 
 namespace ducta {
 namespace Configuration {

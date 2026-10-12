@@ -6,6 +6,8 @@
 #ifndef DUCTA_PIPELINE_NODE_FACTORY_HPP
 #define DUCTA_PIPELINE_NODE_FACTORY_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Configuration/Decode.hpp"
 #include "ducta/Configuration/Diagnostics.hpp"
 #include "ducta/Configuration/NodeConfig.hpp"
@@ -17,11 +19,6 @@
 #include "ducta/Core/Utility.hpp"
 
 #include "ducta/Pipeline/NodeStorage.hpp"
-
-// Capacity of the node type registry (number of DECLARE_NODE types)
-#ifndef DUCTA_MAX_NODE_TYPES
-#define DUCTA_MAX_NODE_TYPES 50
-#endif
 
 namespace ducta {
 namespace Pipeline {

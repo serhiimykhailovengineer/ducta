@@ -25,10 +25,16 @@ find_package(GTest REQUIRED)
 enable_testing()
 include(GoogleTest)
 
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DuctaOptions.cmake)
+
 add_library(ducta_io INTERFACE)
 target_include_directories(ducta_io
     INTERFACE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+target_link_libraries(ducta_io
+    INTERFACE
+        ducta_options
 )
 
 add_library(ducta_configuration INTERFACE)
@@ -39,6 +45,7 @@ target_include_directories(ducta_configuration
 target_link_libraries(ducta_configuration
     INTERFACE
         jsmn::jsmn
+        ducta_options
 )
 if (DUCTA_USE_EMBEDDED_BACKEND)
     target_link_libraries(ducta_configuration INTERFACE etl::etl)

@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_EVENTWIRING_HPP
 #define DUCTA_PIPELINE_PRIVATE_EVENTWIRING_HPP
 
+#include "ducta/Core/Capacity.hpp"
+
 #include "ducta/Pipeline/Clock.hpp"
 #include "ducta/Pipeline/NodeInfo.hpp"
 #include "ducta/Pipeline/Private/PipelineTraceInfo.hpp"
@@ -100,7 +102,7 @@ public:
         size_t m_emitter_index;
         Clock* m_clock;
         PipelineTraceInfo* m_trace;
-        Vector<Sink, 50> m_sinks;
+        Vector<Sink, DUCTA_MAX_EVENT_CONNECTIONS> m_sinks;
     };
 
     /*
@@ -108,7 +110,10 @@ public:
      * @param clock  used for timestamps of traced events (may be null)
      * @param trace  trace sink, null when tracing is disabled
      */
-    void connect(Vector<NodeInfo, 50>& nodes, Clock* clock = nullptr, PipelineTraceInfo* trace = nullptr)
+    void connect(
+        Vector<NodeInfo, DUCTA_MAX_NODES>& nodes,
+        Clock* clock = nullptr,
+        PipelineTraceInfo* trace = nullptr)
     {
         disconnect();
 
@@ -171,7 +176,7 @@ public:
     }
 
 private:
-    Vector<Fanout, 50> m_fanouts;
+    Vector<Fanout, DUCTA_MAX_EVENT_CONNECTIONS> m_fanouts;
 };
 
 } // namespace Private

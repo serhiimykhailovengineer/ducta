@@ -205,7 +205,7 @@ TEST(PipelineTest, tracing_reads_the_clock_once_per_node)
     config.order = makeVector<Pipeline::NodeName, DUCTA_MAX_NODES>("first", "second");
     config.should_trace_execution = true;
     config.trace_flush_threshold = 1;
-    ASSERT_TRUE(pipeline.configure(nodes, config, on_trace));
+    ASSERT_TRUE(pipeline.configure(nodes, config, Pipeline::Pipeline::TraceCallback{on_trace}));
 
     EXPECT_CALL(first_node_mock, init()).Times(1);
     EXPECT_CALL(second_node_mock, init()).Times(1);

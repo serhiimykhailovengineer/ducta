@@ -20,18 +20,18 @@
 #include "ducta/Pipeline/DeclareNode.hpp"
 
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
-#include <boost/assert/source_location.hpp>
+#include <boost/throw_exception.hpp> // declares the functions below (BOOST_NORETURN)
 
 #include "ducta/Core/Panic.hpp"
 
 /* Boost without exceptions (BOOST_NO_EXCEPTIONS) calls these: the application defines them */
 namespace boost {
-[[noreturn]] void throw_exception(std::exception const& e)
+BOOST_NORETURN void throw_exception(std::exception const& e)
 {
     ::ducta::panic(e.what());
 }
 
-[[noreturn]] void throw_exception(std::exception const& e, boost::source_location const&)
+BOOST_NORETURN void throw_exception(std::exception const& e, boost::source_location const&)
 {
     ::ducta::panic(e.what());
 }

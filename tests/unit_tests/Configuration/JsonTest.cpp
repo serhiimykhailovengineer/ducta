@@ -546,6 +546,14 @@ TEST(JsonTest, float_overflow_and_underflow)
     EXPECT_EQ(value, 0.0);
     Configuration::Private::parse_float("0e99999", value);
     EXPECT_EQ(value, 0.0);
+    // Far beyond the range: decided without scaling step by step
+    Configuration::Private::parse_float("-1e-999999", value);
+    EXPECT_EQ(value, 0.0);
+    EXPECT_TRUE(std::signbit(value));
+    Configuration::Private::parse_float("9999999999999999999e-342", value);
+    EXPECT_EQ(value, c_library("9999999999999999999e-342"));
+    Configuration::Private::parse_float("1e-345", value);
+    EXPECT_EQ(value, 0.0);
 }
 
 TEST(JsonTest, floats_are_loaded)
@@ -575,6 +583,32 @@ TEST(JsonTest, overflow_boundary_is_exact)
              Case{"1.7976931348623159e308", true},
              Case{"1.8e308", true},
              Case{"1.7976931348623155e308", false}, // DBL_MAX - 1 unit in the last place
+             // First 19 digits equal to the threshold 2^1024 - 2^970: the next ones decide
+             Case{"1.79769313486231580799e308", true},
+             Case{"1.79769313486231580793e308", false},
+             Case{"1.7976931348623158079372897140530341e308", false},
+             Case{"1.7976931348623158079372897140530342e308", true},
+             Case{
+                 "179769313486231580793728971405303415079934132710037826936173778980444968292764750"
+                 "946"
+                 "649017977587207096330286416692887910946555547851940402630657488671505820681908"
+                 "902000708383676273854845817711531764475730270069855571366959622842914819860834"
+                 "936475292719074168444365510704342711559699508093042880177904174497791",
+                 false}, // threshold - 1
+             Case{
+                 "179769313486231580793728971405303415079934132710037826936173778980444968292764750"
+                 "946"
+                 "649017977587207096330286416692887910946555547851940402630657488671505820681908"
+                 "902000708383676273854845817711531764475730270069855571366959622842914819860834"
+                 "936475292719074168444365510704342711559699508093042880177904174497792",
+                 true}, // the threshold itself: the tie rounds to infinity
+             Case{
+                 "179769313486231580793728971405303415079934132710037826936173778980444968292764750"
+                 "9"
+                 "466490179775872070963302864166928879109465555478519404026306574886715058206819"
+                 "089020007083836762738548458177115317644757302700698555713669596228429148198608"
+                 "349364752927190741684443655107043427115596995080930428801779041744977920e-1",
+                 true}, // the threshold with a trailing zero after the decimal point
          })
     {
         for (bool const negative : {false, true})
@@ -608,4 +642,11 @@ TEST(JsonTest, largest_finite_double_is_loaded)
     EXPECT_FALSE(loadJson(R"({"value": 1.7976931348623159e308})", too_large, errors));
     ASSERT_EQ(errors.size(), 1u);
     EXPECT_EQ(str(errors[0].message), "number 1.7976931348623159e308 is out of range");
+
+    // Equal to the threshold in the first 19 digits, above it in the next ones
+    PropTree trailing;
+    Diagnostics trailing_errors;
+    EXPECT_FALSE(loadJson(R"({"value": 1.79769313486231580799e308})", trailing, trailing_errors));
+    ASSERT_EQ(trailing_errors.size(), 1u);
+    EXPECT_EQ(str(trailing_errors[0].message), "number 1.79769313486231580799e308 is out of range");
 }

@@ -281,20 +281,51 @@ inline bool parse_integer(StringView text, int64_t& out) noexcept
 }
 
 /*
- * Whether significand * 10^(leading_exponent - 18) rounds to infinity, for a significand of
- * 19 digits (the first one non-zero). A double overflows from 2^1024 - 2^970 (DBL_MAX plus half
- * a unit in the last place; the tie rounds to the even infinity) = 1.797693134862315807937...e308.
- * Digits after the 19th are not kept: with equal first 19 digits they would have to reach
- * 937... to overflow, so such a number is taken as finite.
+ * Whether the JSON number text, whose first significant digit is worth 10^leading_exponent,
+ * rounds to infinity. A double overflows from 2^1024 - 2^970 (DBL_MAX plus half a unit in the
+ * last place; the tie rounds to the even infinity). Near it every digit counts, so the
+ * significant digits of text are compared with the 309 digits of 2^1024 - 2^970.
  */
-constexpr bool overflows_double(uint64_t significand, int64_t leading_exponent) noexcept
+inline bool overflows_double(StringView text, int64_t leading_exponent) noexcept
 {
-    constexpr uint64_t threshold = 1797693134862315807ULL; // first 19 digits, followed by 937...
     if (leading_exponent != 308)
     {
         return leading_exponent > 308;
     }
-    return significand > threshold;
+    static constexpr char threshold[] = // 2^1024 - 2^970
+        "17976931348623158079372897140530341507993413271003782693617377898044496829276475"
+        "09466490179775872070963302864166928879109465555478519404026306574886715058206819"
+        "08902000708383676273854845817711531764475730270069855571366959622842914819860834"
+        "936475292719074168444365510704342711559699508093042880177904174497792";
+    constexpr size_t threshold_digits = sizeof(threshold) - 1;
+
+    size_t matched = 0;
+    for (char const c : text)
+    {
+        if (c == 'e' || c == 'E')
+        {
+            break;
+        }
+        if (c < '0' || c > '9' || (matched == 0 && c == '0'))
+        {
+            continue; // sign, decimal point, leading zeros
+        }
+        char const expected = matched < threshold_digits ? threshold[matched] : '0';
+        if (c != expected)
+        {
+            return c > expected;
+        }
+        ++matched;
+    }
+    // Equal so far: below the threshold if the threshold has more non-zero digits
+    for (; matched < threshold_digits; ++matched)
+    {
+        if (threshold[matched] != '0')
+        {
+            return false;
+        }
+    }
+    return true; // exactly the threshold: the tie rounds to infinity
 }
 
 /*
@@ -406,37 +437,45 @@ inline bool parse_float(StringView text, double& out) noexcept
         constexpr int64_t max_scale = max_exact_power + step * max_steps; // 321
 
         int64_t scale = exponent > 0 ? exponent : -exponent;
-        for (; scale > max_scale; scale -= max_exact_power) // only reached by 0 or infinity
+        if (exponent > 0 && scale > max_scale)
         {
-            value = exponent > 0 ? value * powers_of_ten[max_exact_power]
-                                 : value / powers_of_ten[max_exact_power];
+            // At least 10^322: overflows without any scaling
+            value = ::ducta::numeric_limits<double>::infinity();
         }
-        int64_t const steps = scale / step < max_steps ? scale / step : max_steps;
-        int64_t const remainder = scale - steps * step;
-        if (exponent > 0)
+        else if (scale > max_scale + max_digits + 2)
         {
-            value = value * powers_of_ten[remainder] * large_powers[steps];
-            /* The roundings above may cross the overflow boundary either way: decide it exactly
-             * from the decimal digits (at most 3 units in the last place below DBL_MAX) */
-            uint64_t significand = mantissa;
-            for (int i = digits; i < max_digits; ++i)
-            {
-                significand *= 10;
-            }
-            bool const overflow = overflows_double(significand, exponent + digits - 1);
-            double const max = ::ducta::numeric_limits<double>::max();
-            if (!overflow && !(value <= max))
-            {
-                value = max;
-            }
-            else if (overflow && value <= max)
-            {
-                value = ::ducta::numeric_limits<double>::infinity();
-            }
+            // Below 10^19 * 10^-343: underflows to 0 without any scaling
+            value = 0;
         }
         else
         {
-            value = value / powers_of_ten[remainder] * small_powers[steps];
+            for (; scale > max_scale; scale -= max_exact_power) // at most twice, towards 0
+            {
+                value /= powers_of_ten[max_exact_power];
+            }
+            int64_t const steps = scale / step < max_steps ? scale / step : max_steps;
+            int64_t const remainder = scale - steps * step;
+            if (exponent > 0)
+            {
+                value = value * powers_of_ten[remainder] * large_powers[steps];
+                /* The roundings above may cross the overflow boundary either way: decide it
+                 * exactly from the decimal digits (at most 3 units in the last place below
+                 * DBL_MAX) */
+                bool const overflow = overflows_double(text, exponent + digits - 1);
+                double const max = ::ducta::numeric_limits<double>::max();
+                if (!overflow && !(value <= max))
+                {
+                    value = max;
+                }
+                else if (overflow && value <= max)
+                {
+                    value = ::ducta::numeric_limits<double>::infinity();
+                }
+            }
+            else
+            {
+                value = value / powers_of_ten[remainder] * small_powers[steps];
+            }
         }
     }
     out = negative ? -value : value;

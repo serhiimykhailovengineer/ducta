@@ -51,7 +51,7 @@ public:
     /**
      * @brief Retrieve the value of the input. Consumes the value.
      * @return The value of the input
-     * @throws std::runtime_error if the input is not ready
+     * @throws std::runtime_error if the input is not ready (without exceptions: ducta::panic)
      */
     storage_type value();
 

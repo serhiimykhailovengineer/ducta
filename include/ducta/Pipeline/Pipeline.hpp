@@ -42,6 +42,7 @@ struct PipelineConfig
     PortLinks connections;
     /* Minimal duration of one iteration; 0 runs as fast as possible */
     Chrono::TimestampUS target_frame_duration{0};
+    /* Ignored (with a warning) when tracing is disabled at compile time (DUCTA_ENABLE_TRACING) */
     bool should_trace_execution{false};
     /* Traced frames collected before they are passed to the trace callback; at most
      * DUCTA_MAX_TRACED_FRAMES (the default fits any configured capacity) */
@@ -89,24 +90,49 @@ public:
     void clear();
 
     void init();
+
+    /*
+     * @brief Run every node once, in order, then sleep for the rest of target_frame_duration
+     *
+     * The clock is read once at the start of the frame (that time is passed to every node) and
+     * once at its end only to sleep (target_frame_duration > 0) or to trace; with tracing also
+     * once after every node, to measure it.
+     *
+     * @return false if a node requested to stop or failed (or threw a std::exception)
+     */
     bool iterate();
+
     void release();
 
 private:
-    using IterationStrategy = bool (Pipeline::*)();
+    /* Runs one node; false if it requested to stop or failed */
+    bool iterateNode(NodeInfo& node_info, Chrono::TimestampUS frame_start_time);
+    void sleepUntilFrameEnd(Chrono::TimestampUS frame_start_time);
 
-    bool iterateWithTrace();
+    /* Trace of the events, null if tracing is disabled */
+    Private::PipelineTraceInfo* traceInfo() noexcept
+    {
+#if DUCTA_ENABLE_TRACING
+        return m_trace_enabled ? &m_trace_info : nullptr;
+#else
+        return nullptr;
+#endif
+    }
+
     bool iterateWithoutTrace();
-
-    IterationStrategy m_iteration_strategy{&Pipeline::iterateWithoutTrace};
+#if DUCTA_ENABLE_TRACING
+    bool iterateWithTrace();
+#endif
 
 private:
     Clock m_clock;
     Chrono::TimestampUS m_target_frame_duration{0};
     bool m_trace_enabled{false};
+#if DUCTA_ENABLE_TRACING
     Private::PipelineTraceInfo m_trace_info;
     size_t m_trace_flush_threshold{100};
     TraceCallback m_trace_callback;
+#endif
 
     Vector<NodeInfo, DUCTA_MAX_NODES> m_init_order;
     Vector<NodeInfo, DUCTA_MAX_NODES> m_nodes;

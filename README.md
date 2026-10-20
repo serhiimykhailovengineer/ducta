@@ -11,6 +11,7 @@ The framework supports two backends. Each has a Release and a Debug CMake preset
 |-------------|--------------------------------|------------|
 | `std`       | Standard (Boost, fmt)          | Release    |
 | `etl`       | Embedded (ETL)                 | Release    |
+| `etl-mcu`   | Embedded (ETL), MCU capacities | Release    |
 | `std-debug` | Standard (Boost, fmt)          | Debug      |
 | `etl-debug` | Embedded (ETL)                 | Debug      |
 
@@ -29,11 +30,29 @@ just clean     [preset|all]    # remove build dirs (default: all)
 Without `just`, the equivalent commands are:
 
 ```bash
-./project/configure.sh std                  # or: etl, std-debug, etl-debug, all
+./project/configure.sh std                  # or: etl, etl-mcu, std-debug, etl-debug, all
 cmake --build --preset std
 ctest --preset std
 cmake --workflow --preset std               # configure + build + test (after conan install)
 ```
+
+### Capacities and microcontrollers
+
+The embedded backend sizes its fixed containers with compile-time capacities (see
+`include/ducta/Core/Capacity.hpp`). Every capacity is a CMake option; an empty option keeps the
+value of the selected profile:
+
+```bash
+cmake --preset etl -DDUCTA_CAPACITY_PROFILE=mcu       # small capacities, no execution trace
+cmake --preset etl -DDUCTA_MAX_NODES=32               # one capacity
+cmake --preset etl -DDUCTA_ENABLE_TRACING=OFF         # no trace buffers and trace code
+```
+
+Without CMake, define `DUCTA_CAPACITY_PROFILE_MCU` (and any `DUCTA_*` capacity) for the compiler.
+The library compiles with `-fno-exceptions`: misuse such as reading an input that is not ready
+then calls `DUCTA_PANIC_HANDLER(message)` if the application defines it, and `std::abort()`. With
+the standard backend and `-fno-exceptions` the application defines `boost::throw_exception`
+(see `tests/no_exceptions/NoExceptionsApp.cpp`).
 
 ### VS Code
 

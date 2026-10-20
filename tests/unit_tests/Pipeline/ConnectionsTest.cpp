@@ -238,6 +238,10 @@ TEST_F(PipelineConnectionsTest, clear_and_reconfigure_disconnect)
 
 TEST_F(PipelineConnectionsTest, all_problems_are_reported_and_nothing_is_connected)
 {
+    if (DUCTA_CONFIG_MAX_DIAGNOSTICS < 5)
+    {
+        GTEST_SKIP() << "needs DUCTA_CONFIG_MAX_DIAGNOSTICS >= 5";
+    }
     connect("src.out", "dst.in1"); // fine, but dropped because of the errors below
     connect("nope.out", "dst.in2"); // unknown node
     connect("src.missing", "dst.in2"); // unknown output

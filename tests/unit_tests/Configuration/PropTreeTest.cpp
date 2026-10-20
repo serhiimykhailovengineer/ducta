@@ -127,6 +127,10 @@ TEST(PropTreeTest, path_of_deep_node_is_complete)
         }
     }
 
+    if (expected.size() > DUCTA_CONFIG_MAX_PATH_LENGTH)
+    {
+        GTEST_SKIP() << "needs DUCTA_CONFIG_MAX_PATH_LENGTH >= " << expected.size();
+    }
     Path path = PropNode{tree, parent}.path();
 
     EXPECT_EQ(std::string(path.data(), path.size()), expected);
@@ -138,7 +142,7 @@ TEST(PropTreeTest, path_longer_than_capacity_keeps_its_end)
 {
     PropTree tree;
     NodeId parent = tree.root().id();
-    std::string const key(30, 'k');
+    std::string const key(DUCTA_CONFIG_MAX_KEY_LENGTH < 30 ? DUCTA_CONFIG_MAX_KEY_LENGTH : 30, 'k');
     for (int depth = 0; depth < 6; ++depth)
     {
         auto id = tree.add_object(parent, StringView{key.data(), key.size()});
@@ -210,17 +214,17 @@ TEST(PropTreeTest, invalid_handle_is_safe_to_query)
 TEST(PropTreeTest, locations_carry_source_name)
 {
     PropTree tree;
-    tree.set_source_name("configs/pipeline.json");
+    tree.set_source_name("cfg/pipe.json"); // fits DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH of mcu
     ASSERT_TRUE(tree.add_integer(tree.root().id(), "value", 1, {2, 5}));
 
     SourceLocation location = tree.root().child("value").location();
 
-    EXPECT_EQ(str(tree.source_name()), "configs/pipeline.json");
-    EXPECT_STREQ(location.file_name(), "configs/pipeline.json");
+    EXPECT_EQ(str(tree.source_name()), "cfg/pipe.json");
+    EXPECT_STREQ(location.file_name(), "cfg/pipe.json");
     EXPECT_STREQ(location.function_name(), "");
     EXPECT_EQ(location.line(), 2u);
     EXPECT_EQ(location.column(), 5u);
-    EXPECT_EQ(location, (SourceLocation{2, 5, "configs/pipeline.json"}));
+    EXPECT_EQ(location, (SourceLocation{2, 5, "cfg/pipe.json"}));
 }
 
 TEST(PropTreeTest, stream_source_has_empty_file_name)

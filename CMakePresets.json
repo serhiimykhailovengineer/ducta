@@ -34,6 +34,14 @@
             }
         },
         {
+            "name": "etl-mcu",
+            "displayName": "Embedded backend (ETL), microcontroller capacities, no trace",
+            "inherits": "etl",
+            "cacheVariables": {
+                "DUCTA_CAPACITY_PROFILE": "mcu"
+            }
+        },
+        {
             "name": "debug",
             "hidden": true,
             "cacheVariables": {
@@ -68,6 +76,10 @@
             "configurePreset": "etl"
         },
         {
+            "name": "etl-mcu",
+            "configurePreset": "etl-mcu"
+        },
+        {
             "name": "std-debug",
             "configurePreset": "std-debug"
         },
@@ -87,6 +99,13 @@
         {
             "name": "etl",
             "configurePreset": "etl",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "etl-mcu",
+            "configurePreset": "etl-mcu",
             "output": {
                 "outputOnFailure": true
             }
@@ -138,6 +157,23 @@
                 {
                     "type": "test",
                     "name": "etl"
+                }
+            ]
+        },
+        {
+            "name": "etl-mcu",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "etl-mcu"
+                },
+                {
+                    "type": "build",
+                    "name": "etl-mcu"
+                },
+                {
+                    "type": "test",
+                    "name": "etl-mcu"
                 }
             ]
         },

@@ -11,8 +11,6 @@
 #include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Core/Utility.hpp"
 
-#include <cstdlib>
-
 // jsmn is used as a header-only tokenizer: static functions, strict JSON
 #if !defined(JSMN_H)
 #define JSMN_STATIC
@@ -23,6 +21,7 @@
 #endif
 
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <string>
@@ -279,6 +278,133 @@ inline bool parse_integer(StringView text, int64_t& out) noexcept
         out = static_cast<int64_t>(magnitude);
     }
     return true;
+}
+
+/*
+ * Parses a valid JSON number with a fraction or an exponent without the C library (strtod pulls
+ * in malloc, locales and stdio: ~20 KB of flash on a microcontroller).
+ *
+ * Exact (correctly rounded, the same as strtod) when the significant digits fit into 2^53 and
+ * the decimal exponent is within +-22, which covers configuration values such as 0.1, 2.5,
+ * 1e-3 or 123.456: the integer and the power of ten are both exact doubles, so one
+ * multiplication or division rounds once. Otherwise returns false, and the result is the
+ * approximation within 3 units in the last place, 0 on underflow or an infinity on overflow.
+ */
+inline bool parse_float(StringView text, double& out) noexcept
+{
+    static constexpr double powers_of_ten[] = {1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,
+                                               1e8,  1e9,  1e10, 1e11, 1e12, 1e13, 1e14, 1e15,
+                                               1e16, 1e17, 1e18, 1e19, 1e20, 1e21, 1e22};
+    constexpr int max_exact_power = 22;
+    constexpr uint64_t max_exact_integer = uint64_t{1} << 53;
+    constexpr int max_digits = 19; // fits into uint64_t
+
+    size_t i = 0;
+    size_t const n = text.size();
+    bool const negative = n > 0 && text[0] == '-';
+    if (negative)
+    {
+        ++i;
+    }
+
+    // Up to max_digits significant digits; the next ones only move the decimal point
+    uint64_t mantissa = 0;
+    int digits = 0;
+    bool truncated = false;
+    int64_t exponent = 0;
+    auto is_digit = [&](size_t at) {
+        return at < n && text[at] >= '0' && text[at] <= '9';
+    };
+    for (; is_digit(i); ++i)
+    {
+        if (digits < max_digits)
+        {
+            mantissa = mantissa * 10 + static_cast<uint64_t>(text[i] - '0');
+            digits += mantissa != 0 ? 1 : 0;
+        }
+        else
+        {
+            truncated = truncated || text[i] != '0';
+            ++exponent;
+        }
+    }
+    if (i < n && text[i] == '.')
+    {
+        for (++i; is_digit(i); ++i)
+        {
+            if (digits < max_digits)
+            {
+                mantissa = mantissa * 10 + static_cast<uint64_t>(text[i] - '0');
+                digits += mantissa != 0 ? 1 : 0;
+                --exponent;
+            }
+            else
+            {
+                truncated = truncated || text[i] != '0';
+            }
+        }
+    }
+    if (i < n && (text[i] == 'e' || text[i] == 'E'))
+    {
+        ++i;
+        bool const negative_exponent = i < n && text[i] == '-';
+        if (i < n && (text[i] == '+' || text[i] == '-'))
+        {
+            ++i;
+        }
+        int64_t written = 0;
+        for (; is_digit(i); ++i)
+        {
+            if (written < 100000) // far beyond the range of double: the result is 0 or infinity
+            {
+                written = written * 10 + (text[i] - '0');
+            }
+        }
+        exponent += negative_exponent ? -written : written;
+    }
+
+    double value = static_cast<double>(mantissa);
+    bool exact = !truncated && mantissa <= max_exact_integer && exponent >= -max_exact_power &&
+                 exponent <= max_exact_power;
+    if (mantissa == 0 || exponent == 0)
+    {
+        // value is final
+    }
+    else if (exact)
+    {
+        value = exponent > 0 ? value * powers_of_ten[exponent] : value / powers_of_ten[-exponent];
+    }
+    else
+    {
+        /* 10^exponent = 10^remainder * 10^(23 * steps): at most three roundings, plus the one of
+         * the constant 10^(23 * steps) */
+        static constexpr double large_powers[] = {
+            1e0, 1e23, 1e46, 1e69, 1e92, 1e115, 1e138, 1e161, 1e184, 1e207, 1e230, 1e253, 1e276, 1e299};
+        static constexpr double small_powers[] = {
+            1e0, 1e-23, 1e-46, 1e-69, 1e-92, 1e-115, 1e-138, 1e-161, 1e-184, 1e-207, 1e-230, 1e-253, 1e-276, 1e-299};
+        constexpr int64_t step = 23;
+        constexpr int64_t max_steps = 13;
+        constexpr int64_t max_scale = max_exact_power + step * max_steps; // 321
+
+        int64_t scale = exponent > 0 ? exponent : -exponent;
+        for (; scale > max_scale; scale -= max_exact_power) // only reached by 0 or infinity
+        {
+            value = exponent > 0 ? value * powers_of_ten[max_exact_power]
+                                 : value / powers_of_ten[max_exact_power];
+        }
+        int64_t const steps = scale / step < max_steps ? scale / step : max_steps;
+        int64_t const remainder = scale - steps * step;
+        if (exponent > 0)
+        {
+            value = value * powers_of_ten[remainder] * large_powers[steps];
+        }
+        else
+        {
+            value = value / powers_of_ten[remainder] * small_powers[steps];
+        }
+    }
+    out = negative ? -value : value;
+    return exact;
 }
 
 template <class StringType>
@@ -736,19 +862,17 @@ DUCTA_DECL void JsonLoader::primitive(Token const& token, NodeId parent, StringV
         return;
     }
 
-    char buffer[64];
-    if (text.size() >= sizeof(buffer))
+    double number = 0;
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+    parse_float(text, number); // without the C library; see parse_float for the precision
+#else
+    if (!parse_float(text, number))
     {
-        report(value_location, path, "number is too long");
-        return;
+        /* Not exact by parse_float: strtod rounds correctly ("C" locale assumed) */
+        ::std::string const buffer(text.data(), text.size());
+        number = ::std::strtod(buffer.c_str(), nullptr);
     }
-    for (size_t i = 0; i < text.size(); ++i)
-    {
-        buffer[i] = text[i];
-    }
-    buffer[text.size()] = '\0';
-
-    double const number = std::strtod(buffer, nullptr);
+#endif
     double const max = ::ducta::numeric_limits<double>::max();
     if (!(number <= max && number >= -max))
     {

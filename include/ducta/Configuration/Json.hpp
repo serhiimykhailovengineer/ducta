@@ -27,8 +27,11 @@ struct JsonOptions
  * error stops loading, other problems (duplicate keys, out of range numbers, values that do
  * not fit) are all collected. On failure the tree content is incomplete.
  *
- * @note Numbers with a fraction or an exponent are parsed with strtod, which assumes the "C"
- *       locale. Integers must fit into int64_t.
+ * @note Numbers with a fraction or an exponent are parsed without the C library: exactly when
+ *       they have at most 15 significant digits and a decimal exponent within +-22 (e.g. 0.1,
+ *       2.5, 1e-3); others are passed to strtod ("C" locale) by the standard backend and
+ *       approximated within 3 units in the last place by the embedded backend.
+ *       Integers must fit into int64_t.
  * @return true if the whole text was loaded without problems
  */
 bool loadJson(StringView text, PropTree& tree, Diagnostics& diagnostics, JsonOptions options = {});

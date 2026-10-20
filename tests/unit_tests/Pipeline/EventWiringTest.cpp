@@ -430,6 +430,7 @@ TEST_F(Fixture, events_up_to_the_capacity_are_connected)
 }
 #endif
 
+#if DUCTA_ENABLE_TRACING
 namespace {
 
 struct TracedFixture : ::testing::Test
@@ -554,3 +555,4 @@ TEST(PipelineTraceInfoTest, configure_resets_an_open_frame)
     trace.frame_start(Chrono::TimestampUS{2});
     EXPECT_TRUE(trace.frame_open());
 }
+#endif // DUCTA_ENABLE_TRACING

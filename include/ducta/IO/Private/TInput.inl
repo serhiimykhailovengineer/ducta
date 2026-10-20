@@ -8,6 +8,8 @@
 
 #include "ducta/IO/TInput.hpp"
 
+#include "ducta/Core/Panic.hpp"
+
 namespace ducta {
 namespace IO {
 
@@ -28,7 +30,7 @@ typename TInput<T>::storage_type TInput<T>::value()
 {
     if (!ready())
     {
-        throw std::runtime_error("Input not ready");
+        ::ducta::panic("Input not ready");
     }
 
     storage_type result_value = _value.value();

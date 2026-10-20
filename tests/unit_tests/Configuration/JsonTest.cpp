@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+#include <random>
 #include <sstream>
 #include <string>
 
@@ -420,8 +424,13 @@ TEST(JsonTest, embedded_limits_are_reported)
 
     ASSERT_EQ(diagnostics.size(), 2u);
     EXPECT_EQ(str(diagnostics[0].path), "s");
-    EXPECT_EQ(str(diagnostics[0].message), "string is too long (max 64 characters)");
-    EXPECT_EQ(str(diagnostics[1].message), "string is too long (max 32 characters)");
+    EXPECT_EQ(
+        std::string(diagnostics[0].message.data(), diagnostics[0].message.size()),
+        "string is too long (max " + std::to_string(DUCTA_CONFIG_MAX_STRING_LENGTH) +
+            " characters)");
+    EXPECT_EQ(
+        std::string(diagnostics[1].message.data(), diagnostics[1].message.size()),
+        "string is too long (max " + std::to_string(DUCTA_CONFIG_MAX_KEY_LENGTH) + " characters)");
     EXPECT_EQ(tree.root().child("ok").as_integer(), 2);
 }
 
@@ -445,3 +454,105 @@ TEST(JsonTest, embedded_token_limit_is_reported)
 }
 
 #endif
+
+// ========== Floating point numbers (parsed without the C library) ==========
+
+namespace {
+
+double c_library(char const* text)
+{
+    return std::strtod(text, nullptr);
+}
+
+/* Units in the last place between a and b (both finite, same sign) */
+uint64_t ulps(double a, double b)
+{
+    int64_t ia = 0;
+    int64_t ib = 0;
+    std::memcpy(&ia, &a, sizeof(a));
+    std::memcpy(&ib, &b, sizeof(b));
+    return static_cast<uint64_t>(ia > ib ? ia - ib : ib - ia);
+}
+
+} // namespace
+
+TEST(JsonTest, floats_of_up_to_15_digits_and_exponent_22_are_exact)
+{
+    for (char const* text : {"0.1",        "0.2",        "0.3",
+                             "2.5",        "-2.5",       "1e-3",
+                             "123.456",    "3.14159",    "1e22",
+                             "1e-22",      "-0.0",       "0.0",
+                             "1.0e0",      "1E+2",       "0.000001",
+                             "9.81",       "1e21",       "4.35e-5",
+                             "299792.458", "6.02214e23", "1.7976931348623e+22"})
+    {
+        double value = 0;
+        EXPECT_TRUE(Configuration::Private::parse_float(text, value)) << text;
+        EXPECT_EQ(value, c_library(text)) << text;
+        EXPECT_EQ(std::signbit(value), std::signbit(c_library(text))) << text;
+    }
+
+    std::mt19937_64 random{42};
+    for (int i = 0; i < 100000; ++i)
+    {
+        uint64_t const mantissa = random() % 1000000000000000ULL; // 15 digits
+        int const scale = static_cast<int>(random() % 45) - 22;
+        std::string const text = std::to_string(mantissa) + "e" + std::to_string(scale);
+        double value = 0;
+        ASSERT_TRUE(Configuration::Private::parse_float(StringView{text.data(), text.size()}, value))
+            << text;
+        ASSERT_EQ(value, c_library(text.c_str())) << text;
+    }
+}
+
+TEST(JsonTest, other_floats_are_approximated_closely)
+{
+    for (char const* text :
+         {"3.141592653589793238462643383279",
+          "1e300",
+          "-1.5e-300",
+          "2.2250738585072014e-308",
+          "1.7976931348623157e308",
+          "123456789012345678901234567890.5",
+          "1e-30",
+          "6.02214076e123"})
+    {
+        double value = 0;
+        EXPECT_FALSE(Configuration::Private::parse_float(text, value)) << text;
+        EXPECT_LE(ulps(value, c_library(text)), 4u) << text;
+    }
+
+    std::mt19937_64 random{7};
+    for (int i = 0; i < 100000; ++i)
+    {
+        uint64_t const mantissa = random() % 10000000000000000000ULL; // up to 19 digits
+        int const scale = static_cast<int>(random() % 600) - 300;
+        std::string const text = std::to_string(mantissa) + "e" + std::to_string(scale);
+        double value = 0;
+        Configuration::Private::parse_float(StringView{text.data(), text.size()}, value);
+        ASSERT_LE(ulps(value, c_library(text.c_str())), 4u) << text;
+    }
+}
+
+TEST(JsonTest, float_overflow_and_underflow)
+{
+    double value = 0;
+    Configuration::Private::parse_float("1e400", value);
+    EXPECT_TRUE(std::isinf(value));
+    Configuration::Private::parse_float("-1e99999999999", value);
+    EXPECT_TRUE(std::isinf(value) && value < 0);
+    Configuration::Private::parse_float("1e-400", value);
+    EXPECT_EQ(value, 0.0);
+    Configuration::Private::parse_float("0e99999", value);
+    EXPECT_EQ(value, 0.0);
+}
+
+TEST(JsonTest, floats_are_loaded)
+{
+    PropTree tree;
+    Diagnostics diagnostics;
+    ASSERT_TRUE(loadJson(R"({"a": 0.1, "b": -2.5e-3, "c": 1e300})", tree, diagnostics));
+    EXPECT_EQ(tree.root().child("a").as_float(), 0.1);
+    EXPECT_EQ(tree.root().child("b").as_float(), -2.5e-3);
+    EXPECT_NEAR(tree.root().child("c").as_float(), 1e300, 1e285);
+}

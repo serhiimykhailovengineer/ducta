@@ -320,6 +320,7 @@ TYPED_TEST(DuctaEngineTest, destructor_destroys_nodes)
     EXPECT_EQ(TestNodes::CountingNode::alive, 0);
 }
 
+#if DUCTA_ENABLE_TRACING
 TYPED_TEST(DuctaEngineTest, trace_callback_receives_frames)
 {
     PropTree tree = loadTree(R"({
@@ -346,6 +347,7 @@ TYPED_TEST(DuctaEngineTest, trace_callback_receives_frames)
     EXPECT_EQ(names, 2u);
     EXPECT_EQ(frames, 4u);
 }
+#endif
 
 TYPED_TEST(DuctaEngineTest, runs_until_stop_and_can_run_again)
 {

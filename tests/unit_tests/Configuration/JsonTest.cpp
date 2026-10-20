@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <random>
 #include <sstream>
 #include <string>
@@ -555,4 +556,56 @@ TEST(JsonTest, floats_are_loaded)
     EXPECT_EQ(tree.root().child("a").as_float(), 0.1);
     EXPECT_EQ(tree.root().child("b").as_float(), -2.5e-3);
     EXPECT_NEAR(tree.root().child("c").as_float(), 1e300, 1e285);
+}
+
+TEST(JsonTest, overflow_boundary_is_exact)
+{
+    double const max = std::numeric_limits<double>::max();
+    struct Case
+    {
+        char const* text;
+        bool overflows;
+    };
+    for (Case const c : {
+             Case{"1.7976931348623157e308", false}, // DBL_MAX
+             Case{"1.7976931348623158e308", false}, // still rounds to DBL_MAX
+             Case{"179769313486231570e291", false},
+             Case{"1.797693134862315807e308", false}, // last 19 digits below the threshold
+             Case{"1.797693134862315808e308", true}, // first 19 digits above the threshold
+             Case{"1.7976931348623159e308", true},
+             Case{"1.8e308", true},
+             Case{"1.7976931348623155e308", false}, // DBL_MAX - 1 unit in the last place
+         })
+    {
+        for (bool const negative : {false, true})
+        {
+            std::string const text = std::string{negative ? "-" : ""} + c.text;
+            double value = 0;
+            Configuration::Private::parse_float(StringView{text.data(), text.size()}, value);
+            double const expected = c_library(text.c_str());
+            EXPECT_EQ(std::isinf(expected), c.overflows) << text; // the C library agrees
+            EXPECT_EQ(std::isinf(value), c.overflows) << text;
+            if (!c.overflows)
+            {
+                EXPECT_LE(std::fabs(value), max) << text;
+                EXPECT_LE(ulps(value, expected), 3u) << text;
+            }
+        }
+    }
+}
+
+TEST(JsonTest, largest_finite_double_is_loaded)
+{
+    PropTree tree;
+    Diagnostics diagnostics;
+    ASSERT_TRUE(loadJson(
+        R"({"max": 1.7976931348623157e308, "min": -1.7976931348623157e308})", tree, diagnostics));
+    EXPECT_EQ(tree.root().child("max").as_float(), std::numeric_limits<double>::max());
+    EXPECT_EQ(tree.root().child("min").as_float(), -std::numeric_limits<double>::max());
+
+    PropTree too_large;
+    Diagnostics errors;
+    EXPECT_FALSE(loadJson(R"({"value": 1.7976931348623159e308})", too_large, errors));
+    ASSERT_EQ(errors.size(), 1u);
+    EXPECT_EQ(str(errors[0].message), "number 1.7976931348623159e308 is out of range");
 }

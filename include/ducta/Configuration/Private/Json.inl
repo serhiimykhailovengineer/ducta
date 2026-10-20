@@ -281,6 +281,23 @@ inline bool parse_integer(StringView text, int64_t& out) noexcept
 }
 
 /*
+ * Whether significand * 10^(leading_exponent - 18) rounds to infinity, for a significand of
+ * 19 digits (the first one non-zero). A double overflows from 2^1024 - 2^970 (DBL_MAX plus half
+ * a unit in the last place; the tie rounds to the even infinity) = 1.797693134862315807937...e308.
+ * Digits after the 19th are not kept: with equal first 19 digits they would have to reach
+ * 937... to overflow, so such a number is taken as finite.
+ */
+constexpr bool overflows_double(uint64_t significand, int64_t leading_exponent) noexcept
+{
+    constexpr uint64_t threshold = 1797693134862315807ULL; // first 19 digits, followed by 937...
+    if (leading_exponent != 308)
+    {
+        return leading_exponent > 308;
+    }
+    return significand > threshold;
+}
+
+/*
  * Parses a valid JSON number with a fraction or an exponent without the C library (strtod pulls
  * in malloc, locales and stdio: ~20 KB of flash on a microcontroller).
  *
@@ -289,6 +306,8 @@ inline bool parse_integer(StringView text, int64_t& out) noexcept
  * 1e-3 or 123.456: the integer and the power of ten are both exact doubles, so one
  * multiplication or division rounds once. Otherwise returns false, and the result is the
  * approximation within 3 units in the last place, 0 on underflow or an infinity on overflow.
+ * Overflow itself is decided exactly (see overflows_double), so the largest finite values such
+ * as 1.7976931348623157e308 stay finite.
  */
 inline bool parse_float(StringView text, double& out) noexcept
 {
@@ -397,6 +416,23 @@ inline bool parse_float(StringView text, double& out) noexcept
         if (exponent > 0)
         {
             value = value * powers_of_ten[remainder] * large_powers[steps];
+            /* The roundings above may cross the overflow boundary either way: decide it exactly
+             * from the decimal digits (at most 3 units in the last place below DBL_MAX) */
+            uint64_t significand = mantissa;
+            for (int i = digits; i < max_digits; ++i)
+            {
+                significand *= 10;
+            }
+            bool const overflow = overflows_double(significand, exponent + digits - 1);
+            double const max = ::ducta::numeric_limits<double>::max();
+            if (!overflow && !(value <= max))
+            {
+                value = max;
+            }
+            else if (overflow && value <= max)
+            {
+                value = ::ducta::numeric_limits<double>::infinity();
+            }
         }
         else
         {

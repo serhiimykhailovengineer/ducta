@@ -18,5 +18,5 @@ add_custom_target(check
     USES_TERMINAL
 )
 if (TARGET NoExceptionsApp)
-    add_dependencies(check NoExceptionsApp)
+    add_dependencies(check NoExceptionsApp NoExceptionsPanic NoExceptionsPanicHandler)
 endif()

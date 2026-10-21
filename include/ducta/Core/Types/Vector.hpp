@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_VECTOR_HPP
 #define DUCTA_CORE_TYPES_VECTOR_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Utility.hpp"
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)

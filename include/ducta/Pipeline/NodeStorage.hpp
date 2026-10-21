@@ -16,6 +16,8 @@
 #ifndef DUCTA_PIPELINE_NODE_STORAGE_HPP
 #define DUCTA_PIPELINE_NODE_STORAGE_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include <cstddef>
 #include <new>
 

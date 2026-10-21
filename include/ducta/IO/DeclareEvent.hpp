@@ -1,6 +1,8 @@
 #ifndef DUCTA_IO_DECLAREEVENT_HPP
 #define DUCTA_IO_DECLAREEVENT_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/TypeRegistry.hpp"
 
 namespace ducta {

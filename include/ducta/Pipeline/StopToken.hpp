@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_STOPTOKEN_HPP
 #define DUCTA_PIPELINE_STOPTOKEN_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/TypeTraits.hpp"
 
 namespace ducta {

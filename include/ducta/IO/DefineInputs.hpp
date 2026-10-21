@@ -6,6 +6,8 @@
 #ifndef DUCTA_DEFINE_INPUTS_HPP
 #define DUCTA_DEFINE_INPUTS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Core/Types/Map.hpp"

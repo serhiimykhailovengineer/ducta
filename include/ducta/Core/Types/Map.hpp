@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_MAP_HPP
 #define DUCTA_CORE_TYPES_MAP_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Utility.hpp"
 
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)

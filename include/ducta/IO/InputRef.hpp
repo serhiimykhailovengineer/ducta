@@ -6,6 +6,8 @@
 #ifndef DUCTA_T_INPUT_REF_HPP
 #define DUCTA_T_INPUT_REF_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 #include "ducta/Core/Panic.hpp"
 

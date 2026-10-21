@@ -1,6 +1,8 @@
 #ifndef DUCTA_CHRONO_CHRONO_HPP
 #define DUCTA_CHRONO_CHRONO_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Threads.hpp"
 
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)

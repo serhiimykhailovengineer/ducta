@@ -11,6 +11,8 @@
 #ifndef DUCTA_CORE_PANIC_HPP
 #define DUCTA_CORE_PANIC_HPP
 
+// Must not include other Ducta headers: Capacity.hpp includes it
+
 #include <cstdlib>
 
 #if defined(__cpp_exceptions)

@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_NODES_HPP
 #define DUCTA_PIPELINE_NODES_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Core/Types/Map.hpp"

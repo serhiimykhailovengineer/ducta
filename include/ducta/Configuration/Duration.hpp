@@ -12,6 +12,8 @@
 #ifndef DUCTA_CONFIGURATION_DURATION_HPP
 #define DUCTA_CONFIGURATION_DURATION_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Configuration/Decode.hpp"
 #include "ducta/Configuration/Diagnostics.hpp"
 #include "ducta/Configuration/PropTree.hpp"

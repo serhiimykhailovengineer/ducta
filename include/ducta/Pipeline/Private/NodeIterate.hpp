@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP
 #define DUCTA_PIPELINE_PRIVATE_NODEITERATE_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/Error.hpp"
 #include "ducta/Core/Types/Expected.hpp"
 

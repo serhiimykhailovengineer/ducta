@@ -1,6 +1,8 @@
 #ifndef DUCTA_CHRONO_STEADYCLOCK_HPP
 #define DUCTA_CHRONO_STEADYCLOCK_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Chrono/Chrono.hpp"
 
 namespace ducta {

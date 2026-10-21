@@ -1,0 +1,23 @@
+# find_package(ducta) for an installed Ducta: imports ducta::ducta (header-only), with the backend,
+# capacities and features it was installed with, and finds its dependencies.
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+set(DUCTA_BACKEND "@DUCTA_BACKEND@")
+if (DUCTA_BACKEND STREQUAL "etl")
+    if (NOT TARGET etl::etl)
+        find_dependency(etl)
+    endif()
+else()
+    if (NOT TARGET Boost::headers)
+        find_dependency(Boost)
+    endif()
+    if (NOT TARGET fmt::fmt)
+        find_dependency(fmt)
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/ductaTargets.cmake")
+
+check_required_components(ducta)

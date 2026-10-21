@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_SOURCE_LOCATION_HPP
 #define DUCTA_CORE_SOURCE_LOCATION_HPP
 
+#include "ducta/Core/Config.hpp"
+
 // With the standard backend in C++20, current() is implemented with std::source_location
 // (and a std::source_location converts implicitly); otherwise (C++17 or the embedded
 // backend) with compiler builtins.

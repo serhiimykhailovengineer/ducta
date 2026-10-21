@@ -1,6 +1,8 @@
 #ifndef DUCTA_UTILS_LOG_HPP
 #define DUCTA_UTILS_LOG_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include <iostream>
 
 #include "ducta/Core/Algorithms/Format.hpp"

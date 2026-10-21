@@ -23,8 +23,9 @@ esac
 
 # Dependencies are shared by all presets and installed once into build/conan.
 # Debug presets link against the Release dependencies.
+# develop=True: the dependencies of every backend and the tests (see conanfile.py).
 conan install . --output-folder=build/conan --build=missing -s build_type=Release \
-    -c tools.cmake.cmaketoolchain:user_presets=
+    -o "&:develop=True" -c tools.cmake.cmaketoolchain:user_presets=
 
 for p in "${PRESETS[@]}"; do
     cmake --preset "$p" --fresh

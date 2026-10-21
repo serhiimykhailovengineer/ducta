@@ -5,6 +5,8 @@
 #ifndef DUCTA_CONNECTION_HPP
 #define DUCTA_CONNECTION_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/Deferred.hpp"
 
 #include "ducta/IO/InputRef.hpp"

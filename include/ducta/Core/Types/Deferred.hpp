@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_DEFERRED_HPP
 #define DUCTA_CORE_TYPES_DEFERRED_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/FunctionRef.hpp"
 #include "ducta/Core/Types/Optional.hpp"
 #include "ducta/Core/Utility.hpp"

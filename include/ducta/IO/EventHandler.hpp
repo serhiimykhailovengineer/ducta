@@ -1,6 +1,8 @@
 #ifndef DUCTA_IO_EVENT_HANDLER_HPP
 #define DUCTA_IO_EVENT_HANDLER_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Types/FunctionRef.hpp"
 

@@ -6,6 +6,8 @@
 #ifndef DUCTA_DEFINE_OUTPUTS_HPP
 #define DUCTA_DEFINE_OUTPUTS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/IO/OutputRef.hpp"

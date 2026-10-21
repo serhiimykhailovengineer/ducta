@@ -7,6 +7,8 @@
 #ifndef DUCTA_CORE_CHECKED_MATH_HPP
 #define DUCTA_CORE_CHECKED_MATH_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Limits.hpp"
 #include "ducta/Core/Types/Integers.hpp"
 

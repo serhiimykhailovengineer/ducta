@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_REFERENCE_WRAPPER_HPP
 #define DUCTA_CORE_REFERENCE_WRAPPER_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/functional.h>
 #include "ducta/Core/ETLProfile.hpp"

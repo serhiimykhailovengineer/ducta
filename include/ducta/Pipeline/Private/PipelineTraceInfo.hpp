@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_PIPELINETRACEINFO_HPP
 #define DUCTA_PIPELINE_PRIVATE_PIPELINETRACEINFO_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Chrono/Chrono.hpp"

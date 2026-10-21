@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_CLOCK_HPP
 #define DUCTA_PIPELINE_CLOCK_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Chrono/Chrono.hpp"
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Types/Integers.hpp"

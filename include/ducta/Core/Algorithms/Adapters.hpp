@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_ALGORITHM_ADAPTERS_HPP
 #define DUCTA_CORE_ALGORITHM_ADAPTERS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 namespace ducta {
 namespace Adapters {
 

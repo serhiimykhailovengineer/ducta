@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_UTILITY_HPP
 #define DUCTA_CORE_UTILITY_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/utility.h>
 #include "ducta/Core/ETLProfile.hpp"

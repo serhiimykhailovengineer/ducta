@@ -5,9 +5,10 @@
 #   cmake --preset etl -DDUCTA_MAX_NODES=16 -DDUCTA_NODE_STORAGE_BYTES=2048
 # An empty option (the default) keeps the value of the selected profile:
 #   cmake --preset etl -DDUCTA_CAPACITY_PROFILE=mcu        # small capacities, no trace
-# The values are passed to the code through the INTERFACE target ducta_options, which every
-# Ducta library links. The embedded backend sizes its fixed containers with them; the standard
-# backend grows dynamically and ignores most of them.
+# The values are compile definitions of the target ducta::ducta, so every target linking it uses
+# the same ones. An application can set them in ducta_config.hpp instead (see
+# include/ducta/Core/Config.hpp); set each value in one place only. The embedded backend sizes
+# its fixed containers with them; the standard backend grows dynamically and ignores most of them.
 
 set(DUCTA_CAPACITY_PROFILE "default" CACHE STRING
     "Defaults of the capacities: 'default', or 'mcu' (small capacities, no execution trace)")
@@ -56,19 +57,20 @@ ducta_capacity_option(DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH "Maximum length of a c
 ducta_capacity_option(DUCTA_CONFIG_MAX_DIAGNOSTICS "Diagnostics kept by one Diagnostics object")
 ducta_capacity_option(DUCTA_CONFIG_MAX_JSON_TOKENS "JSON tokens of one document (values and keys); default 2 x DUCTA_CONFIG_MAX_NODES")
 
-add_library(ducta_options INTERFACE)
+# Compile definitions of the options, added to ducta::ducta
+set(DUCTA_OPTION_DEFINITIONS)
 if (DUCTA_CAPACITY_PROFILE STREQUAL "mcu")
-    target_compile_definitions(ducta_options INTERFACE DUCTA_CAPACITY_PROFILE_MCU)
+    list(APPEND DUCTA_OPTION_DEFINITIONS DUCTA_CAPACITY_PROFILE_MCU)
 endif()
 if (NOT "${DUCTA_ENABLE_TRACING}" STREQUAL "")
     if (DUCTA_ENABLE_TRACING)
-        target_compile_definitions(ducta_options INTERFACE DUCTA_ENABLE_TRACING=1)
+        list(APPEND DUCTA_OPTION_DEFINITIONS DUCTA_ENABLE_TRACING=1)
     else()
-        target_compile_definitions(ducta_options INTERFACE DUCTA_ENABLE_TRACING=0)
+        list(APPEND DUCTA_OPTION_DEFINITIONS DUCTA_ENABLE_TRACING=0)
     endif()
 endif()
 foreach(option IN LISTS DUCTA_CAPACITY_OPTIONS)
-    target_compile_definitions(ducta_options INTERFACE ${option}=${${option}})
+    list(APPEND DUCTA_OPTION_DEFINITIONS ${option}=${${option}})
 endforeach()
 
 message(STATUS "Ducta capacity profile: ${DUCTA_CAPACITY_PROFILE}")

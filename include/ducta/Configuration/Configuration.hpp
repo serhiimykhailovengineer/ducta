@@ -1,6 +1,8 @@
 #ifndef DUCTA_CONFIGURATION_CONFIGURATION_HPP
 #define DUCTA_CONFIGURATION_CONFIGURATION_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Configuration/Decode.hpp"
 #include "ducta/Configuration/DefineConfig.hpp"
 #include "ducta/Configuration/Diagnostics.hpp"

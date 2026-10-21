@@ -1,6 +1,8 @@
 #ifndef DUCTA_EVENT_REF_HPP
 #define DUCTA_EVENT_REF_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Core/TypeTraits.hpp"

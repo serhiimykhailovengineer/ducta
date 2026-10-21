@@ -25,8 +25,8 @@ std::string str(StringView text)
     return std::string{text.data(), text.size()};
 }
 
-/* Keeps what it receives */
-class RecordingSink : public Log::Sink
+/* Keeps what it receives (a sink: no base class, write() and flush()) */
+class RecordingSink
 {
 public:
     struct Entry
@@ -38,13 +38,12 @@ public:
         int64_t timestamp;
     };
 
-    void write(Log::Record const& record) override
+    void write(Level level, StringView message, char const* function, uint32_t line, Chrono::TimestampUS timestamp)
     {
-        records.push_back(Entry{
-            record.level, str(record.message), record.function, record.line, record.timestamp.count()});
+        records.push_back(Entry{level, str(message), function, line, timestamp.count()});
     }
 
-    void flush() override
+    void flush()
     {
         ++flushes;
     }
@@ -53,11 +52,11 @@ public:
     int flushes{0};
 };
 
-/* Logs from its write(): must not recurse */
-class LoggingSink : public Log::Sink
+/* Logs from its write(): must not recurse. Has no flush() */
+class LoggingSink
 {
 public:
-    void write(Log::Record const&) override
+    void write(Level, StringView, char const*, uint32_t, Chrono::TimestampUS)
     {
         ++writes;
         DUCTA_LOG_ERROR("from a sink");
@@ -192,6 +191,18 @@ TEST_F(LogTest, a_sink_that_logs_does_not_recurse)
     EXPECT_EQ(sink.writes, 1);
 }
 
+static_assert(Log::is_sink_v<RecordingSink>, "write(level, message, function, line, timestamp)");
+static_assert(Log::is_sink_v<Log::CallbackSink>, "TextSink provides write()");
+static_assert(!Log::is_sink_v<int>, "not a sink");
+
+TEST_F(LogTest, sink_without_flush_is_skipped_by_flush)
+{
+    LoggingSink sink;
+    ASSERT_TRUE(Log::logger().add_sink(sink));
+    Log::logger().flush(); // must not call write()
+    EXPECT_EQ(sink.writes, 0);
+}
+
 TEST_F(LogTest, flush_reaches_every_sink)
 {
     RecordingSink a;
@@ -230,8 +241,7 @@ TEST_F(LogTest, long_line_is_truncated)
     std::string const text(Log::Line::capacity + 10, 'y');
     Log::Line line;
     StringView const view = Log::format_line(
-        Log::Record{Level::Info, StringView{text.data(), text.size()}, "f", 1, Chrono::TimestampUS{0}},
-        line);
+        line, Level::Info, StringView{text.data(), text.size()}, "f", 1, Chrono::TimestampUS{0});
     EXPECT_EQ(view.size(), Log::Line::capacity);
     EXPECT_EQ(str(view).substr(0, 12), "[info] f:1: ");
 }
@@ -239,11 +249,10 @@ TEST_F(LogTest, long_line_is_truncated)
 TEST_F(LogTest, line_format)
 {
     Log::Line line;
-    Log::format_line(
-        Log::Record{Level::Warning, "message", "function", 42, Chrono::TimestampUS{0}}, line);
+    Log::format_line(line, Level::Warning, "message", "function", 42, Chrono::TimestampUS{0});
     EXPECT_EQ(str(line.view()), "[warning] function:42: message");
 
-    Log::format_line(Log::Record{Level::Error, "late", "f", 7, Chrono::TimestampUS{3000123}}, line);
+    Log::format_line(line, Level::Error, "late", "f", 7, Chrono::TimestampUS{3000123});
     EXPECT_EQ(str(line.view()), "[3.000123] [error] f:7: late");
 }
 
@@ -251,7 +260,7 @@ TEST_F(LogTest, callback_sink_receives_lines)
 {
     std::vector<std::string> lines;
     Log::CallbackSink sink{
-        [](void* context, StringView line, Log::Record const&) {
+        [](void* context, StringView line, Level) {
             static_cast<std::vector<std::string>*>(context)->push_back(str(line));
         },
         &lines};

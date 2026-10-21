@@ -15,10 +15,11 @@ namespace ducta {
 namespace Log {
 
 /* Each line goes to a function, with a context pointer of the application */
-class CallbackSink : public TextSink
+class CallbackSink : public TextSink<CallbackSink>
 {
 public:
-    using Callback = void (*)(void* context, StringView line, Record const& record);
+    /* line has no line break */
+    using Callback = void (*)(void* context, StringView line, Level level);
 
     explicit CallbackSink(Callback callback, void* context = nullptr) noexcept
         : m_callback{callback}
@@ -26,12 +27,11 @@ public:
     {
     }
 
-protected:
-    void write_line(StringView line, Record const& record) override
+    void write_line(StringView line, Level level)
     {
         if (m_callback != nullptr)
         {
-            m_callback(m_context, line, record);
+            m_callback(m_context, line, level);
         }
     }
 

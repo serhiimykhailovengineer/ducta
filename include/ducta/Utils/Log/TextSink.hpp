@@ -1,11 +1,17 @@
 /**
  * @file TextSink.hpp
- * @brief Base of the sinks that write one text line per record (see ducta/Utils/Log.hpp):
+ * @brief Base of the log sinks that write one text line per record (see ducta/Utils/Log.hpp):
  *
  *     [12.345678] [warning] iterateNode:233: Error during iteration of node: gain
  *
- * (the time only with Logger::set_time_source()). Derive from TextSink and implement
- * write_line() to send the lines anywhere else (UDP, a display, ...).
+ * (the time only with Logger::set_time_source()). A sink derives from TextSink<itself> and
+ * implements the line output; flush() is optional:
+ *
+ *     class UdpSink : public ducta::Log::TextSink<UdpSink>
+ *     {
+ *     public:
+ *         void write_line(ducta::StringView line, ducta::Log::Level level);
+ *     };
  */
 
 #ifndef DUCTA_UTILS_LOG_TEXT_SINK_HPP
@@ -25,40 +31,54 @@ namespace Log {
  * "[1234567.123456] [warning] function:12345: " */
 using Line = FormatBuffer<DUCTA_LOG_MESSAGE_LENGTH + 96>;
 
-/* "[12.345678] [warning] function:42: message" (the time if the record has one) */
-inline StringView format_line(Record const& record, Line& line)
+/* "[12.345678] [warning] function:42: message" (the time if there is one) */
+inline StringView format_line(
+    Line& text,
+    Level level,
+    StringView message,
+    char const* function,
+    uint32_t line,
+    Chrono::TimestampUS timestamp)
 {
-    char const* const function = record.function != nullptr ? record.function : "";
-    int64_t const time_us = record.timestamp.count();
-    if (time_us > 0)
+    if (function == nullptr)
     {
+        function = "";
+    }
+    if (timestamp.count() > 0)
+    {
+        // Unsigned: the same formatter as the other numbers (no code for signed 64-bit ones)
+        auto const time_us = static_cast<uint64_t>(timestamp.count());
         return format_to_n(
-            line,
+            text,
             "[{}.{:06}] [{}] {}:{}: {}",
             time_us / 1000000,
             time_us % 1000000,
-            to_string(record.level),
+            to_string(level),
             function,
-            record.line,
-            record.message);
+            line,
+            message);
     }
-    return format_to_n(
-        line, "[{}] {}:{}: {}", to_string(record.level), function, record.line, record.message);
+    return format_to_n(text, "[{}] {}:{}: {}", to_string(level), function, line, message);
 }
 
-/* A sink writing each record as one line of text */
-class TextSink : public Sink
+/*
+ * @brief Formats each record as one line and passes it to Derived::write_line()
+ * @tparam Derived The sink, with a public void write_line(StringView line, Level level)
+ */
+template <class Derived>
+class TextSink
 {
 public:
-    void write(Record const& record) override
+    void write(Level level, StringView message, char const* function, uint32_t line, Chrono::TimestampUS timestamp)
     {
-        Line line;
-        write_line(format_line(record, line), record);
+        Line text;
+        static_cast<Derived&>(*this).write_line(
+            format_line(text, level, message, function, line, timestamp), level);
     }
 
 protected:
-    /* The line has no line break; record is the one it was formatted from */
-    virtual void write_line(StringView line, Record const& record) = 0;
+    TextSink() = default;
+    ~TextSink() = default;
 };
 
 } // namespace Log

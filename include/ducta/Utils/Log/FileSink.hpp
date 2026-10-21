@@ -16,7 +16,7 @@ namespace ducta {
 namespace Log {
 
 /* A file: one opened (and closed) by the sink, or an open std::FILE* such as stdout */
-class FileSink : public TextSink
+class FileSink : public TextSink<FileSink>
 {
 public:
     /*
@@ -54,16 +54,7 @@ public:
         return m_file != nullptr;
     }
 
-    void flush() override
-    {
-        if (m_file != nullptr)
-        {
-            std::fflush(m_file);
-        }
-    }
-
-protected:
-    void write_line(StringView line, Record const& record) override
+    void write_line(StringView line, Level level)
     {
         if (m_file == nullptr)
         {
@@ -71,7 +62,15 @@ protected:
         }
         std::fwrite(line.data(), 1, line.size(), m_file);
         std::fputc('\n', m_file);
-        if (record.level >= m_flush_level)
+        if (level >= m_flush_level)
+        {
+            std::fflush(m_file);
+        }
+    }
+
+    void flush()
+    {
+        if (m_file != nullptr)
         {
             std::fflush(m_file);
         }

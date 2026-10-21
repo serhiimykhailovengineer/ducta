@@ -16,7 +16,7 @@ namespace ducta {
 namespace Log {
 
 /* The console: stdout, and stderr for the records of error_level and above */
-class ConsoleSink : public TextSink
+class ConsoleSink : public TextSink<ConsoleSink>
 {
 public:
     explicit ConsoleSink(Level error_level = Level::Warning) noexcept
@@ -24,19 +24,18 @@ public:
     {
     }
 
-    void flush() override
+    void write_line(StringView line, Level level)
     {
-        std::fflush(stdout);
-        std::fflush(stderr);
-    }
-
-protected:
-    void write_line(StringView line, Record const& record) override
-    {
-        std::FILE* const out = record.level >= m_error_level ? stderr : stdout;
+        std::FILE* const out = level >= m_error_level ? stderr : stdout;
         std::fwrite(line.data(), 1, line.size(), out);
         std::fputc('\n', out);
         std::fflush(out); // a console is read as it goes
+    }
+
+    void flush()
+    {
+        std::fflush(stdout);
+        std::fflush(stderr);
     }
 
 private:

@@ -99,7 +99,7 @@ the attached sinks; without sinks nothing is written. Each sink has its own head
 | `FileSink.hpp` | a file it opens, or any `std::FILE*` |
 | `CallbackSink.hpp` | a function of the application (a UART driver, a queue, UDP, ...) |
 | `PrintSink.hpp` | an Arduino `Print` (`Serial`, a TCP client, ...) |
-| `TextSink.hpp` | base class: one text line per record, to write anywhere else |
+| `TextSink.hpp` | base (CRTP) of the above: one text line per record, to write anywhere else |
 
 ```cpp
 #include "ducta/Utils/Log/ConsoleSink.hpp"
@@ -113,6 +113,11 @@ ducta::Log::logger().set_time_source(+[] { return ducta::Chrono::SteadyClock{}.n
 
 DUCTA_LOG_INFO("node '{}' created", name);   // [12.345678] [info] create:42: node 'gain' created
 ```
+
+A sink needs no base class: any type with
+`void write(Log::Level, StringView message, char const* function, uint32_t line, Chrono::TimestampUS timestamp)`
+(and, optionally, `void flush()`) can be attached. The logger keeps its address and one function
+per sink type; it does not own it.
 
 A message is formatted only when a sink takes its level, into `DUCTA_LOG_MESSAGE_LENGTH`
 characters on the stack. `DUCTA_LOG_LEVEL` (0 debug ... 4 off; CMake `-DDUCTA_LOG_LEVEL=warning`)

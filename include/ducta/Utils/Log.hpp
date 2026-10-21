@@ -9,14 +9,23 @@
  *
  *     DUCTA_LOG_INFO("node '{}' created", name);
  *
+ * A sink is any type with
+ *     void write(Log::Level level, StringView message, char const* function, uint32_t line,
+ *                Chrono::TimestampUS timestamp);
+ *     void flush();   // optional: Logger::flush(), e.g. before a reset
+ * No base class: the logger keeps the sink's address and one function per sink type (the
+ * views passed to write() are valid during the call only). The sink is not owned: it must
+ * outlive its attachment.
+ *
  * A record is formatted only if some sink accepts its level, into a buffer on the stack of
  * DUCTA_LOG_MESSAGE_LENGTH characters (no heap with either backend, a longer one is truncated).
  * DUCTA_LOG_LEVEL removes the calls of less important levels from the program. Without sinks
- * nothing is written. A sink is anything implementing Log::Sink: an application adds its own (UDP,
- * TCP, a queue for another thread, ...).
+ * nothing is written. An application adds its own sinks (UDP, TCP, a queue for another thread,
+ * ...).
  *
  * Sinks, each in its own header so that only the used ones are compiled in (ducta/Utils/Log/):
- * ConsoleSink, FileSink, CallbackSink, PrintSink (Arduino), and TextSink to write lines elsewhere.
+ * ConsoleSink, FileSink, CallbackSink, PrintSink (Arduino), and TextSink (a base formatting one
+ * text line per record) for other destinations.
  *
  * Without logging (DUCTA_ENABLE_LOGGING 0; CMake -DDUCTA_ENABLE_LOGGING=OFF) the DUCTA_LOG_*
  * calls compile to nothing, their arguments are not evaluated, and the logger keeps its API but
@@ -36,8 +45,10 @@
 
 #include "ducta/Chrono/Chrono.hpp"
 #include "ducta/Core/Algorithms/Format.hpp"
+#include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Types/Integers.hpp"
 #include "ducta/Core/Types/StringView.hpp"
+#include "ducta/Core/Utility.hpp"
 
 namespace ducta {
 namespace Log {
@@ -70,31 +81,70 @@ constexpr StringView to_string(Level level) noexcept
     return "off";
 }
 
-/* One log message; the views are valid only during Sink::write() */
+namespace Private {
+
+/* One log message on its way from the macro to the sinks (sinks get its fields) */
 struct Record
 {
     Level level;
     StringView message;
-    /* Function that logged (__func__) and its line */
     char const* function;
     uint32_t line;
-    /* Of the logger's time source; 0 without one */
     Chrono::TimestampUS timestamp;
 };
 
-/* Destination of records. Not owned by the logger: it must outlive its attachment */
-class Sink
+template <class T, class = void>
+struct is_sink : ::ducta::false_type
 {
-public:
-    virtual ~Sink() = default;
-
-    virtual void write(Record const& record) = 0;
-
-    /* Write out what is buffered (Logger::flush(), e.g. before a reset) */
-    virtual void flush()
-    {
-    }
 };
+
+template <class T>
+struct is_sink<
+    T,
+    ::ducta::void_t<decltype(::ducta::declval<T&>().write(
+        ::ducta::declval<Level>(),
+        ::ducta::declval<StringView>(),
+        ::ducta::declval<char const*>(),
+        ::ducta::declval<uint32_t>(),
+        ::ducta::declval<Chrono::TimestampUS>()))>> : ::ducta::true_type
+{
+};
+
+template <class T, class = void>
+struct has_flush : ::ducta::false_type
+{
+};
+
+template <class T>
+struct has_flush<T, ::ducta::void_t<decltype(::ducta::declval<T&>().flush())>> : ::ducta::true_type
+{
+};
+
+/* The one function of a sink type: writes record, or flushes when it is null */
+using SinkFunction = void (*)(void* sink, Record const* record);
+
+template <class SinkType>
+void sink_function(void* object, Record const* record)
+{
+    SinkType& sink = *static_cast<SinkType*>(object);
+    if (record != nullptr)
+    {
+        sink.write(record->level, record->message, record->function, record->line, record->timestamp);
+    }
+    else
+    {
+        if constexpr (has_flush<SinkType>::value)
+        {
+            sink.flush();
+        }
+    }
+}
+
+} // namespace Private
+
+/* Whether SinkType can be attached to the logger (see the contract above) */
+template <class SinkType>
+constexpr bool is_sink_v = Private::is_sink<SinkType>::value;
 
 #if DUCTA_ENABLE_LOGGING
 
@@ -112,21 +162,29 @@ public:
      * @brief Attach sink for the records of min_level and above
      * @return false if it is attached already or DUCTA_MAX_LOG_SINKS sinks are
      */
-    bool add_sink(Sink& sink, Level min_level = Level::Debug) noexcept
+    template <class SinkType>
+    bool add_sink(SinkType& sink, Level min_level = Level::Debug) noexcept
     {
-        if (m_count == DUCTA_MAX_LOG_SINKS || find(sink) != DUCTA_MAX_LOG_SINKS)
+        static_assert(
+            is_sink_v<SinkType>,
+            "a log sink needs void write(Log::Level, StringView message, char const* function, "
+            "uint32_t line, Chrono::TimestampUS timestamp)");
+        if (m_count == DUCTA_MAX_LOG_SINKS || find(&sink) != DUCTA_MAX_LOG_SINKS)
         {
             return false;
         }
-        m_sinks[m_count++] = Entry{&sink, min_level};
+        m_sinks[m_count] = Entry{&sink, &Private::sink_function<SinkType>};
+        m_levels[m_count] = min_level;
+        ++m_count;
         update_sink_level();
         return true;
     }
 
     /* @return false if sink was not attached */
-    bool remove_sink(Sink& sink) noexcept
+    template <class SinkType>
+    bool remove_sink(SinkType& sink) noexcept
     {
-        size_t const index = find(sink);
+        size_t const index = find(&sink);
         if (index == DUCTA_MAX_LOG_SINKS)
         {
             return false;
@@ -134,8 +192,11 @@ public:
         for (size_t i = index + 1; i < m_count; ++i)
         {
             m_sinks[i - 1] = m_sinks[i];
+            m_levels[i - 1] = m_levels[i];
         }
-        m_sinks[--m_count] = Entry{};
+        --m_count;
+        m_sinks[m_count] = Entry{};
+        m_levels[m_count] = Level::Off;
         update_sink_level();
         return true;
     }
@@ -143,9 +204,10 @@ public:
     /* Detach every sink */
     void clear() noexcept
     {
-        for (Entry& entry : m_sinks)
+        for (size_t i = 0; i < DUCTA_MAX_LOG_SINKS; ++i)
         {
-            entry = Entry{};
+            m_sinks[i] = Entry{};
+            m_levels[i] = Level::Off;
         }
         m_count = 0;
         update_sink_level();
@@ -179,48 +241,51 @@ public:
         return level != Level::Off && level >= m_level && level >= m_sink_level;
     }
 
-    /* Pass record to every sink of its level; its timestamp is set from the time source */
-    void write(Record record)
+    /* Pass a record to every sink of its level (the DUCTA_LOG_* macros call it) */
+    void write(Level level, StringView message, char const* function, uint32_t line)
     {
-        if (!enabled(record.level) || m_writing)
+        if (!enabled(level) || m_writing)
         {
             return; // a sink that logs would recurse
         }
         m_writing = true;
-        if (m_time_source != nullptr)
-        {
-            record.timestamp = m_time_source();
-        }
+        Private::Record const record{
+            level,
+            message,
+            function != nullptr ? function : "",
+            line,
+            m_time_source != nullptr ? m_time_source() : Chrono::TimestampUS{0}};
         for (size_t i = 0; i < m_count; ++i)
         {
-            if (record.level >= m_sinks[i].min_level)
+            if (level >= m_levels[i])
             {
-                m_sinks[i].sink->write(record);
+                m_sinks[i].function(m_sinks[i].sink, &record);
             }
         }
         m_writing = false;
     }
 
+    /* Flush every sink that has flush() */
     void flush()
     {
         for (size_t i = 0; i < m_count; ++i)
         {
-            m_sinks[i].sink->flush();
+            m_sinks[i].function(m_sinks[i].sink, nullptr);
         }
     }
 
 private:
     struct Entry
     {
-        Sink* sink{nullptr};
-        Level min_level{Level::Off};
+        void* sink{nullptr};
+        Private::SinkFunction function{nullptr};
     };
 
-    size_t find(Sink const& sink) const noexcept
+    size_t find(void const* sink) const noexcept
     {
         for (size_t i = 0; i < m_count; ++i)
         {
-            if (m_sinks[i].sink == &sink)
+            if (m_sinks[i].sink == sink)
             {
                 return i;
             }
@@ -234,14 +299,15 @@ private:
         m_sink_level = Level::Off;
         for (size_t i = 0; i < m_count; ++i)
         {
-            if (m_sinks[i].min_level < m_sink_level)
+            if (m_levels[i] < m_sink_level)
             {
-                m_sink_level = m_sinks[i].min_level;
+                m_sink_level = m_levels[i];
             }
         }
     }
 
     Entry m_sinks[DUCTA_MAX_LOG_SINKS]{};
+    Level m_levels[DUCTA_MAX_LOG_SINKS]{};
     size_t m_count{0};
     Level m_level{Level::Info};
     Level m_sink_level{Level::Off};
@@ -262,12 +328,18 @@ public:
     Logger(Logger const&) = delete;
     Logger& operator=(Logger const&) = delete;
 
-    bool add_sink(Sink& /*sink*/, Level /*min_level*/ = Level::Debug) noexcept
+    template <class SinkType>
+    bool add_sink(SinkType& /*sink*/, Level /*min_level*/ = Level::Debug) noexcept
     {
+        static_assert(
+            is_sink_v<SinkType>,
+            "a log sink needs void write(Log::Level, StringView, "
+            "char const*, uint32_t, Chrono::TimestampUS)");
         return false;
     }
 
-    bool remove_sink(Sink& /*sink*/) noexcept
+    template <class SinkType>
+    bool remove_sink(SinkType& /*sink*/) noexcept
     {
         return false;
     }
@@ -299,7 +371,7 @@ public:
         return false;
     }
 
-    void write(Record const& /*record*/)
+    void write(Level /*level*/, StringView /*message*/, char const* /*function*/, uint32_t /*line*/)
     {
     }
 
@@ -317,11 +389,6 @@ inline Logger& logger() noexcept
     return instance;
 }
 
-} // namespace Log
-} // namespace ducta
-
-namespace ducta {
-namespace Log {
 namespace Private {
 
 /* Uses the arguments of a log call that is compiled out (no unused-variable warnings) */
@@ -331,6 +398,7 @@ constexpr void discard(Args const&... /*args*/) noexcept
 }
 
 } // namespace Private
+
 } // namespace Log
 } // namespace ducta
 
@@ -344,12 +412,11 @@ constexpr void discard(Args const&... /*args*/) noexcept
         if (::ducta::Log::logger().enabled(level))                               \
         {                                                                        \
             ::ducta::FormatBuffer<DUCTA_LOG_MESSAGE_LENGTH> ducta_log_message_;  \
-            ::ducta::Log::logger().write(::ducta::Log::Record{                   \
+            ::ducta::Log::logger().write(                                        \
                 level,                                                           \
                 ::ducta::format_to_n(ducta_log_message_, format, ##__VA_ARGS__), \
                 __func__,                                                        \
-                static_cast<uint32_t>(__LINE__),                                 \
-                ::ducta::Chrono::TimestampUS{0}});                               \
+                static_cast<uint32_t>(__LINE__));                                \
         }                                                                        \
     } while (false)
 

@@ -26,7 +26,7 @@ using format_string = etl::format_string<Args...>;
 template <class StringType, class... Args>
 StringType& format_to(StringType& s, format_string<Args...> fmt, Args&&... args)
 {
-    etl::format_to(s, fmt, forward<Args>(args)...);
+    etl::format_to(s, fmt, ::ducta::forward<Args>(args)...);
     return s;
 }
 
@@ -95,7 +95,7 @@ private:
 template <size_t Capacity, class... Args>
 StringView format_to_n(FormatBuffer<Capacity>& out, format_string<Args...> fmt, Args&&... args)
 {
-    return out.format(fmt, forward<Args>(args)...);
+    return out.format(fmt, ::ducta::forward<Args>(args)...);
 }
 
 } // namespace ducta

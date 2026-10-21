@@ -39,7 +39,7 @@ TEST(LogDisabledTest, logger_does_nothing)
 {
     int lines = 0;
     Log::CallbackSink sink{
-        [](void* context, StringView, Log::Record const&) {
+        [](void* context, StringView, Level) {
             ++*static_cast<int*>(context);
         },
         &lines};
@@ -49,10 +49,10 @@ TEST(LogDisabledTest, logger_does_nothing)
     Log::logger().set_level(Level::Debug);
     EXPECT_EQ(Log::logger().level(), Level::Off);
     DUCTA_LOG_ERROR("dropped");
-    Log::logger().write(Log::Record{Level::Error, "dropped", "f", 1, Chrono::TimestampUS{0}});
+    Log::logger().write(Level::Error, "dropped", "f", 1);
     EXPECT_EQ(lines, 0);
 
     // A sink still works when used directly
-    sink.write(Log::Record{Level::Error, "direct", "f", 1, Chrono::TimestampUS{0}});
+    sink.write(Level::Error, "direct", "f", 1, Chrono::TimestampUS{0});
     EXPECT_EQ(lines, 1);
 }

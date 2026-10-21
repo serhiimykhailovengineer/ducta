@@ -30,7 +30,7 @@ typename TInput<T>::storage_type TInput<T>::value()
 {
     if (!ready())
     {
-        ::ducta::panic("Input not ready");
+        ::ducta::fatal_error("Input not ready");
     }
 
     storage_type result_value = _value.value();

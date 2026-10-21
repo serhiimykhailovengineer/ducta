@@ -16,7 +16,7 @@
  *
  * The capacities change the layout of Ducta types, so the whole program must use the same ones.
  * Every source file that includes Ducta checks this at startup (before main()) and calls
- * ducta::panic if its capacities differ from the ones of another file. DUCTA_NO_CAPACITY_CHECK
+ * ducta::fatal_error if its capacities differ from the ones of another file. DUCTA_NO_CAPACITY_CHECK
  * removes the check.
  */
 
@@ -234,7 +234,7 @@ struct DuctaCapacitiesCheck
             *static_cast<uint64_t const volatile*>(&::ducta::Private::program_capacities_signature);
         if (program_signature != ::ducta::Private::capacities_signature)
         {
-            ::ducta::panic(
+            ::ducta::fatal_error(
                 "Ducta capacities or backend differ between source files of the program: "
                 "configure them in ducta_config.hpp, seen by every file that includes Ducta");
         }

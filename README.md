@@ -24,7 +24,7 @@ and `include/ducta/Core/Capacity.hpp`):
 ```
 
 The capacities change the layout of Ducta types, so the whole program must use the same ones.
-Every source file that includes Ducta checks this before `main()` and calls `ducta::panic` if
+Every source file that includes Ducta checks this before `main()` and calls `ducta::fatal_error` if
 another file was compiled with other capacities or another backend (`DUCTA_NO_CAPACITY_CHECK`
 removes the check). Set each value in one place: `ducta_config.hpp`, or the compile definitions
 of the package (CMake / Conan options below).

@@ -1,4 +1,7 @@
 # ducta
+
+[![CI](https://github.com/serhiimykhailovengineer/ducta/actions/workflows/ci.yml/badge.svg)](https://github.com/serhiimykhailovengineer/ducta/actions/workflows/ci.yml)
+
 Ducta — modular C++ data-flow framework for connecting and executing computational nodes.
 
 Header-only, C++17. Two backends: `std` (standard library, Boost, fmt) and `etl` (Embedded
@@ -84,8 +87,8 @@ build_unflags = -std=gnu++11 -std=gnu++14
 build_flags = -std=gnu++17 -I include    ; include/ducta_config.hpp, for the libraries too
 ```
 
-PlatformIO selects the embedded backend and installs ETL. A complete program (a board and the
-computer as `native`) is in `examples/platformio/`.
+PlatformIO selects the embedded backend and installs ETL. A complete program (STM32, ESP32,
+ESP8266, Arduino UNO R4 and the computer as `native`) is in `examples/platformio/`.
 
 ### Logging
 
@@ -180,6 +183,13 @@ The library compiles with `-fno-exceptions`: misuse such as reading an input tha
 then calls `DUCTA_PANIC_HANDLER(message)` if the application defines it, and `std::abort()`. With
 the standard backend and `-fno-exceptions` the application defines `boost::throw_exception`
 (see `tests/no_exceptions/NoExceptionsApp.cpp`).
+
+### Continuous integration
+
+`.github/workflows/ci.yml` builds and tests the Release presets `std`, `etl` and `etl-mcu` on
+Linux and macOS for every pull request and every push to `main`, with the same commands as above. It also
+builds the PlatformIO example for every environment of `examples/platformio/platformio.ini`
+(the computer, STM32 Nucleo-F446RE, ESP32, ESP8266, Arduino UNO R4 Minima) and runs the native one.
 
 ### VS Code
 

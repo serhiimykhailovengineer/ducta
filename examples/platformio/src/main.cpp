@@ -1,6 +1,6 @@
-// A sensor, a low-pass filter and a printer, created and connected from a JSON configuration
-
-#include <stdio.h>
+// A sensor, a low-pass filter and a printer, created and connected from a JSON configuration.
+// The printer and Ducta itself write through the logger: to Serial on the board, to the console
+// on the computer.
 
 #if defined(ARDUINO)
 #include <Arduino.h>
@@ -14,18 +14,17 @@
 #include "ducta/IO/TInput.hpp"
 #include "ducta/IO/TOutput.hpp"
 #include "ducta/Pipeline/DeclareNode.hpp"
+#include "ducta/Utils/Log.hpp"
+
+#if DUCTA_ENABLE_LOGGING
+#if defined(ARDUINO)
+#include "ducta/Utils/Log/PrintSink.hpp"
+#else
+#include "ducta/Utils/Log/ConsoleSink.hpp"
+#endif
+#endif
 
 namespace app {
-
-void print_line(char const* text)
-{
-#if defined(ARDUINO)
-    Serial.println(text);
-#else
-    puts(text);
-    fflush(stdout);
-#endif
-}
 
 /* Simulated sensor: a saw-tooth signal */
 struct Sensor
@@ -113,15 +112,7 @@ struct Printer
             float const value = in.value();
             if (++frame % every == 0)
             {
-                char line[48];
-                snprintf(
-                    line,
-                    sizeof(line),
-                    "frame %d: %d.%02d",
-                    frame,
-                    static_cast<int>(value),
-                    static_cast<int>(value * 100) % 100);
-                print_line(line);
+                DUCTA_LOG_INFO("frame {}: {}", frame, value);
             }
         }
     }
@@ -170,6 +161,25 @@ char const kConfig[] = R"({
 ducta::Chrono::SteadyClock clock;
 ducta::DuctaEngine<> engine{clock};
 
+/* Without logging (DUCTA_ENABLE_LOGGING 0 in ducta_config.hpp) no sink is compiled in */
+#if DUCTA_ENABLE_LOGGING
+#if defined(ARDUINO)
+ducta::Log::PrintSink log_sink{Serial};
+#else
+ducta::Log::ConsoleSink log_sink;
+#endif
+#endif
+
+void start_logging()
+{
+#if DUCTA_ENABLE_LOGGING
+    ducta::Log::logger().add_sink(log_sink);
+    ducta::Log::logger().set_time_source(+[] {
+        return ducta::Chrono::SteadyClock{}.now();
+    });
+#endif
+}
+
 bool configure()
 {
     // Only needed while configuring
@@ -180,14 +190,8 @@ bool configure()
     {
         for (auto const& diagnostic : diagnostics)
         {
-            char line[128];
-            snprintf(
-                line,
-                sizeof(line),
-                "config: %.*s",
-                static_cast<int>(diagnostic.message.size()),
-                diagnostic.message.data());
-            app::print_line(line);
+            DUCTA_LOG_ERROR(
+                "config: {}", ducta::StringView{diagnostic.message.data(), diagnostic.message.size()});
         }
         return false;
     }
@@ -201,6 +205,7 @@ bool configure()
 void setup()
 {
     Serial.begin(115200);
+    start_logging();
     if (configure())
     {
         engine.run(app::Forever{}); // never returns
@@ -215,6 +220,7 @@ void loop()
 
 int main()
 {
+    start_logging();
     return configure() ? engine.run(app::Forever{}) : 1;
 }
 

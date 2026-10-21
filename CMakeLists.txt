@@ -41,7 +41,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/DuctaOptions.cmake)
 
 if (DUCTA_USE_EMBEDDED_BACKEND)
     if (NOT TARGET etl::etl)
-        find_package(etl REQUIRED)
+        find_package(etl 20.46 REQUIRED) # 20.46: formats long (int64_t on 64-bit Linux)
     endif()
     set(DUCTA_DEPENDENCIES etl::etl)
 else()

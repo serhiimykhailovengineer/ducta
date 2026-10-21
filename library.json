@@ -21,7 +21,7 @@
     {
       "owner": "etlcpp",
       "name": "Embedded Template Library",
-      "version": "^20.45.0"
+      "version": "^20.49.0"
     }
   ],
   "build": {

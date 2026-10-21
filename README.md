@@ -43,7 +43,7 @@ FetchContent_MakeAvailable(ducta)
 target_link_libraries(app PRIVATE ducta::ducta)
 ```
 
-The dependencies are found with `find_package` (`etl`, or `Boost` and `fmt`), unless the project
+The dependencies are found with `find_package` (`etl` 20.46 or newer, or `Boost` and `fmt`), unless the project
 already defines their targets (`etl::etl`, `Boost::headers`, `fmt::fmt`), e.g. with FetchContent
 as well. Tests are built only when Ducta is the top-level project (`DUCTA_BUILD_TESTS`).
 
@@ -72,7 +72,7 @@ default_options = {"ducta/*:backend": "etl", "ducta/*:capacity_profile": "mcu"}
 ```
 
 Options: `backend` (`std`, `etl`), `capacity_profile` (`default`, `mcu`), `tracing` (unset: the
-profile's default). With CMakeDeps: `find_package(ducta)` and `ducta::ducta`. The package is
+profile's default), `logging` (`True`, `False`). With CMakeDeps: `find_package(ducta)` and `ducta::ducta`. The package is
 checked by `test_package/`.
 
 ### PlatformIO
@@ -86,6 +86,41 @@ build_flags = -std=gnu++17 -I include    ; include/ducta_config.hpp, for the lib
 
 PlatformIO selects the embedded backend and installs ETL. A complete program (a board and the
 computer as `native`) is in `examples/platformio/`.
+
+### Logging
+
+Ducta and the nodes log through `ducta::Log::logger()` (`ducta/Utils/Log.hpp`). Records go to
+the attached sinks; without sinks nothing is written. Each sink has its own header in
+`ducta/Utils/Log/`, so only the included ones are compiled in:
+
+| Header | Writes to |
+|---|---|
+| `ConsoleSink.hpp` | stdout, warnings and errors to stderr |
+| `FileSink.hpp` | a file it opens, or any `std::FILE*` |
+| `CallbackSink.hpp` | a function of the application (a UART driver, a queue, UDP, ...) |
+| `PrintSink.hpp` | an Arduino `Print` (`Serial`, a TCP client, ...) |
+| `TextSink.hpp` | base class: one text line per record, to write anywhere else |
+
+```cpp
+#include "ducta/Utils/Log/ConsoleSink.hpp"
+#include "ducta/Utils/Log/FileSink.hpp"
+
+ducta::Log::ConsoleSink console;
+ducta::Log::FileSink file{"pipeline.log"};
+ducta::Log::logger().add_sink(console);                          // info and above (the default level)
+ducta::Log::logger().add_sink(file, ducta::Log::Level::Warning); // warnings and errors only
+ducta::Log::logger().set_time_source(+[] { return ducta::Chrono::SteadyClock{}.now(); });
+
+DUCTA_LOG_INFO("node '{}' created", name);   // [12.345678] [info] create:42: node 'gain' created
+```
+
+A message is formatted only when a sink takes its level, into `DUCTA_LOG_MESSAGE_LENGTH`
+characters on the stack. `DUCTA_LOG_LEVEL` (0 debug ... 4 off; CMake `-DDUCTA_LOG_LEVEL=warning`)
+removes the less important calls from the program. `DUCTA_ENABLE_LOGGING 0` (CMake
+`-DDUCTA_ENABLE_LOGGING=OFF`, Conan `logging=False`) builds without logging: the calls compile
+to nothing, their arguments are not evaluated, and the logger does nothing; create your sinks
+under `#if DUCTA_ENABLE_LOGGING` so that they are not compiled in either. The logger is not
+thread-safe yet.
 
 ## Developing Ducta
 

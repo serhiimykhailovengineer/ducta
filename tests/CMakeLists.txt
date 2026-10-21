@@ -14,7 +14,7 @@ endif()
 add_custom_target(check
     COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    DEPENDS CoreTests IOTests SteadyClockTests PipelineTests ConfigurationTests IntTests
+    DEPENDS CoreTests IOTests SteadyClockTests PipelineTests ConfigurationTests UtilsTests LogDisabledTests IntTests
     USES_TERMINAL
 )
 if (TARGET NoExceptionsApp)

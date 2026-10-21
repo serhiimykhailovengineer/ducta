@@ -138,6 +138,29 @@
 #define DUCTA_CONFIG_MAX_JSON_TOKENS (2 * DUCTA_CONFIG_MAX_NODES)
 #endif
 
+// ========== Logging (see ducta/Utils/Log.hpp) ==========
+
+// 0 removes logging: the DUCTA_LOG_* calls compile to nothing and the logger does nothing
+#ifndef DUCTA_ENABLE_LOGGING
+#define DUCTA_ENABLE_LOGGING 1
+#endif
+
+// Sinks attached to the logger at the same time
+#ifndef DUCTA_MAX_LOG_SINKS
+#define DUCTA_MAX_LOG_SINKS DUCTA_PROFILE_VALUE(4, 2)
+#endif
+
+// Maximum length of a log message (characters, longer ones are truncated)
+#ifndef DUCTA_LOG_MESSAGE_LENGTH
+#define DUCTA_LOG_MESSAGE_LENGTH DUCTA_PROFILE_VALUE(256, 96)
+#endif
+
+// Least important level compiled in: 0 debug, 1 info, 2 warning, 3 error, 4 nothing. The calls
+// below it are removed from the program (the logger also filters at run time)
+#ifndef DUCTA_LOG_LEVEL
+#define DUCTA_LOG_LEVEL DUCTA_PROFILE_VALUE(0, 1)
+#endif
+
 // ========== The same capacities in the whole program ==========
 
 #if !defined(DUCTA_NO_CAPACITY_CHECK)
@@ -187,7 +210,10 @@ constexpr uint64_t capacities_signature = signature_of(
     DUCTA_CONFIG_MAX_PATH_LENGTH,
     DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH,
     DUCTA_CONFIG_MAX_DIAGNOSTICS,
-    DUCTA_CONFIG_MAX_JSON_TOKENS);
+    DUCTA_CONFIG_MAX_JSON_TOKENS,
+    DUCTA_ENABLE_LOGGING,
+    DUCTA_MAX_LOG_SINKS,
+    DUCTA_LOG_MESSAGE_LENGTH);
 
 /* Of the program: the linker keeps one definition (initialized before any dynamic
  * initialization) for all source files, so a file with other capacities sees another value */

@@ -1,5 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+#include <limits>
+#include <random>
 #include <sstream>
 #include <string>
 
@@ -420,8 +425,13 @@ TEST(JsonTest, embedded_limits_are_reported)
 
     ASSERT_EQ(diagnostics.size(), 2u);
     EXPECT_EQ(str(diagnostics[0].path), "s");
-    EXPECT_EQ(str(diagnostics[0].message), "string is too long (max 64 characters)");
-    EXPECT_EQ(str(diagnostics[1].message), "string is too long (max 32 characters)");
+    EXPECT_EQ(
+        std::string(diagnostics[0].message.data(), diagnostics[0].message.size()),
+        "string is too long (max " + std::to_string(DUCTA_CONFIG_MAX_STRING_LENGTH) +
+            " characters)");
+    EXPECT_EQ(
+        std::string(diagnostics[1].message.data(), diagnostics[1].message.size()),
+        "string is too long (max " + std::to_string(DUCTA_CONFIG_MAX_KEY_LENGTH) + " characters)");
     EXPECT_EQ(tree.root().child("ok").as_integer(), 2);
 }
 
@@ -445,3 +455,198 @@ TEST(JsonTest, embedded_token_limit_is_reported)
 }
 
 #endif
+
+// ========== Floating point numbers (parsed without the C library) ==========
+
+namespace {
+
+double c_library(char const* text)
+{
+    return std::strtod(text, nullptr);
+}
+
+/* Units in the last place between a and b (both finite, same sign) */
+uint64_t ulps(double a, double b)
+{
+    int64_t ia = 0;
+    int64_t ib = 0;
+    std::memcpy(&ia, &a, sizeof(a));
+    std::memcpy(&ib, &b, sizeof(b));
+    return static_cast<uint64_t>(ia > ib ? ia - ib : ib - ia);
+}
+
+} // namespace
+
+TEST(JsonTest, floats_of_up_to_15_digits_and_exponent_22_are_exact)
+{
+    for (char const* text : {"0.1",        "0.2",        "0.3",
+                             "2.5",        "-2.5",       "1e-3",
+                             "123.456",    "3.14159",    "1e22",
+                             "1e-22",      "-0.0",       "0.0",
+                             "1.0e0",      "1E+2",       "0.000001",
+                             "9.81",       "1e21",       "4.35e-5",
+                             "299792.458", "6.02214e23", "1.7976931348623e+22"})
+    {
+        double value = 0;
+        EXPECT_TRUE(Configuration::Private::parse_float(text, value)) << text;
+        EXPECT_EQ(value, c_library(text)) << text;
+        EXPECT_EQ(std::signbit(value), std::signbit(c_library(text))) << text;
+    }
+
+    std::mt19937_64 random{42};
+    for (int i = 0; i < 100000; ++i)
+    {
+        uint64_t const mantissa = random() % 1000000000000000ULL; // 15 digits
+        int const scale = static_cast<int>(random() % 45) - 22;
+        std::string const text = std::to_string(mantissa) + "e" + std::to_string(scale);
+        double value = 0;
+        ASSERT_TRUE(Configuration::Private::parse_float(StringView{text.data(), text.size()}, value))
+            << text;
+        ASSERT_EQ(value, c_library(text.c_str())) << text;
+    }
+}
+
+TEST(JsonTest, other_floats_are_approximated_closely)
+{
+    for (char const* text :
+         {"3.141592653589793238462643383279",
+          "1e300",
+          "-1.5e-300",
+          "2.2250738585072014e-308",
+          "1.7976931348623157e308",
+          "123456789012345678901234567890.5",
+          "1e-30",
+          "6.02214076e123"})
+    {
+        double value = 0;
+        EXPECT_FALSE(Configuration::Private::parse_float(text, value)) << text;
+        EXPECT_LE(ulps(value, c_library(text)), 4u) << text;
+    }
+
+    std::mt19937_64 random{7};
+    for (int i = 0; i < 100000; ++i)
+    {
+        uint64_t const mantissa = random() % 10000000000000000000ULL; // up to 19 digits
+        int const scale = static_cast<int>(random() % 600) - 300;
+        std::string const text = std::to_string(mantissa) + "e" + std::to_string(scale);
+        double value = 0;
+        Configuration::Private::parse_float(StringView{text.data(), text.size()}, value);
+        ASSERT_LE(ulps(value, c_library(text.c_str())), 4u) << text;
+    }
+}
+
+TEST(JsonTest, float_overflow_and_underflow)
+{
+    double value = 0;
+    Configuration::Private::parse_float("1e400", value);
+    EXPECT_TRUE(std::isinf(value));
+    Configuration::Private::parse_float("-1e99999999999", value);
+    EXPECT_TRUE(std::isinf(value) && value < 0);
+    Configuration::Private::parse_float("1e-400", value);
+    EXPECT_EQ(value, 0.0);
+    Configuration::Private::parse_float("0e99999", value);
+    EXPECT_EQ(value, 0.0);
+    // Far beyond the range: decided without scaling step by step
+    Configuration::Private::parse_float("-1e-999999", value);
+    EXPECT_EQ(value, 0.0);
+    EXPECT_TRUE(std::signbit(value));
+    Configuration::Private::parse_float("9999999999999999999e-342", value);
+    EXPECT_EQ(value, c_library("9999999999999999999e-342"));
+    Configuration::Private::parse_float("1e-345", value);
+    EXPECT_EQ(value, 0.0);
+}
+
+TEST(JsonTest, floats_are_loaded)
+{
+    PropTree tree;
+    Diagnostics diagnostics;
+    ASSERT_TRUE(loadJson(R"({"a": 0.1, "b": -2.5e-3, "c": 1e300})", tree, diagnostics));
+    EXPECT_EQ(tree.root().child("a").as_float(), 0.1);
+    EXPECT_EQ(tree.root().child("b").as_float(), -2.5e-3);
+    EXPECT_NEAR(tree.root().child("c").as_float(), 1e300, 1e285);
+}
+
+TEST(JsonTest, overflow_boundary_is_exact)
+{
+    double const max = std::numeric_limits<double>::max();
+    struct Case
+    {
+        char const* text;
+        bool overflows;
+    };
+    for (Case const c : {
+             Case{"1.7976931348623157e308", false}, // DBL_MAX
+             Case{"1.7976931348623158e308", false}, // still rounds to DBL_MAX
+             Case{"179769313486231570e291", false},
+             Case{"1.797693134862315807e308", false}, // last 19 digits below the threshold
+             Case{"1.797693134862315808e308", true}, // first 19 digits above the threshold
+             Case{"1.7976931348623159e308", true},
+             Case{"1.8e308", true},
+             Case{"1.7976931348623155e308", false}, // DBL_MAX - 1 unit in the last place
+             // First 19 digits equal to the threshold 2^1024 - 2^970: the next ones decide
+             Case{"1.79769313486231580799e308", true},
+             Case{"1.79769313486231580793e308", false},
+             Case{"1.7976931348623158079372897140530341e308", false},
+             Case{"1.7976931348623158079372897140530342e308", true},
+             Case{
+                 "179769313486231580793728971405303415079934132710037826936173778980444968292764750"
+                 "946"
+                 "649017977587207096330286416692887910946555547851940402630657488671505820681908"
+                 "902000708383676273854845817711531764475730270069855571366959622842914819860834"
+                 "936475292719074168444365510704342711559699508093042880177904174497791",
+                 false}, // threshold - 1
+             Case{
+                 "179769313486231580793728971405303415079934132710037826936173778980444968292764750"
+                 "946"
+                 "649017977587207096330286416692887910946555547851940402630657488671505820681908"
+                 "902000708383676273854845817711531764475730270069855571366959622842914819860834"
+                 "936475292719074168444365510704342711559699508093042880177904174497792",
+                 true}, // the threshold itself: the tie rounds to infinity
+             Case{
+                 "179769313486231580793728971405303415079934132710037826936173778980444968292764750"
+                 "9"
+                 "466490179775872070963302864166928879109465555478519404026306574886715058206819"
+                 "089020007083836762738548458177115317644757302700698555713669596228429148198608"
+                 "349364752927190741684443655107043427115596995080930428801779041744977920e-1",
+                 true}, // the threshold with a trailing zero after the decimal point
+         })
+    {
+        for (bool const negative : {false, true})
+        {
+            std::string const text = std::string{negative ? "-" : ""} + c.text;
+            double value = 0;
+            Configuration::Private::parse_float(StringView{text.data(), text.size()}, value);
+            double const expected = c_library(text.c_str());
+            EXPECT_EQ(std::isinf(expected), c.overflows) << text; // the C library agrees
+            EXPECT_EQ(std::isinf(value), c.overflows) << text;
+            if (!c.overflows)
+            {
+                EXPECT_LE(std::fabs(value), max) << text;
+                EXPECT_LE(ulps(value, expected), 3u) << text;
+            }
+        }
+    }
+}
+
+TEST(JsonTest, largest_finite_double_is_loaded)
+{
+    PropTree tree;
+    Diagnostics diagnostics;
+    ASSERT_TRUE(loadJson(
+        R"({"max": 1.7976931348623157e308, "min": -1.7976931348623157e308})", tree, diagnostics));
+    EXPECT_EQ(tree.root().child("max").as_float(), std::numeric_limits<double>::max());
+    EXPECT_EQ(tree.root().child("min").as_float(), -std::numeric_limits<double>::max());
+
+    PropTree too_large;
+    Diagnostics errors;
+    EXPECT_FALSE(loadJson(R"({"value": 1.7976931348623159e308})", too_large, errors));
+    ASSERT_EQ(errors.size(), 1u);
+    EXPECT_EQ(str(errors[0].message), "number 1.7976931348623159e308 is out of range");
+
+    // Equal to the threshold in the first 19 digits, above it in the next ones
+    PropTree trailing;
+    Diagnostics trailing_errors;
+    EXPECT_FALSE(loadJson(R"({"value": 1.79769313486231580799e308})", trailing, trailing_errors));
+    ASSERT_EQ(trailing_errors.size(), 1u);
+    EXPECT_EQ(str(trailing_errors[0].message), "number 1.79769313486231580799e308 is out of range");
+}

@@ -131,16 +131,23 @@ DUCTA_DECL bool Pipeline::configure(
         return false;
     }
 
-    m_trace_enabled = config.should_trace_execution;
     m_target_frame_duration = config.target_frame_duration;
+#if DUCTA_ENABLE_TRACING
+    m_trace_enabled = config.should_trace_execution;
     m_trace_flush_threshold = config.trace_flush_threshold;
     m_trace_callback = trace_callback;
-    m_iteration_strategy =
-        m_trace_enabled ? &Pipeline::iterateWithTrace : &Pipeline::iterateWithoutTrace;
-
     m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
-    if (!m_event_wiring.connect(
-            m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr, &diagnostics))
+#else
+    (void)trace_callback;
+    if (config.should_trace_execution)
+    {
+        diagnostics.warning(
+            PropNode{},
+            "should_trace_execution is ignored: tracing is disabled at compile time "
+            "(DUCTA_ENABLE_TRACING=0)");
+    }
+#endif
+    if (!m_event_wiring.connect(m_nodes, &m_clock, traceInfo(), &diagnostics))
     {
         clear();
         return false;
@@ -165,17 +172,18 @@ DUCTA_DECL void Pipeline::clear()
     m_connections.clear();
     m_init_order.clear();
     m_nodes.clear();
-    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
     m_trace_enabled = false;
+#if DUCTA_ENABLE_TRACING
+    m_trace_info.configure(Span<NodeInfo const>(m_nodes.data(), m_nodes.size()));
     m_trace_callback = {};
-    m_iteration_strategy = &Pipeline::iterateWithoutTrace;
+#endif
 }
 
 DUCTA_DECL void Pipeline::init()
 {
     // release() disconnects the events: connect them again, so that every run delivers them.
     // The same nodes were connected by configure(), so this fits the capacities too.
-    m_event_wiring.connect(m_nodes, &m_clock, m_trace_enabled ? &m_trace_info : nullptr);
+    m_event_wiring.connect(m_nodes, &m_clock, traceInfo());
 
     size_t initialized = 0;
 #if defined(__cpp_exceptions)
@@ -204,7 +212,50 @@ DUCTA_DECL void Pipeline::init()
 
 DUCTA_DECL bool Pipeline::iterate()
 {
-    return (this->*m_iteration_strategy)();
+#if DUCTA_ENABLE_TRACING
+    if (m_trace_enabled)
+    {
+        return iterateWithTrace();
+    }
+#endif
+    return iterateWithoutTrace();
+}
+
+DUCTA_DECL bool Pipeline::iterateNode(NodeInfo& node_info, Chrono::TimestampUS frame_start_time)
+{
+#if defined(__cpp_exceptions)
+    try
+    {
+#endif
+        auto const result = node_info.node.iterate(frame_start_time);
+        if (!result)
+        {
+            DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
+            return false;
+        }
+        return *result; // false: the node requested to stop
+#if defined(__cpp_exceptions)
+    }
+    catch (std::exception const& e)
+    {
+        DUCTA_LOG_ERROR(
+            "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
+        return false;
+    }
+#endif
+}
+
+DUCTA_DECL void Pipeline::sleepUntilFrameEnd(Chrono::TimestampUS frame_start_time)
+{
+    if (m_target_frame_duration.count() <= 0)
+    {
+        return; // as fast as possible: no need to read the clock again
+    }
+    auto const frame_duration = m_clock.now() - frame_start_time;
+    if (m_target_frame_duration > frame_duration)
+    {
+        m_clock.sleepFor(m_target_frame_duration - frame_duration);
+    }
 }
 
 DUCTA_DECL bool Pipeline::iterateWithoutTrace()
@@ -213,100 +264,64 @@ DUCTA_DECL bool Pipeline::iterateWithoutTrace()
 
     for (auto& node_info : m_nodes)
     {
-        auto const start_node = m_clock.now();
-        try
+        if (!iterateNode(node_info, frame_start_time))
         {
-            auto result = node_info.node.iterate(start_node);
-
-            if (result)
-            {
-                if (!*result)
-                {
-                    return false; // Stop iteration as requested by the node
-                }
-            }
-            else
-            {
-                DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
-                return false;
-            }
-        }
-        catch (const std::exception& e)
-        {
-            DUCTA_LOG_ERROR(
-                "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
             return false;
         }
     }
 
-    auto const frame_duration = m_clock.now() - frame_start_time;
-    if (m_target_frame_duration > frame_duration)
-    {
-        m_clock.sleepFor(m_target_frame_duration - frame_duration);
-    }
-
+    sleepUntilFrameEnd(frame_start_time);
     return true;
 }
 
+#if DUCTA_ENABLE_TRACING
 DUCTA_DECL bool Pipeline::iterateWithTrace()
 {
     auto const frame_start_time = m_clock.now();
     m_trace_info.frame_start(frame_start_time);
 
+    /* Closes the frame however it ends (including an exception passed on), or the next
+     * frame_start() fails */
+    struct FrameCloser
+    {
+        Private::PipelineTraceInfo& trace;
+        Clock& clock;
+
+        ~FrameCloser()
+        {
+            if (trace.frame_open())
+            {
+                trace.frame_end(clock.now());
+            }
+        }
+    } const closer{m_trace_info, m_clock};
+
+    /* The end of a node is the start of the next one: one clock read per node */
+    auto node_start_time = frame_start_time;
     size_t node_index = 0;
     for (auto& node_info : m_nodes)
     {
-        auto const start_node = m_clock.now();
-        try
+        bool const keep_running = iterateNode(node_info, frame_start_time);
+        auto const node_end_time = m_clock.now();
+        m_trace_info.node_duration(node_index++, node_end_time - node_start_time);
+        node_start_time = node_end_time;
+        if (!keep_running)
         {
-            auto result = node_info.node.iterate(start_node);
-            m_trace_info.node_duration(node_index++, m_clock.now() - start_node);
-
-            if (result)
-            {
-                if (!*result)
-                {
-                    m_trace_info.frame_end(m_clock.now());
-                    return false; // Stop iteration as requested by the node
-                }
-            }
-            else
-            {
-                m_trace_info.frame_end(m_clock.now());
-                DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
-                return false;
-            }
-        }
-        catch (const std::exception& e)
-        {
-            m_trace_info.frame_end(m_clock.now());
-            DUCTA_LOG_ERROR(
-                "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
+            m_trace_info.frame_end(node_end_time);
             return false;
         }
-        catch (...)
-        {
-            // Close the frame before passing the exception on, or the next frame_start() fails
-            m_trace_info.frame_end(m_clock.now());
-            throw;
-        }
     }
-
-    m_trace_info.frame_end(m_clock.now());
+    m_trace_info.frame_end(node_start_time);
 
     if (m_trace_callback && m_trace_info.pending_frames() >= m_trace_flush_threshold)
     {
         m_trace_info.flush(m_trace_callback);
     }
 
-    auto const frame_duration = m_clock.now() - frame_start_time;
-    if (m_target_frame_duration > frame_duration)
-    {
-        m_clock.sleepFor(m_target_frame_duration - frame_duration);
-    }
-
+    sleepUntilFrameEnd(frame_start_time);
     return true;
 }
+#endif
 
 DUCTA_DECL void Pipeline::release()
 {

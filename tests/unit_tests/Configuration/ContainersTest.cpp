@@ -170,6 +170,10 @@ TEST(ContainersTest, empty_containers_replace_previous_content)
 
 TEST(ContainersTest, wrong_container_kinds_are_reported)
 {
+    if (DUCTA_CONFIG_MAX_DIAGNOSTICS < 5)
+    {
+        GTEST_SKIP() << "needs DUCTA_CONFIG_MAX_DIAGNOSTICS >= 5";
+    }
     PropTree tree;
     NodeId root = tree.root().id();
     tree.add_integer(root, "name", 1, {2, 3});

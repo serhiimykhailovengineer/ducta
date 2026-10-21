@@ -3,6 +3,7 @@
 # Every recipe takes an optional preset (default: std):
 #   std       — standard backend (Boost + fmt), Release
 #   etl       — embedded backend (ETL), Release
+#   etl-mcu   — embedded backend, microcontroller capacities (DUCTA_CAPACITY_PROFILE=mcu), no trace
 #   std-debug — standard backend, Debug
 #   etl-debug — embedded backend, Debug
 #   all       — all of the above, one after another
@@ -19,7 +20,7 @@ configure preset="std":
 build preset="std":
     #!/usr/bin/env bash
     set -e
-    for b in {{ if preset == "all" { "std etl std-debug etl-debug" } else { preset } }}; do
+    for b in {{ if preset == "all" { "std etl etl-mcu std-debug etl-debug" } else { preset } }}; do
         cmake --build --preset "$b"
     done
 
@@ -27,7 +28,7 @@ build preset="std":
 test preset="std" filter="":
     #!/usr/bin/env bash
     set -e
-    for b in {{ if preset == "all" { "std etl std-debug etl-debug" } else { preset } }}; do
+    for b in {{ if preset == "all" { "std etl etl-mcu std-debug etl-debug" } else { preset } }}; do
         ctest --preset "$b" {{ if filter != "" { "-R " + quote(filter) } else { "" } }}
     done
 
@@ -35,7 +36,7 @@ test preset="std" filter="":
 check preset="std":
     #!/usr/bin/env bash
     set -e
-    for b in {{ if preset == "all" { "std etl std-debug etl-debug" } else { preset } }}; do
+    for b in {{ if preset == "all" { "std etl etl-mcu std-debug etl-debug" } else { preset } }}; do
         cmake --build --preset "$b" --target check
     done
 

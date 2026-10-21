@@ -1,10 +1,10 @@
 #!/bin/bash
 # Installs Conan dependencies and configures CMake for the given backend(s).
 #
-# Usage: ./project/configure.sh [std|etl|std-debug|etl-debug|all]   (default: std)
+# Usage: ./project/configure.sh [std|etl|etl-mcu|std-debug|etl-debug|all]   (default: std)
 #
 # Afterwards everything is driven by CMake presets
-# (<preset> = std | etl | std-debug | etl-debug):
+# (<preset> = std | etl | etl-mcu | std-debug | etl-debug):
 #   cmake --build --preset <preset>                  # build
 #   ctest --preset <preset>                          # run tests
 #   cmake --build --preset <preset> --target check   # build + run tests
@@ -16,9 +16,9 @@ cd "$(dirname "$0")/.."
 
 PRESET=${1:-std}
 case "$PRESET" in
-    std|etl|std-debug|etl-debug) PRESETS=("$PRESET") ;;
-    all) PRESETS=(std etl std-debug etl-debug) ;;
-    *) echo "Unknown preset '$PRESET' (expected: std, etl, std-debug, etl-debug, all)" >&2; exit 1 ;;
+    std|etl|etl-mcu|std-debug|etl-debug) PRESETS=("$PRESET") ;;
+    all) PRESETS=(std etl etl-mcu std-debug etl-debug) ;;
+    *) echo "Unknown preset '$PRESET' (expected: std, etl, etl-mcu, std-debug, etl-debug, all)" >&2; exit 1 ;;
 esac
 
 # Dependencies are shared by all presets and installed once into build/conan.

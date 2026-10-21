@@ -47,7 +47,7 @@ private:
                 using ValueType = typename T::value_type;
                 if (type != ::ducta::type_id<ValueType>())
                 {
-                    ::ducta::panic("Incompatible type for notification");
+                    ::ducta::fatal_error("Incompatible type for notification");
                 }
 
                 static_cast<T*>(obj)->notify(*static_cast<ValueType const*>(value));

@@ -44,3 +44,6 @@ build/
 
 # Generated build presets
 CMakeUserPresets.json
+
+# PlatformIO
+.pio/

@@ -28,12 +28,12 @@
 namespace boost {
 BOOST_NORETURN void throw_exception(std::exception const& e)
 {
-    ::ducta::panic(e.what());
+    ::ducta::fatal_error(e.what());
 }
 
 BOOST_NORETURN void throw_exception(std::exception const& e, boost::source_location const&)
 {
-    ::ducta::panic(e.what());
+    ::ducta::fatal_error(e.what());
 }
 } // namespace boost
 #endif

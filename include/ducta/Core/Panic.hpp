@@ -26,7 +26,8 @@ void DUCTA_PANIC_HANDLER(char const* message);
 
 namespace ducta {
 
-[[noreturn]] inline void panic(char const* message)
+/* Not named panic(): the ESP8266 Arduino core defines a panic() macro */
+[[noreturn]] inline void fatal_error(char const* message)
 {
 #if defined(__cpp_exceptions)
     throw std::runtime_error(message);

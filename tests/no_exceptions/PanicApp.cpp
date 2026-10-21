@@ -1,4 +1,4 @@
-// Built with -fno-exceptions: misuse calls ducta::panic, which must call DUCTA_PANIC_HANDLER (when
+// Built with -fno-exceptions: misuse calls ducta::fatal_error, which must call DUCTA_PANIC_HANDLER (when
 // the application defines it) and then abort, even if the handler returns.
 // Run by CheckPanic.cmake: PanicApp <input|notify>
 
@@ -15,7 +15,7 @@
 #if defined(DUCTA_PANIC_HANDLER)
 #include "ducta/Core/Panic.hpp"
 
-/* Returns: ducta::panic must abort afterwards */
+/* Returns: ducta::fatal_error must abort afterwards */
 void DUCTA_PANIC_HANDLER(char const* message)
 {
     std::fprintf(stderr, "panic handler: %s\n", message);
@@ -32,12 +32,12 @@ void DUCTA_PANIC_HANDLER(char const* message)
 namespace boost {
 BOOST_NORETURN void throw_exception(std::exception const& e)
 {
-    ::ducta::panic(e.what());
+    ::ducta::fatal_error(e.what());
 }
 
 BOOST_NORETURN void throw_exception(std::exception const& e, boost::source_location const&)
 {
-    ::ducta::panic(e.what());
+    ::ducta::fatal_error(e.what());
 }
 } // namespace boost
 #endif

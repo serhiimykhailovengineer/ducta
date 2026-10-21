@@ -41,6 +41,8 @@ class DuctaConan(ConanFile):
         "capacity_profile": ["default", "mcu"],
         # None: the default of the capacity profile
         "tracing": [None, True, False],
+        # False: the DUCTA_LOG_* calls compile to nothing (DUCTA_ENABLE_LOGGING 0)
+        "logging": [True, False],
         # Dependencies of every backend and of the tests, to develop Ducta
         "develop": [True, False],
     }
@@ -48,6 +50,7 @@ class DuctaConan(ConanFile):
         "backend": "std",
         "capacity_profile": "default",
         "tracing": None,
+        "logging": True,
         "develop": False,
         # Ducta uses only header-only parts of Boost
         "boost/*:header_only": True,
@@ -66,7 +69,7 @@ class DuctaConan(ConanFile):
             self.requires("boost/1.89.0", transitive_headers=True)
             self.requires("fmt/12.1.0", transitive_headers=True, transitive_libs=True)
         if self.options.develop or self.options.backend == "etl":
-            self.requires("etl/20.45.0", transitive_headers=True)
+            self.requires("etl/20.49.0", transitive_headers=True)
 
     def build_requirements(self):
         if self.options.develop:
@@ -109,3 +112,5 @@ class DuctaConan(ConanFile):
             self.cpp_info.defines.append(
                 "DUCTA_ENABLE_TRACING=1" if self.options.tracing else "DUCTA_ENABLE_TRACING=0"
             )
+        if not self.options.logging:
+            self.cpp_info.defines.append("DUCTA_ENABLE_LOGGING=0")

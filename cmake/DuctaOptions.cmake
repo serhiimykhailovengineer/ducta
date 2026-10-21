@@ -21,6 +21,19 @@ set(DUCTA_ENABLE_TRACING "" CACHE STRING
     "Execution trace: ON, OFF, or empty for the profile's default (ON, OFF for mcu)")
 set_property(CACHE DUCTA_ENABLE_TRACING PROPERTY STRINGS "" ON OFF)
 
+option(DUCTA_ENABLE_LOGGING "Logging: OFF compiles the DUCTA_LOG_* calls to nothing" ON)
+
+set(DUCTA_LOG_LEVEL "" CACHE STRING
+    "Least important log level compiled in: debug, info, warning, error, off, or empty for the profile's default (debug, info for mcu)")
+set_property(CACHE DUCTA_LOG_LEVEL PROPERTY STRINGS "" debug info warning error off)
+set(DUCTA_LOG_LEVEL_VALUES debug info warning error off)
+if (NOT "${DUCTA_LOG_LEVEL}" STREQUAL "")
+    list(FIND DUCTA_LOG_LEVEL_VALUES "${DUCTA_LOG_LEVEL}" DUCTA_LOG_LEVEL_NUMBER)
+    if (DUCTA_LOG_LEVEL_NUMBER EQUAL -1)
+        message(FATAL_ERROR "DUCTA_LOG_LEVEL must be one of ${DUCTA_LOG_LEVEL_VALUES} or empty, got '${DUCTA_LOG_LEVEL}'")
+    endif()
+endif()
+
 # ducta_capacity_option(<NAME> <DESCRIPTION>): empty keeps the profile's value
 macro(ducta_capacity_option NAME DESCRIPTION)
     set(${NAME} "" CACHE STRING "${DESCRIPTION} (empty: the profile's value)")
@@ -57,6 +70,10 @@ ducta_capacity_option(DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH "Maximum length of a c
 ducta_capacity_option(DUCTA_CONFIG_MAX_DIAGNOSTICS "Diagnostics kept by one Diagnostics object")
 ducta_capacity_option(DUCTA_CONFIG_MAX_JSON_TOKENS "JSON tokens of one document (values and keys); default 2 x DUCTA_CONFIG_MAX_NODES")
 
+# Logging
+ducta_capacity_option(DUCTA_MAX_LOG_SINKS "Sinks attached to the logger at the same time")
+ducta_capacity_option(DUCTA_LOG_MESSAGE_LENGTH "Maximum length of a log message (characters)")
+
 # Compile definitions of the options, added to ducta::ducta
 set(DUCTA_OPTION_DEFINITIONS)
 if (DUCTA_CAPACITY_PROFILE STREQUAL "mcu")
@@ -69,6 +86,12 @@ if (NOT "${DUCTA_ENABLE_TRACING}" STREQUAL "")
         list(APPEND DUCTA_OPTION_DEFINITIONS DUCTA_ENABLE_TRACING=0)
     endif()
 endif()
+if (NOT DUCTA_ENABLE_LOGGING)
+    list(APPEND DUCTA_OPTION_DEFINITIONS DUCTA_ENABLE_LOGGING=0)
+endif()
+if (NOT "${DUCTA_LOG_LEVEL}" STREQUAL "")
+    list(APPEND DUCTA_OPTION_DEFINITIONS DUCTA_LOG_LEVEL=${DUCTA_LOG_LEVEL_NUMBER})
+endif()
 foreach(option IN LISTS DUCTA_CAPACITY_OPTIONS)
     list(APPEND DUCTA_OPTION_DEFINITIONS ${option}=${${option}})
 endforeach()
@@ -76,6 +99,12 @@ endforeach()
 message(STATUS "Ducta capacity profile: ${DUCTA_CAPACITY_PROFILE}")
 if (NOT "${DUCTA_ENABLE_TRACING}" STREQUAL "")
     message(STATUS "  DUCTA_ENABLE_TRACING = ${DUCTA_ENABLE_TRACING}")
+endif()
+if (NOT DUCTA_ENABLE_LOGGING)
+    message(STATUS "  DUCTA_ENABLE_LOGGING = OFF")
+endif()
+if (NOT "${DUCTA_LOG_LEVEL}" STREQUAL "")
+    message(STATUS "  DUCTA_LOG_LEVEL = ${DUCTA_LOG_LEVEL}")
 endif()
 foreach(option IN LISTS DUCTA_CAPACITY_OPTIONS)
     message(STATUS "  ${option} = ${${option}}")

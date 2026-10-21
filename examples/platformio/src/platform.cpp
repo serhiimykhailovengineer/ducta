@@ -3,11 +3,10 @@
 
 #if defined(ARDUINO)
 
-#include <Arduino.h>
-
-#include <etl/chrono.h>
-
+// Ducta first: it selects the ETL profile before ETL is configured by another ETL header
 #include "ducta/Core/Threads.hpp"
+
+#include <Arduino.h>
 
 /* Nanoseconds (the default ETL_CHRONO_STEADY_CLOCK_DURATION) since start-up; micros() wraps
  * after ~71 minutes, so the wraps are counted */

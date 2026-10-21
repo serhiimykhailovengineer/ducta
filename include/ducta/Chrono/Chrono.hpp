@@ -8,8 +8,7 @@
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <chrono>
 #else
-#include "ducta/Core/ETLProfile.hpp"
-#include "etl/chrono.h"
+#include "ducta/Core/Private/EtlChrono.hpp"
 #endif
 
 namespace ducta {

@@ -10,7 +10,7 @@ endfunction()
 ducta_no_exceptions_executable(NoExceptionsApp NoExceptionsApp.cpp)
 add_test(NAME NoExceptionsApp COMMAND NoExceptionsApp)
 
-# ducta::panic aborts, without a handler and after a handler that returns
+# ducta::fatal_error aborts, without a handler and after a handler that returns
 ducta_no_exceptions_executable(NoExceptionsPanic PanicApp.cpp)
 ducta_no_exceptions_executable(NoExceptionsPanicHandler PanicApp.cpp)
 target_compile_definitions(NoExceptionsPanicHandler PRIVATE DUCTA_PANIC_HANDLER=test_panic_handler)

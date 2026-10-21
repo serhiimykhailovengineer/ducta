@@ -1,0 +1,121 @@
+# Builds Ducta and runs its tests (Release) for every pull request and every push to main.
+#
+# Each job runs the same commands as a developer (see README.md, "Developing Ducta"):
+#   ./project/configure.sh <preset>     # Conan dependencies + CMake configure
+#   cmake --build --preset <preset>
+#   ctest --preset <preset>
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# A new push to a pull request cancels its previous, still running checks
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.preset }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        # std: Boost + fmt; etl: Embedded Template Library; etl-mcu: small capacities, no trace
+        preset: [std, etl, etl-mcu]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Conan
+        run: python -m pip install "conan>=2.0,<3"
+
+      - name: Conan profile (C++17)
+        run: |
+          conan profile detect --force
+          # The detected profile may use the compiler's older default standard: Ducta needs 17
+          python - <<'PY'
+          import re, subprocess
+          path = subprocess.check_output(["conan", "profile", "path", "default"], text=True).strip()
+          text = open(path).read()
+          text = re.sub(r"(?m)^compiler\.cppstd=.*$", "compiler.cppstd=17", text)
+          if "compiler.cppstd=" not in text:
+              text = text.replace("[settings]\n", "[settings]\ncompiler.cppstd=17\n")
+          open(path, "w").write(text)
+          print(text)
+          PY
+
+      # Dependencies built from source (when ConanCenter has no binary for the runner's compiler)
+      # are kept between runs
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2/p
+          key: conan-${{ runner.os }}-${{ hashFiles('conanfile.py') }}
+          restore-keys: conan-${{ runner.os }}-
+
+      - name: Configure
+        run: ./project/configure.sh ${{ matrix.preset }}
+
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }} --parallel
+
+      - name: Test
+        run: ctest --preset ${{ matrix.preset }} --parallel 4
+
+  # The PlatformIO example (examples/platformio) on the boards of its platformio.ini: Ducta as a
+  # PlatformIO library (library.json) with the embedded backend, the Arduino framework and the
+  # toolchain of each platform. The native build also runs for a moment and must log frames.
+  platformio:
+    name: PlatformIO ${{ matrix.env }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # native: the computer; nucleo_f446re: STM32F4; esp32dev: ESP32; nodemcuv2: ESP8266;
+        # uno_r4_minima: Arduino UNO R4
+        env: [native, nucleo_f446re, esp32dev, nodemcuv2, uno_r4_minima]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install PlatformIO
+        run: python -m pip install platformio
+
+      # Platforms, toolchains and frameworks (hundreds of MB) are kept between runs
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: platformio-${{ matrix.env }}-${{ hashFiles('examples/platformio/platformio.ini') }}
+          restore-keys: platformio-${{ matrix.env }}-
+
+      - name: Build
+        run: pio run -d examples/platformio -e ${{ matrix.env }}
+
+      - name: Run (native)
+        if: matrix.env == 'native'
+        run: |
+          # The program runs forever: stop it after 2 s, it logs a line every 25 frames of 10 ms
+          timeout 2 examples/platformio/.pio/build/native/program > output.txt || test $? -eq 124
+          cat output.txt
+          grep -q "\[info\] iterate:[0-9]*: frame 25: " output.txt

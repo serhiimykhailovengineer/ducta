@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_INTEGERS_HPP
 #define DUCTA_CORE_TYPES_INTEGERS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include <cstddef>
 #include <cstdint>
 

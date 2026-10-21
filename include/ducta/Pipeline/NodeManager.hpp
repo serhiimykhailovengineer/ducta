@@ -6,6 +6,8 @@
 #ifndef DUCTA_PIPELINE_NODE_MANAGER_HPP
 #define DUCTA_PIPELINE_NODE_MANAGER_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Configuration/Decode.hpp"

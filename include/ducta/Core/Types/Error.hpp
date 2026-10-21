@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_ERROR_HPP
 #define DUCTA_CORE_TYPES_ERROR_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/String.hpp"
 
 namespace ducta {

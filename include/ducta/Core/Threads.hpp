@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_THREADS_HPP
 #define DUCTA_CORE_THREADS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #if !defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <thread>
 #else

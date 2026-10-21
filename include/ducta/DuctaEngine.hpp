@@ -6,6 +6,8 @@
 #ifndef DUCTA_DUCTA_ENGINE_HPP
 #define DUCTA_DUCTA_ENGINE_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include <cstdlib>
 
 #include "ducta/Core/Capacity.hpp"

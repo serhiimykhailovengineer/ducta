@@ -439,7 +439,7 @@ TYPED_TEST(DuctaEngineTest, nodes_initialised_before_a_failing_init_are_released
 TYPED_TEST(DuctaEngineTest, default_trace_flush_threshold_is_valid)
 {
     EXPECT_LE(
-        Pipeline::PipelineConfig{}.trace_flush_threshold,
+        ::ducta::Pipeline::PipelineConfig{}.trace_flush_threshold,
         static_cast<size_t>(DUCTA_MAX_TRACED_FRAMES));
 
     PropTree tree = loadTree(R"({
@@ -505,16 +505,16 @@ TEST(PipelineEngineTest, destructor_logs_instead_of_throwing_from_release)
     TestNodes::ThrowingConfig config;
     config.in_release = true;
     TestNodes::ThrowingNode node{config};
-    Pipeline::Nodes nodes;
+    ::ducta::Pipeline::Nodes nodes;
     nodes.add_node("t", node);
-    Pipeline::Pipeline::Config pipeline_config;
+    ::ducta::Pipeline::Pipeline::Config pipeline_config;
     pipeline_config.order.push_back(NodeName{"t"});
-    Pipeline::Pipeline pipeline{clock};
+    ::ducta::Pipeline::Pipeline pipeline{clock};
     ASSERT_TRUE(pipeline.configure(nodes, pipeline_config));
 
     StopAfter stop{1};
     {
-        Pipeline::PipelineEngine engine{pipeline, stop};
+        ::ducta::Pipeline::PipelineEngine engine{pipeline, stop};
         EXPECT_EQ(engine.run(), EXIT_SUCCESS);
     } // ~PipelineEngine releases the node: must not terminate
     SUCCEED();
@@ -524,13 +524,16 @@ TEST(PipelineEngineTest, destructor_logs_instead_of_throwing_from_release)
 TEST(DuctaEngineLifetimeTest, temporary_factory_is_rejected)
 {
     using Engine = DuctaEngine<>;
-    static_assert(std::is_constructible_v<Engine, TestClock&, Pipeline::NodeFactory&>);
-    static_assert(std::is_constructible_v<Engine, TestClock&, Pipeline::NodeFactory const&>);
-    static_assert(!std::is_constructible_v<Engine, TestClock&, Pipeline::NodeFactory>);
-    static_assert(!std::is_constructible_v<Engine, Pipeline::Clock, Pipeline::NodeFactory>);
+    static_assert(std::is_constructible_v<Engine, TestClock&, ::ducta::Pipeline::NodeFactory&>);
+    static_assert(std::is_constructible_v<Engine, TestClock&, ::ducta::Pipeline::NodeFactory const&>);
+    static_assert(!std::is_constructible_v<Engine, TestClock&, ::ducta::Pipeline::NodeFactory>);
+    static_assert(
+        !std::is_constructible_v<Engine, ::ducta::Pipeline::Clock, ::ducta::Pipeline::NodeFactory>);
 
-    static_assert(std::is_constructible_v<Pipeline::NodeManager<>, Pipeline::NodeFactory&>);
-    static_assert(!std::is_constructible_v<Pipeline::NodeManager<>, Pipeline::NodeFactory>);
+    static_assert(
+        std::is_constructible_v<::ducta::Pipeline::NodeManager<>, ::ducta::Pipeline::NodeFactory&>);
+    static_assert(
+        !std::is_constructible_v<::ducta::Pipeline::NodeManager<>, ::ducta::Pipeline::NodeFactory>);
     SUCCEED();
 }
 

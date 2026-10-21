@@ -2,8 +2,8 @@
  * @file Capacity.hpp
  * @brief Compile-time capacities of the library, in one place
  *
- * Every value can be overridden with a compile definition. With CMake use the cache options
- * of the same name (see cmake/DuctaOptions.cmake), e.g.
+ * Every value can be overridden in ducta_config.hpp (see Config.hpp) or with a compile
+ * definition. With CMake use the cache options of the same name (see cmake/DuctaOptions.cmake):
  *     cmake --preset etl -DDUCTA_MAX_NODES=16 -DDUCTA_NODE_STORAGE_BYTES=2048
  *
  * The embedded backend uses them as the sizes of its fixed containers. The standard backend
@@ -13,10 +13,17 @@
  * DUCTA_CAPACITY_PROFILE_MCU (CMake: -DDUCTA_CAPACITY_PROFILE=mcu) selects the <mcu> values:
  * small capacities and no execution trace, for microcontrollers with tens of KB of RAM.
  * A value defined explicitly overrides the profile.
+ *
+ * The capacities change the layout of Ducta types, so the whole program must use the same ones.
+ * Every source file that includes Ducta checks this at startup (before main()) and calls
+ * ducta::panic if its capacities differ from the ones of another file. DUCTA_NO_CAPACITY_CHECK
+ * removes the check.
  */
 
 #ifndef DUCTA_CORE_CAPACITY_HPP
 #define DUCTA_CORE_CAPACITY_HPP
+
+#include "ducta/Core/Config.hpp"
 
 #if defined(DUCTA_CAPACITY_PROFILE_MCU)
 #define DUCTA_PROFILE_VALUE(default_value, mcu_value) mcu_value
@@ -130,5 +137,87 @@
 #ifndef DUCTA_CONFIG_MAX_JSON_TOKENS
 #define DUCTA_CONFIG_MAX_JSON_TOKENS (2 * DUCTA_CONFIG_MAX_NODES)
 #endif
+
+// ========== The same capacities in the whole program ==========
+
+#if !defined(DUCTA_NO_CAPACITY_CHECK)
+
+#include <cstdint>
+
+#include "ducta/Core/Panic.hpp"
+
+namespace ducta {
+namespace Private {
+
+constexpr uint64_t signature_of() noexcept
+{
+    return 0xcbf29ce484222325ULL;
+}
+
+/* FNV-1a style mix of the values */
+template <class... Values>
+constexpr uint64_t signature_of(uint64_t value, Values... values) noexcept
+{
+    return (signature_of(values...) ^ value) * 0x100000001b3ULL;
+}
+
+/* Backend and capacities of this source file */
+constexpr uint64_t capacities_signature = signature_of(
+#if defined(DUCTA_USE_EMBEDDED_BACKEND)
+    1,
+#else
+    2,
+#endif
+    DUCTA_ENABLE_TRACING,
+    DUCTA_MAX_NODE_NAME_LENGTH,
+    DUCTA_MAX_NODES,
+    DUCTA_MAX_NODE_TYPES,
+    DUCTA_NODE_STORAGE_BYTES,
+    DUCTA_MAX_NODE_PORTS,
+    DUCTA_MAX_PORT_NAME_LENGTH,
+    DUCTA_MAX_CONNECTIONS,
+    DUCTA_MAX_OUTPUT_CONNECTIONS,
+    DUCTA_MAX_EVENT_CONNECTIONS,
+    DUCTA_MAX_EVENT_TYPES,
+    DUCTA_MAX_TRACED_FRAMES,
+    DUCTA_MAX_TRACED_EVENTS_PER_FRAME,
+    DUCTA_CONFIG_MAX_NODES,
+    DUCTA_CONFIG_MAX_KEY_LENGTH,
+    DUCTA_CONFIG_MAX_STRING_LENGTH,
+    DUCTA_CONFIG_MAX_PATH_LENGTH,
+    DUCTA_CONFIG_MAX_SOURCE_NAME_LENGTH,
+    DUCTA_CONFIG_MAX_DIAGNOSTICS,
+    DUCTA_CONFIG_MAX_JSON_TOKENS);
+
+/* Of the program: the linker keeps one definition (initialized before any dynamic
+ * initialization) for all source files, so a file with other capacities sees another value */
+inline uint64_t program_capacities_signature = capacities_signature;
+
+} // namespace Private
+} // namespace ducta
+
+namespace {
+/* Internal linkage: every source file runs its own check (an inline function shared by the
+ * files would compare one signature only), before main() */
+struct DuctaCapacitiesCheck
+{
+    DuctaCapacitiesCheck()
+    {
+        // Volatile: the compiler must not assume the value of this file's initializer
+        uint64_t const program_signature =
+            *static_cast<uint64_t const volatile*>(&::ducta::Private::program_capacities_signature);
+        if (program_signature != ::ducta::Private::capacities_signature)
+        {
+            ::ducta::panic(
+                "Ducta capacities or backend differ between source files of the program: "
+                "configure them in ducta_config.hpp, seen by every file that includes Ducta");
+        }
+    }
+};
+
+DuctaCapacitiesCheck const ducta_capacities_check;
+} // namespace
+
+#endif // DUCTA_NO_CAPACITY_CHECK
 
 #endif // DUCTA_CORE_CAPACITY_HPP

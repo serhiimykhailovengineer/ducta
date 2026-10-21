@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_TYPEINDEX_HPP
 #define DUCTA_CORE_TYPES_TYPEINDEX_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/TypeTraits.hpp"
 #include "ducta/Core/Types/Integers.hpp"
 

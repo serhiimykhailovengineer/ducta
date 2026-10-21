@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_TYPEREGISTRY_HPP
 #define DUCTA_CORE_TYPES_TYPEREGISTRY_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Core/Types/Integers.hpp"

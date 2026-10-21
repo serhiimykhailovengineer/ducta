@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_VARIANT_HPP
 #define DUCTA_CORE_TYPES_VARIANT_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/variant.h>
 #include "ducta/Core/ETLProfile.hpp"

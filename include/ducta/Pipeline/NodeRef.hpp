@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_NODEREF_HPP
 #define DUCTA_PIPELINE_NODEREF_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/IO/EventRef.hpp"

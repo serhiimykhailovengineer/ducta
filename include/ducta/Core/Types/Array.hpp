@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPES_ARRAY_HPP
 #define DUCTA_CORE_TYPES_ARRAY_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/Error.hpp"
 #include "ducta/Core/Types/Expected.hpp"
 

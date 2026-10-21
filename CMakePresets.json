@@ -22,7 +22,7 @@
             "displayName": "Standard backend (Boost + fmt)",
             "inherits": "base",
             "cacheVariables": {
-                "USE_EMBEDDED_BACKEND": "OFF"
+                "DUCTA_BACKEND": "std"
             }
         },
         {
@@ -30,7 +30,7 @@
             "displayName": "Embedded backend (ETL)",
             "inherits": "base",
             "cacheVariables": {
-                "USE_EMBEDDED_BACKEND": "ON"
+                "DUCTA_BACKEND": "etl"
             }
         },
         {

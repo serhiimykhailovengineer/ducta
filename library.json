@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/schema/library.json",
+  "name": "ducta",
+  "version": "0.1.0",
+  "description": "Modular C++17 data-flow framework: nodes with typed inputs, outputs and events, created and connected from a JSON configuration and run in a deterministic loop. Header-only, no heap with the embedded (ETL) backend.",
+  "keywords": "dataflow, pipeline, nodes, robotics, embedded, etl, json, configuration",
+  "homepage": "https://github.com/serhiimykhailovengineer/ducta",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/serhiimykhailovengineer/ducta.git"
+  },
+  "authors": {
+    "name": "Serhii Mykhailov",
+    "maintainer": true
+  },
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": "ducta/DuctaEngine.hpp",
+  "dependencies": [
+    {
+      "owner": "etlcpp",
+      "name": "Embedded Template Library",
+      "version": "^20.45.0"
+    }
+  ],
+  "build": {
+    "includeDir": "include",
+    "srcFilter": "-<*>"
+  },
+  "export": {
+    "include": [
+      "include",
+      "examples/platformio",
+      "LICENSE",
+      "README.md",
+      "library.json"
+    ]
+  },
+  "examples": [
+    {
+      "name": "JSON configured pipeline",
+      "base": "examples/platformio",
+      "files": ["platformio.ini", "include/ducta_config.hpp", "src/main.cpp", "src/platform.cpp"]
+    }
+  ]
+}

@@ -1,6 +1,8 @@
 #ifndef DUCTA_CONFIGURATION_DIAGNOSTICS_HPP
 #define DUCTA_CONFIGURATION_DIAGNOSTICS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Capacity.hpp"
 
 #include "ducta/Configuration/PropTree.hpp"

@@ -6,6 +6,8 @@
 #ifndef DUCTA_PIPELINE_DECLARE_NODE_HPP
 #define DUCTA_PIPELINE_DECLARE_NODE_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Preprocessor.hpp"
 #include "ducta/Pipeline/NodeFactory.hpp"
 

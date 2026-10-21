@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_TYPETRAITS_HPP
 #define DUCTA_CORE_TYPETRAITS_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
 #include <etl/type_traits.h>
 #include "ducta/Core/ETLProfile.hpp"

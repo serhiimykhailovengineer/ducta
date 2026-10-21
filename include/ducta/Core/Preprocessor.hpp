@@ -1,6 +1,8 @@
 #ifndef DUCTA_CORE_PREPROCESSOR_HPP
 #define DUCTA_CORE_PREPROCESSOR_HPP
 
+#include "ducta/Core/Config.hpp"
+
 // ========== basic concatenation ==========
 #define DUCTA_PP_CAT(a, b) DUCTA_PP_CAT_I(a, b)
 #define DUCTA_PP_CAT_I(a, b) a##b

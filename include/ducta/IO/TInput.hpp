@@ -6,6 +6,8 @@
 #ifndef DUCTA_T_INPUT_HPP
 #define DUCTA_T_INPUT_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/Optional.hpp"
 #include "ducta/Core/Types/TypeIndex.hpp"
 

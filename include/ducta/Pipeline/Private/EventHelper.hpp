@@ -1,6 +1,8 @@
 #ifndef DUCTA_PIPELINE_PRIVATE_EVENTHELPER_HPP
 #define DUCTA_PIPELINE_PRIVATE_EVENTHELPER_HPP
 
+#include "ducta/Core/Config.hpp"
+
 #include "ducta/Core/Types/Array.hpp"
 #include "ducta/Core/Types/Error.hpp"
 #include "ducta/Core/Types/Expected.hpp"

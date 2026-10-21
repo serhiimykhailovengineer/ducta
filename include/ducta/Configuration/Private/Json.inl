@@ -15,7 +15,7 @@
 #if !defined(JSMN_H)
 #define JSMN_STATIC
 #define JSMN_STRICT
-#include <jsmn.h>
+#include "ducta/ThirdParty/jsmn/jsmn.h"
 #undef JSMN_STATIC
 #undef JSMN_STRICT
 #endif

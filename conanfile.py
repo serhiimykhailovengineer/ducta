@@ -15,7 +15,7 @@ class DuctaConan(ConanFile):
 
         conan create . -o "ducta/*:backend=etl"
         # conanfile of the application
-        requires = "ducta/0.1.0"
+        requires = "ducta/0.2.0"
         default_options = {"ducta/*:backend": "etl", "ducta/*:capacity_profile": "mcu"}
 
     Capacities are configured by the application in ducta_config.hpp (see

@@ -39,7 +39,7 @@ The embedded backend needs two platform functions from the application, unless
 include(FetchContent)
 FetchContent_Declare(ducta
     GIT_REPOSITORY https://github.com/serhiimykhailovengineer/ducta.git
-    GIT_TAG v0.1.0)
+    GIT_TAG v0.2.0)
 set(DUCTA_BACKEND etl)              # std (default) or etl
 FetchContent_MakeAvailable(ducta)
 
@@ -70,7 +70,7 @@ conan create . -o "ducta/*:backend=etl"   # into the local cache (or upload to y
 
 ```python
 # conanfile.py of the application
-requires = "ducta/0.1.0"
+requires = "ducta/0.2.0"
 default_options = {"ducta/*:backend": "etl", "ducta/*:capacity_profile": "mcu"}
 ```
 
@@ -82,7 +82,7 @@ checked by `test_package/`.
 
 ```ini
 ; platformio.ini
-lib_deps = https://github.com/serhiimykhailovengineer/ducta.git#v0.1.0
+lib_deps = https://github.com/serhiimykhailovengineer/ducta.git#v0.2.0
 build_unflags = -std=gnu++11 -std=gnu++14
 build_flags = -std=gnu++17 -I include    ; include/ducta_config.hpp, for the libraries too
 ```

@@ -19,6 +19,10 @@
 #include "ducta/Core/Types/Vector.hpp"
 #include "ducta/Utils/Log.hpp"
 
+#if defined(__cpp_exceptions)
+#include <exception>
+#endif
+
 namespace ducta {
 namespace Pipeline {
 namespace Private {
@@ -98,17 +102,40 @@ public:
                 bool const traced = m_trace && m_clock && m_trace->frame_open();
                 Chrono::TimestampUS const start = traced ? m_clock->now() : Chrono::TimestampUS{0};
 
-                auto result = sink.node.sendEventRaw(sink.id, event);
+#if defined(__cpp_exceptions)
+                // A receiver breaking its contract (throwing) is named: it is not the emitter's
+                // failure, and the other receivers still get the event
+                try
+                {
+#endif
+                    auto result = sink.node.sendEventRaw(sink.id, event);
+                    if (!result)
+                    {
+                        DUCTA_LOG_ERROR(
+                            "Event from '{}' failed in node '{}': {}",
+                            m_emitter_name,
+                            sink.name,
+                            StringView{result.error().message.data(), result.error().message.size()});
+                    }
+#if defined(__cpp_exceptions)
+                }
+                catch (std::exception const& e)
+                {
+                    DUCTA_LOG_ERROR(
+                        "Event from '{}' failed in node '{}': exception: {}", m_emitter_name, sink.name, e.what());
+                }
+                catch (...)
+                {
+                    DUCTA_LOG_ERROR(
+                        "Event from '{}' failed in node '{}': unknown exception", m_emitter_name, sink.name);
+                }
+#endif
 
                 if (traced)
                 {
                     m_trace->event(
                         EventTraceInfo{
                             m_emitter_index, sink.index, sink.id, start, m_clock->now() - start});
-                }
-                if (!result)
-                {
-                    DUCTA_LOG_ERROR("Event from '{}' failed in node '{}'", m_emitter_name, sink.name);
                 }
             }
         }

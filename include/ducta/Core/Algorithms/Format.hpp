@@ -78,7 +78,7 @@ public:
     StringView format(format_string<Args...> fmt, Args&&... args)
     {
 #if defined(DUCTA_USE_EMBEDDED_BACKEND)
-        char* const end = etl::format_to_n(m_data, Capacity, fmt, forward<Args>(args)...);
+        char* const end = etl::format_to_n(m_data, Capacity, fmt, ::ducta::forward<Args>(args)...);
 #else
         char* const end = fmt::format_to_n(m_data, Capacity, fmt, std::forward<Args>(args)...).out;
 #endif

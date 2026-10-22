@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -330,9 +332,12 @@ TEST_F(LogTest, pipeline_reports_through_the_logger)
     config.order.push_back("missing");
     EXPECT_FALSE(pipeline.configure(nodes, config)); // the overload that logs its diagnostics
 
-    ASSERT_FALSE(sink.records.empty());
-    EXPECT_EQ(sink.records[0].level, Level::Error);
-    EXPECT_NE(sink.records[0].message.find("missing"), std::string::npos) << sink.records[0].message;
+    // The pipeline may log information too: the error is checked, not the first record
+    auto const error = std::find_if(sink.records.begin(), sink.records.end(), [](auto const& record) {
+        return record.level == Level::Error;
+    });
+    ASSERT_NE(error, sink.records.end());
+    EXPECT_NE(error->message.find("missing"), std::string::npos) << error->message;
 }
 
 #endif // DUCTA_ENABLE_LOGGING

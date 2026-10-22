@@ -38,12 +38,9 @@ void TOutput<T>::set(value_type&& value)
 }
 
 template <typename T>
-void TOutput<T>::update(FunctionRef<void(value_type&)> callback)
+template <typename Callback>
+void TOutput<T>::update(Callback&& callback)
 {
-    if (!callback)
-    {
-        return;
-    }
     callback(_value);
     for (auto& input_ref : _inputs)
     {

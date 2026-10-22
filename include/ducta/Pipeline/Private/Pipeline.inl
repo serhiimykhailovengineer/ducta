@@ -13,6 +13,44 @@
 
 namespace ducta {
 namespace Pipeline {
+namespace Private {
+
+inline StringView error_message(Error const& error)
+{
+    return StringView{error.message.data(), error.message.size()};
+}
+
+/*
+ * Called in a catch block: a node broke its contract by throwing from call (init, iterate,
+ * release); logs the node and what() if available
+ */
+inline void log_node_exception(char const* call, StringView node_name)
+{
+#if defined(__cpp_exceptions)
+    try
+    {
+        throw;
+    }
+    catch (std::exception const& e)
+    {
+        DUCTA_LOG_ERROR("{}() of node '{}' failed: exception: {}", call, node_name, e.what());
+    }
+    catch (...)
+    {
+        DUCTA_LOG_ERROR("{}() of node '{}' failed: unknown exception", call, node_name);
+    }
+#else
+    (void)call;
+    (void)node_name;
+#endif
+}
+
+inline unsigned long long to_ull(Chrono::TimestampUS duration)
+{
+    return static_cast<unsigned long long>(duration.count() > 0 ? duration.count() : 0);
+}
+
+} // namespace Private
 
 DUCTA_DECL Pipeline::Pipeline(Clock&& clock)
     : m_clock(::ducta::move(clock))
@@ -26,6 +64,7 @@ DUCTA_DECL bool Pipeline::configure(
     TraceCallback trace_callback)
 {
     using Configuration::PropNode;
+    DUCTA_LOG_DEBUG("Pipeline configuration started");
 
     clear();
     if (!Configuration::validate(PropNode{}, config, diagnostics))
@@ -123,6 +162,7 @@ DUCTA_DECL bool Pipeline::configure(
         }
         m_connections.push_back(::ducta::move(connection));
         connected.push_back(i);
+        DUCTA_LOG_DEBUG("Connected '{}.{}' -> '{}.{}'", output_node, output_name, input_node, input_name);
     }
 
     if (diagnostics.error_count() != errors)
@@ -152,6 +192,12 @@ DUCTA_DECL bool Pipeline::configure(
         clear();
         return false;
     }
+
+    DUCTA_LOG_INFO(
+        "Pipeline configured: {} nodes, {} connections, target frame duration {} us",
+        static_cast<unsigned long long>(m_nodes.size()),
+        static_cast<unsigned long long>(m_connections.size()),
+        Private::to_ull(m_target_frame_duration));
     return true;
 }
 
@@ -179,35 +225,54 @@ DUCTA_DECL void Pipeline::clear()
 #endif
 }
 
-DUCTA_DECL void Pipeline::init()
+DUCTA_DECL bool Pipeline::init()
 {
     // release() disconnects the events: connect them again, so that every run delivers them.
     // The same nodes were connected by configure(), so this fits the capacities too.
     m_event_wiring.connect(m_nodes, &m_clock, traceInfo());
 
-    size_t initialized = 0;
-#if defined(__cpp_exceptions)
-    try
+    m_failed = false;
+    m_frames = 0;
+    m_overrun_frames = 0;
+    m_longest_frame = Chrono::TimestampUS{0};
+
+    // From the first node not initialised yet (all of them after release())
+    for (size_t i = m_initialized; i < m_init_order.size(); ++i)
     {
-#endif
-        for (auto& node_info : m_init_order)
-        {
-            node_info.node.init();
-            ++initialized;
-        }
+        auto& node_info = m_init_order[i];
+        DUCTA_LOG_DEBUG("Initialising node '{}'", node_info.name);
 #if defined(__cpp_exceptions)
-    }
-    catch (...)
-    {
-        // Release the nodes initialised so far, in reverse order, then pass the error on
-        while (initialized > 0)
+        Expected<bool, Error> result{true};
+        try
         {
-            m_init_order[--initialized].node.release();
+            result = node_info.node.init();
         }
-        m_event_wiring.disconnect();
-        throw;
-    }
+        catch (...)
+        {
+            Private::log_node_exception("init", node_info.name);
+            m_failed = true;
+            return false; // not counted as initialised: not released
+        }
+#else
+        auto const result = node_info.node.init();
 #endif
+        if (!result)
+        {
+            DUCTA_LOG_ERROR(
+                "init() of node '{}' failed: {}", node_info.name, Private::error_message(result.error()));
+            m_failed = true;
+            return false;
+        }
+        if (!*result)
+        {
+            DUCTA_LOG_ERROR("init() of node '{}' returned false", node_info.name);
+            m_failed = true;
+            return false;
+        }
+        ++m_initialized; // counted only now: a node whose init() failed is not released
+    }
+    DUCTA_LOG_INFO("Pipeline initialised: {} nodes", static_cast<unsigned long long>(m_initialized));
+    return true;
 }
 
 DUCTA_DECL bool Pipeline::iterate()
@@ -224,25 +289,33 @@ DUCTA_DECL bool Pipeline::iterate()
 DUCTA_DECL bool Pipeline::iterateNode(NodeInfo& node_info, Chrono::TimestampUS frame_start_time)
 {
 #if defined(__cpp_exceptions)
+    Expected<bool, Error> result{true};
     try
     {
-#endif
-        auto const result = node_info.node.iterate(frame_start_time);
-        if (!result)
-        {
-            DUCTA_LOG_ERROR("Error during iteration of node: {}", node_info.name);
-            return false;
-        }
-        return *result; // false: the node requested to stop
-#if defined(__cpp_exceptions)
+        result = node_info.node.iterate(frame_start_time);
     }
-    catch (std::exception const& e)
+    catch (...)
     {
-        DUCTA_LOG_ERROR(
-            "Exception during iteration of node: {}, what(): {}", node_info.name, e.what());
+        Private::log_node_exception("iterate", node_info.name);
+        m_failed = true;
         return false;
     }
+#else
+    auto const result = node_info.node.iterate(frame_start_time);
 #endif
+    if (!result)
+    {
+        DUCTA_LOG_ERROR(
+            "iterate() of node '{}' failed: {}", node_info.name, Private::error_message(result.error()));
+        m_failed = true;
+        return false;
+    }
+    if (!*result)
+    {
+        DUCTA_LOG_INFO("Node '{}' requested to stop the pipeline", node_info.name);
+        return false;
+    }
+    return true;
 }
 
 DUCTA_DECL void Pipeline::sleepUntilFrameEnd(Chrono::TimestampUS frame_start_time)
@@ -252,9 +325,22 @@ DUCTA_DECL void Pipeline::sleepUntilFrameEnd(Chrono::TimestampUS frame_start_tim
         return; // as fast as possible: no need to read the clock again
     }
     auto const frame_duration = m_clock.now() - frame_start_time;
+    ++m_frames;
+    if (frame_duration > m_longest_frame)
+    {
+        m_longest_frame = frame_duration;
+    }
     if (m_target_frame_duration > frame_duration)
     {
         m_clock.sleepFor(m_target_frame_duration - frame_duration);
+    }
+    else if (frame_duration > m_target_frame_duration && ++m_overrun_frames == 1)
+    {
+        // Once per run: the count is in the summary of release()
+        DUCTA_LOG_WARNING(
+            "Frame took {} us, longer than the target frame duration {} us",
+            Private::to_ull(frame_duration),
+            Private::to_ull(m_target_frame_duration));
     }
 }
 
@@ -325,83 +411,129 @@ DUCTA_DECL bool Pipeline::iterateWithTrace()
 
 DUCTA_DECL void Pipeline::release()
 {
-#if defined(__cpp_exceptions)
-    // Every node is released even if one throws; the first exception is passed on afterwards
-    std::exception_ptr first_error;
-    for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
+    size_t const initialized = m_initialized;
+    while (m_initialized > 0)
     {
+        auto& node_info = m_init_order[m_initialized - 1];
+        DUCTA_LOG_DEBUG("Releasing node '{}'", node_info.name);
+#if defined(__cpp_exceptions)
         try
         {
+#endif
             node_info.node.release();
+#if defined(__cpp_exceptions)
         }
         catch (...)
         {
-            if (!first_error)
-            {
-                first_error = std::current_exception();
-            }
+            // It broke the contract: nothing more can be done for it, the others are released
+            Private::log_node_exception("release", node_info.name);
+            m_failed = true;
         }
-    }
-    m_event_wiring.disconnect();
-    if (first_error)
-    {
-        std::rethrow_exception(first_error);
-    }
-#else
-    for (auto& node_info : ducta::Adapters::Reversed(m_init_order))
-    {
-        node_info.node.release();
-    }
-    m_event_wiring.disconnect();
 #endif
+        --m_initialized;
+    }
+    m_event_wiring.disconnect();
+    if (initialized != 0)
+    {
+        logRunSummary(initialized);
+    }
+}
+
+DUCTA_DECL void Pipeline::logRunSummary(size_t released)
+{
+    DUCTA_LOG_INFO("Pipeline released: {} nodes", static_cast<unsigned long long>(released));
+    if (m_overrun_frames != 0)
+    {
+        DUCTA_LOG_WARNING(
+            "{} of {} frames took longer than the target frame duration {} us (longest: {} us)",
+            static_cast<unsigned long long>(m_overrun_frames),
+            static_cast<unsigned long long>(m_frames),
+            Private::to_ull(m_target_frame_duration),
+            Private::to_ull(m_longest_frame));
+    }
 }
 
 DUCTA_DECL PipelineEngine::PipelineEngine(Pipeline& pipeline, StopToken&& stop_token)
     : m_pipeline{pipeline}
     , m_stop_token{::ducta::move(stop_token)}
 {
-    m_pipeline.init();
+#if defined(__cpp_exceptions)
+    try
+    {
+#endif
+        m_initialized = m_pipeline.init(); // a failure is logged by Pipeline::init
+#if defined(__cpp_exceptions)
+    }
+    catch (...)
+    {
+        // The destructor does not run: release the nodes initialised before the exception
+        m_pipeline.release();
+        throw;
+    }
+#endif
 }
 
 DUCTA_DECL PipelineEngine::~PipelineEngine()
 {
+    // Also after a failed init(): the nodes initialised before the failing one
 #if defined(__cpp_exceptions)
-    // A destructor must not throw: an exception from a node's release() is logged
     try
     {
+#endif
         m_pipeline.release();
+#if defined(__cpp_exceptions)
     }
-    catch (std::exception const& e)
+    catch (std::exception& e)
     {
-        DUCTA_LOG_ERROR("Exception during release of the pipeline, what(): {}", e.what());
+        DUCTA_LOG_ERROR("Exception in destructor: {}", e.what());
     }
     catch (...)
     {
-        DUCTA_LOG_ERROR("Exception during release of the pipeline");
+        DUCTA_LOG_ERROR("Exception in destructor: unknown");
     }
-#else
-    m_pipeline.release();
 #endif
 }
 
 DUCTA_DECL int PipelineEngine::run()
 {
-    while (true)
+    if (!m_initialized)
     {
-        if (m_stop_token.stopRequested())
-        {
-            DUCTA_LOG_INFO("Stop requested, exiting pipeline engine.");
-            break;
-        }
-
-        if (!m_pipeline.iterate())
-        {
-            DUCTA_LOG_INFO("Pipeline iteration requested stop, exiting pipeline engine.");
-            break;
-        }
+        DUCTA_LOG_ERROR("Pipeline not initialized: cannot run");
+        return EXIT_FAILURE;
     }
 
-    return EXIT_SUCCESS;
+    DUCTA_LOG_INFO("Pipeline running");
+#if defined(__cpp_exceptions)
+    try
+    {
+#endif
+        while (true)
+        {
+            if (m_stop_token.stopRequested())
+            {
+                DUCTA_LOG_INFO("Stop requested: stopping the pipeline");
+                break;
+            }
+
+            if (!m_pipeline.iterate())
+            {
+                break; // the reason is logged by Pipeline::iterate
+            }
+        }
+#if defined(__cpp_exceptions)
+    }
+    catch (std::exception& e)
+        {
+            DUCTA_LOG_ERROR("Exception in run(): {}", e.what());
+            return EXIT_FAILURE;
+        }
+        catch (...)
+        {
+            DUCTA_LOG_ERROR("Exception in run(): unknown");
+            return EXIT_FAILURE;
+        }
+#endif
+    return m_pipeline.failed() ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 } // namespace Pipeline

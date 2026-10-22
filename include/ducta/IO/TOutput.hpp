@@ -56,9 +56,11 @@ public:
     /**
      * @brief Update the output value by applying a callback function to the current value.
      * @param callback The function to apply to the current value. It should take a reference to the
-     * current value and modify it.
+     * current value and modify it. Called directly (any callable, a temporary lambda too): no
+     * FunctionRef, so no heap with the standard backend.
      */
-    void update(FunctionRef<void(value_type&)> callback);
+    template <typename Callback>
+    void update(Callback&& callback);
 
     /**
      * @brief Assignment operator to set the output value by const reference

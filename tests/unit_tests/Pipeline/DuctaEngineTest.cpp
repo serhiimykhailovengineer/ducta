@@ -5,6 +5,8 @@
 
 #include "ducta/Configuration/Configuration.hpp"
 #include "ducta/DuctaEngine.hpp"
+#include "ducta/Utils/Log.hpp"
+#include "ducta/Utils/Log/CallbackSink.hpp"
 
 #include "TestNodes.hpp"
 
@@ -377,7 +379,8 @@ TYPED_TEST(DuctaEngineTest, engine_is_usable_after_a_node_throws_while_running)
     DuctaEngine<TypeParam> engine{this->clock};
     ASSERT_TRUE(engine.configure(tree, diagnostics));
 
-    EXPECT_THROW(engine.run(StopAfter{1}), std::runtime_error);
+    // The exception stops at the node: the run fails, the engine is not stuck in "running"
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_FAILURE);
 
     // Not stuck in "running": it can be reconfigured and run again
     PropTree other =
@@ -431,7 +434,7 @@ TYPED_TEST(DuctaEngineTest, nodes_initialised_before_a_failing_init_are_released
     DuctaEngine<TypeParam> engine{this->clock};
     ASSERT_TRUE(engine.configure(tree, diagnostics));
 
-    EXPECT_THROW(engine.run(StopAfter{1}), std::runtime_error);
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_FAILURE);
     EXPECT_EQ(TestNodes::run_log(), "iAiBrBrA");
 }
 #endif
@@ -452,7 +455,7 @@ TYPED_TEST(DuctaEngineTest, default_trace_flush_threshold_is_valid)
 }
 
 #if defined(__cpp_exceptions)
-TYPED_TEST(DuctaEngineTest, release_exception_is_passed_on_after_every_node_is_released)
+TYPED_TEST(DuctaEngineTest, node_throwing_from_release_is_logged_and_the_others_are_released)
 {
     PropTree tree = loadTree(R"({
         "nodes": {
@@ -466,14 +469,14 @@ TYPED_TEST(DuctaEngineTest, release_exception_is_passed_on_after_every_node_is_r
     DuctaEngine<TypeParam> engine{this->clock};
     ASSERT_TRUE(engine.configure(tree, diagnostics));
 
-    // Not std::terminate: the exception reaches the caller
-    EXPECT_THROW(engine.run(StopAfter{1}), std::runtime_error);
-    // "a" is released although "t" (released before it) threw
+    // release() of a node must not throw: if it does, the failure is logged with the node name
+    // and "a" (released after it) is still released
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_SUCCESS);
     EXPECT_EQ(TestNodes::run_log(), "iAiBABrBrA");
 
-    // Not stuck in "running"
+    // The next run starts from scratch: every node is initialised again
     TestNodes::run_log().clear();
-    EXPECT_THROW(engine.run(StopAfter{0}), std::runtime_error);
+    EXPECT_EQ(engine.run(StopAfter{0}), EXIT_SUCCESS);
     EXPECT_EQ(TestNodes::run_log(), "iAiBrBrA");
 }
 
@@ -490,35 +493,71 @@ TYPED_TEST(DuctaEngineTest, traced_run_survives_a_non_standard_exception_of_iter
     DuctaEngine<TypeParam> engine{this->clock};
     ASSERT_TRUE(engine.configure(tree, diagnostics));
 
-    EXPECT_THROW(engine.run(StopAfter{1}), int);
+    // The exception stops at the node: the run fails, the nodes are released
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_FAILURE);
     EXPECT_EQ(TestNodes::run_log(), "iAArA");
 
     // The trace frame of the failed iteration was closed: the next frame can start
     TestNodes::run_log().clear();
-    EXPECT_THROW(engine.run(StopAfter{1}), int);
+    EXPECT_EQ(engine.run(StopAfter{1}), EXIT_FAILURE);
     EXPECT_EQ(TestNodes::run_log(), "iAArA");
 }
 
-TEST(PipelineEngineTest, destructor_logs_instead_of_throwing_from_release)
+TEST(PipelineEngineTest, destructor_releases_the_nodes_after_an_exception_of_iterate)
 {
     TestClock clock;
     TestNodes::ThrowingConfig config;
-    config.in_release = true;
+    config.in_iterate = true;
     TestNodes::ThrowingNode node{config};
+    TestNodes::LoggingNode<'A'> first;
     ::ducta::Pipeline::Nodes nodes;
+    nodes.add_node("a", first);
     nodes.add_node("t", node);
     ::ducta::Pipeline::Pipeline::Config pipeline_config;
+    pipeline_config.order.push_back(NodeName{"a"});
     pipeline_config.order.push_back(NodeName{"t"});
     ::ducta::Pipeline::Pipeline pipeline{clock};
     ASSERT_TRUE(pipeline.configure(nodes, pipeline_config));
 
-    StopAfter stop{1};
+    TestNodes::run_log().clear();
     {
+        StopAfter stop{2};
         ::ducta::Pipeline::PipelineEngine engine{pipeline, stop};
-        EXPECT_EQ(engine.run(), EXIT_SUCCESS);
-    } // ~PipelineEngine releases the node: must not terminate
-    SUCCEED();
+        EXPECT_EQ(TestNodes::run_log(), "iA");
+        EXPECT_EQ(engine.run(), EXIT_FAILURE);
+        EXPECT_EQ(TestNodes::run_log(), "iAA"); // not released yet: the engine is alive
+    }
+    EXPECT_EQ(TestNodes::run_log(), "iAArA");
 }
+
+TEST(PipelineEngineTest, node_throwing_from_init_fails_and_the_nodes_before_it_are_released)
+{
+    TestClock clock;
+    TestNodes::ThrowingConfig config;
+    config.in_init = true;
+    TestNodes::ThrowingNode node{config};
+    TestNodes::LoggingNode<'A'> first;
+    TestNodes::LoggingNode<'B'> last;
+    ::ducta::Pipeline::Nodes nodes;
+    nodes.add_node("a", first);
+    nodes.add_node("t", node);
+    nodes.add_node("b", last);
+    ::ducta::Pipeline::Pipeline::Config pipeline_config;
+    pipeline_config.order.push_back(NodeName{"a"});
+    pipeline_config.order.push_back(NodeName{"t"});
+    pipeline_config.order.push_back(NodeName{"b"});
+    ::ducta::Pipeline::Pipeline pipeline{clock};
+    ASSERT_TRUE(pipeline.configure(nodes, pipeline_config));
+
+    TestNodes::run_log().clear();
+    {
+        StopAfter stop{1};
+        ::ducta::Pipeline::PipelineEngine engine{pipeline, stop}; // the exception stops at "t"
+        EXPECT_EQ(engine.run(), EXIT_FAILURE);
+    }
+    EXPECT_EQ(TestNodes::run_log(), "iArA"); // "t" failed: neither released nor "b" initialised
+}
+
 #endif
 
 TEST(DuctaEngineLifetimeTest, temporary_factory_is_rejected)
@@ -536,6 +575,151 @@ TEST(DuctaEngineLifetimeTest, temporary_factory_is_rejected)
         !std::is_constructible_v<::ducta::Pipeline::NodeManager<>, ::ducta::Pipeline::NodeFactory>);
     SUCCEED();
 }
+
+namespace {
+
+/* init() / iterate() reporting a failure as a value */
+struct FailingInitNode
+{
+    ::ducta::Expected<void, ::ducta::Error> init()
+    {
+        return ::ducta::Unexpected<::ducta::Error>{::ducta::Error{"no device"}};
+    }
+    void release()
+    {
+        TestNodes::run_log() += "rF";
+    }
+};
+
+struct RefusingInitNode
+{
+    bool init()
+    {
+        return false;
+    }
+    void release()
+    {
+        TestNodes::run_log() += "rR";
+    }
+};
+
+struct FailingIterateNode
+{
+    void init()
+    {
+    }
+    ::ducta::Expected<void, ::ducta::Error> iterate()
+    {
+        return ::ducta::Unexpected<::ducta::Error>{::ducta::Error{"sensor lost"}};
+    }
+    void release()
+    {
+        TestNodes::run_log() += "rI";
+    }
+};
+
+/* Records the error lines of the logger */
+struct ErrorLines
+{
+    std::string text;
+    ::ducta::Log::CallbackSink sink{
+        +[](void* context, ::ducta::StringView line, ::ducta::Log::Level level) {
+            if (level == ::ducta::Log::Level::Error)
+            {
+                static_cast<ErrorLines*>(context)->text.append(line.data(), line.size()).append("\n");
+            }
+        },
+        this};
+
+    ErrorLines()
+    {
+        ::ducta::Log::logger().add_sink(sink);
+    }
+    ~ErrorLines()
+    {
+        ::ducta::Log::logger().remove_sink(sink);
+    }
+};
+
+template <class Middle>
+void run_three_nodes(Middle& middle, ::ducta::Pipeline::Pipeline& pipeline, int expected_run_result)
+{
+    TestNodes::LoggingNode<'A'> first;
+    TestNodes::LoggingNode<'B'> last;
+    ::ducta::Pipeline::Nodes nodes;
+    nodes.add_node("a", first);
+    nodes.add_node("m", middle);
+    nodes.add_node("b", last);
+    ::ducta::Pipeline::Pipeline::Config pipeline_config;
+    pipeline_config.order.push_back(NodeName{"a"});
+    pipeline_config.order.push_back(NodeName{"m"});
+    pipeline_config.order.push_back(NodeName{"b"});
+    ASSERT_TRUE(pipeline.configure(nodes, pipeline_config));
+
+    TestNodes::run_log().clear();
+    StopAfter stop{3};
+    ::ducta::Pipeline::PipelineEngine engine{pipeline, stop};
+    EXPECT_EQ(engine.run(), expected_run_result);
+}
+
+} // namespace
+
+TEST(PipelineEngineTest, error_of_init_stops_and_releases_the_nodes_initialised_before)
+{
+    TestClock clock;
+    ::ducta::Pipeline::Pipeline pipeline{clock};
+    FailingInitNode node;
+    ErrorLines errors;
+    run_three_nodes(node, pipeline, EXIT_FAILURE);
+    EXPECT_EQ(TestNodes::run_log(), "iArA"); // "m" failed: not released, "b" not initialised
+    EXPECT_NE(errors.text.find("init() of node 'm' failed: no device"), std::string::npos)
+        << errors.text;
+}
+
+TEST(PipelineEngineTest, init_returning_false_stops_and_releases_the_nodes_initialised_before)
+{
+    TestClock clock;
+    ::ducta::Pipeline::Pipeline pipeline{clock};
+    RefusingInitNode node;
+    ErrorLines errors;
+    run_three_nodes(node, pipeline, EXIT_FAILURE);
+    EXPECT_EQ(TestNodes::run_log(), "iArA");
+    EXPECT_NE(errors.text.find("init() of node 'm' returned false"), std::string::npos)
+        << errors.text;
+}
+
+TEST(PipelineEngineTest, error_of_iterate_stops_the_run_and_is_logged)
+{
+    TestClock clock;
+    ::ducta::Pipeline::Pipeline pipeline{clock};
+    FailingIterateNode node;
+    ErrorLines errors;
+    run_three_nodes(node, pipeline, EXIT_FAILURE);
+    EXPECT_EQ(TestNodes::run_log(), "iAiBArBrIrA"); // "b" not iterated
+    EXPECT_NE(errors.text.find("iterate() of node 'm' failed: sensor lost"), std::string::npos)
+        << errors.text;
+}
+
+#if defined(__cpp_exceptions)
+TEST(PipelineEngineTest, node_breaking_its_contract_is_named_in_the_log)
+{
+    TestNodes::ThrowingConfig config;
+    config.in_iterate = true; // throws 42: not even a std::exception
+    config.in_release = true;
+    TestNodes::ThrowingNode node{config};
+    TestClock clock;
+    ::ducta::Pipeline::Pipeline pipeline{clock};
+    ErrorLines errors;
+    run_three_nodes(node, pipeline, EXIT_FAILURE);
+    EXPECT_EQ(TestNodes::run_log(), "iAiBArBrA"); // every other node released
+    EXPECT_NE(errors.text.find("iterate() of node 'm' failed: unknown exception"), std::string::npos)
+        << errors.text;
+    EXPECT_NE(
+        errors.text.find("release() of node 'm' failed: exception: release failed"),
+        std::string::npos)
+        << errors.text;
+}
+#endif
 
 TYPED_TEST(DuctaEngineTest, run_without_configuration_fails)
 {

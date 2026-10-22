@@ -32,7 +32,7 @@ class NodeRef
 private:
     struct VTable
     {
-        void (*init)(void*);
+        Expected<bool, Error> (*init)(void*);
         Expected<bool, Error> (*iterate)(void*, Chrono::TimestampUS);
         void (*release)(void*);
         Map<StringView, IO::InputRef, DUCTA_MAX_NODE_PORTS> (*get_inputs)(void*);
@@ -47,8 +47,9 @@ private:
     static const VTable& vt_for()
     {
         static const VTable vt = {
-            +[](void* obj) {
-                static_cast<T*>(obj)->init();
+            +[](void* obj) -> Expected<bool, Error> {
+                using NodeType = ::ducta::decay_t<T>;
+                return Private::call_init(*static_cast<NodeType*>(obj));
             },
             +[](void* obj, Chrono::TimestampUS timestamp) -> Expected<bool, Error> {
                 using NodeType = ::ducta::decay_t<T>;
@@ -111,10 +112,12 @@ public:
 
     /*
      * @brief Initialize the node
+     * @return Expected<bool, Error>: true if the node is ready, false if it cannot run, or the
+     * Error it returned. init() of the node may return void, bool or an expected-like type.
      */
-    void init()
+    Expected<bool, Error> init()
     {
-        m_vtable->init(m_node_obj);
+        return m_vtable->init(m_node_obj);
     }
 
     /*

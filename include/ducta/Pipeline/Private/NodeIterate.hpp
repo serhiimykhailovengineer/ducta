@@ -146,55 +146,73 @@ Error convert_to_error(E const& e) noexcept
     }
 }
 
+/*
+ * Result of a node call (init(), iterate()) as Expected<bool, Error>: true to go on, false to
+ * stop, or the error. The call may return void (always true), bool, or an expected-like type
+ * with value_type void or bool and an error convertible to Error.
+ */
+template <typename Call>
+Expected<bool, Error> call_node(Call&& call)
+{
+    using R = decltype(call());
+
+    if constexpr (::ducta::is_same_v<R, void>)
+    {
+        call();
+        return true;
+    }
+    else if constexpr (::ducta::is_same_v<R, bool>)
+    {
+        return call();
+    }
+    else if constexpr (is_expected_like_v<R> && ::ducta::is_same_v<typename R::value_type, void>)
+    {
+        auto r = call();
+        if (!r)
+        {
+            return Unexpected<Error>{convert_to_error(r.error())};
+        }
+        return true;
+    }
+    else if constexpr (
+        is_expected_like_v<R> && ::ducta::is_same_v<typename R::value_type, bool> &&
+        (has_deref<R>::value || has_value_fn<R>::value))
+    {
+        auto r = call();
+        if (!r)
+        {
+            return Unexpected<Error>{convert_to_error(r.error())};
+        }
+        return expected_bool_value(r); // true=continue, false=stop
+    }
+    else
+    {
+        static_assert(
+            sizeof(R) == 0,
+            "Unsupported init() / iterate() signature. Use void, bool, or expected-like with "
+            "value_type/error_type.");
+        return true;
+    }
+}
+
+template <typename NodeType>
+Expected<bool, Error> call_init(NodeType& node)
+{
+    return call_node([&node]() -> decltype(node.init()) { return node.init(); });
+}
+
 template <typename NodeType>
 Expected<bool, Error> call_iterate(NodeType& node, Chrono::TimestampUS timestamp)
 {
+    (void)timestamp;
     if constexpr (!has_iterate_v<NodeType>)
     {
         return true; // no iterate() => always continue
     }
     else
     {
-        using R = decltype(node.iterate());
-
-        if constexpr (::ducta::is_same_v<R, void>)
-        {
-            node.iterate();
-            return true;
-        }
-        else if constexpr (::ducta::is_same_v<R, bool>)
-        {
-            return node.iterate();
-        }
-        else if constexpr (is_expected_like_v<R> && ::ducta::is_same_v<typename R::value_type, void>)
-        {
-            auto r = node.iterate();
-            if (!r)
-            {
-                return Unexpected<Error>{convert_to_error(r.error())};
-            }
-            return true;
-        }
-        else if constexpr (
-            is_expected_like_v<R> && ::ducta::is_same_v<typename R::value_type, bool> &&
-            (has_deref<R>::value || has_value_fn<R>::value))
-        {
-            auto r = node.iterate();
-            if (!r)
-            {
-                return Unexpected<Error>{convert_to_error(r.error())};
-            }
-            return expected_bool_value(r); // true=continue, false=stop
-        }
-        else
-        {
-            static_assert(
-                sizeof(NodeType) == 0,
-                "Unsupported iterate() signature. Use void, bool, or expected-like with "
-                "value_type/error_type.");
-        }
+        return call_node([&node]() -> decltype(node.iterate()) { return node.iterate(); });
     }
-    return true;
 }
 
 } // namespace Private

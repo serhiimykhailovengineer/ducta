@@ -10,6 +10,7 @@ add_executable(${TARGET_NAME}
     EventRefTest.cpp
     DefineEventsTest.cpp
     EventHandlerTest.cpp
+    DeclareEventTest.cpp
 )
 
 target_include_directories(${TARGET_NAME}

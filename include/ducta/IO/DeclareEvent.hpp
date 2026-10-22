@@ -3,6 +3,8 @@
 
 #include "ducta/Core/Config.hpp"
 
+#include "ducta/Core/TypeTraits.hpp"
+#include "ducta/Core/Types/StringView.hpp"
 #include "ducta/Core/Types/TypeRegistry.hpp"
 
 namespace ducta {
@@ -58,12 +60,24 @@ struct SupportedEventsOf<T, ::ducta::void_t<typename T::SupportedEvents>>
 
 #define DUCTA_TYPE_ID(T) ::ducta::Private::type_id_impl<T>(__FILE__, __LINE__)
 
-#define DUCTA_DECLARE_EVENT_NAME(Type, NameLiteral)      \
-    template <>                                          \
-    struct ::ducta::Private::EventNameOverride<Type>     \
-    {                                                    \
-        static constexpr bool has_override = true;       \
-        static constexpr StringView value = NameLiteral; \
-    }
+/*
+ * Name of an event type (instead of the compiler's type name), the same in every build:
+ *     DUCTA_DECLARE_EVENT_NAME(SDL_Event, "SDL_Event");
+ * At global scope, before the type is used as an event; Type is fully qualified.
+ */
+// clang-format off
+#define DUCTA_DECLARE_EVENT_NAME(Type, NameLiteral)                    \
+    namespace ducta {                                                  \
+    namespace Private {                                                \
+    template <>                                                        \
+    struct EventNameOverride<Type>                                     \
+    {                                                                  \
+        static constexpr bool has_override = true;                     \
+        static constexpr ::ducta::StringView value{NameLiteral};       \
+    };                                                                 \
+    }                                                                  \
+    }                                                                  \
+    static_assert(sizeof(NameLiteral) > 1, "DUCTA_DECLARE_EVENT_NAME: the name must not be empty")
+// clang-format on
 
 #endif // DUCTA_IO_DECLAREEVENT_HPP

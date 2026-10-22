@@ -4,6 +4,7 @@
 #include "ducta/Core/Config.hpp"
 
 #include "ducta/Core/Capacity.hpp"
+#include "ducta/Core/Types/Integers.hpp"
 
 #include "ducta/Configuration/DefineConfig.hpp"
 #include "ducta/Configuration/Duration.hpp"
@@ -91,7 +92,16 @@ public:
     /* Disconnect everything and forget the nodes */
     void clear();
 
-    void init();
+    /*
+     * @brief Initialise the nodes in pipeline order, up to the first one that fails
+     *
+     * A node fails if its init() returns false or an error, or throws (caught here); the failure
+     * is logged with the node name. The nodes
+     * initialised so far stay initialised: release() releases them.
+     *
+     * @return true if every node was initialised
+     */
+    bool init();
 
     /*
      * @brief Run every node once, in order, then sleep for the rest of target_frame_duration
@@ -100,16 +110,30 @@ public:
      * once at its end only to sleep (target_frame_duration > 0) or to trace; with tracing also
      * once after every node, to measure it.
      *
-     * @return false if a node requested to stop or failed (or threw a std::exception)
+     * @return false if a node requested to stop or failed (returned an error or threw: caught
+     * here, logged with the node name, see failed())
      */
     bool iterate();
 
+    /*
+     * @brief Release the initialised nodes, in reverse order; nothing if none is initialised
+     *
+     * release() of a node returns nothing and must not throw: if it does, the exception is
+     * caught here, logged with the node name, and the other nodes are still released.
+     */
     void release();
+
+    /* A node failed (init(), iterate() or release()) since the last init() */
+    bool failed() const noexcept
+    {
+        return m_failed;
+    }
 
 private:
     /* Runs one node; false if it requested to stop or failed */
     bool iterateNode(NodeInfo& node_info, Chrono::TimestampUS frame_start_time);
     void sleepUntilFrameEnd(Chrono::TimestampUS frame_start_time);
+    void logRunSummary(size_t released);
 
     /* Trace of the events, null if tracing is disabled */
     Private::PipelineTraceInfo* traceInfo() noexcept
@@ -129,6 +153,13 @@ private:
 private:
     Clock m_clock;
     Chrono::TimestampUS m_target_frame_duration{0};
+    /* The first m_initialized nodes of m_init_order are initialised */
+    size_t m_initialized{0};
+    bool m_failed{false};
+    /* Frames of the current run, for the summary logged by release() */
+    uint32_t m_frames{0};
+    uint32_t m_overrun_frames{0};
+    Chrono::TimestampUS m_longest_frame{0};
     bool m_trace_enabled{false};
 #if DUCTA_ENABLE_TRACING
     Private::PipelineTraceInfo m_trace_info;
@@ -142,6 +173,14 @@ private:
     Private::EventWiring m_event_wiring;
 };
 
+/*
+ * @brief Runs a configured pipeline (RAII): the constructor initialises the nodes, run()
+ *        iterates them until stop, the destructor releases the nodes that were initialised
+ *
+ * Failures are values: a node's init() / iterate() returning false or an error stops the
+ * pipeline (the error is logged with the node name). A node throwing fails the same way: the
+ * Pipeline catches the exception of each node call and names the node; the others are released.
+ */
 class PipelineEngine
 {
 public:
@@ -157,11 +196,13 @@ public:
 
     ~PipelineEngine();
 
+    /* @return EXIT_SUCCESS once stopped (by the stop token or a node) */
     int run();
 
 private:
     Pipeline& m_pipeline;
     StopToken m_stop_token;
+    bool m_initialized{false};
 };
 
 } // namespace Pipeline

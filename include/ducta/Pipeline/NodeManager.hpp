@@ -21,6 +21,11 @@
 #include "ducta/Pipeline/NodeFactory.hpp"
 #include "ducta/Pipeline/NodeStorage.hpp"
 #include "ducta/Pipeline/Nodes.hpp"
+#include "ducta/Utils/Log.hpp"
+
+#if defined(__cpp_exceptions)
+#include <exception>
+#endif
 
 namespace ducta {
 namespace Pipeline {
@@ -127,20 +132,32 @@ public:
                 continue;
             }
             Slot slot{*this, name};
+            size_t const errors_before = diagnostics.error_count();
 #if defined(__cpp_exceptions)
             try
             {
                 create(slot, spec.config, diagnostics);
             }
+            catch (std::exception const& e)
+            {
+                DUCTA_LOG_ERROR("Constructor of node '{}' ({}) failed: {}", name, type, e.what());
+                // A node constructor threw: keep the all-or-nothing guarantee
+                clear();
+                throw;
+            }
             catch (...)
             {
-                // A node constructor threw: keep the all-or-nothing guarantee
+                DUCTA_LOG_ERROR("Constructor of node '{}' ({}) failed: unknown exception", name, type);
                 clear();
                 throw;
             }
 #else
             create(slot, spec.config, diagnostics);
 #endif
+            if (diagnostics.error_count() == errors_before)
+            {
+                DUCTA_LOG_DEBUG("Node '{}' created, type '{}'", name, type);
+            }
         }
 
         if (diagnostics.error_count() != errors)
@@ -148,6 +165,7 @@ public:
             clear();
             return false;
         }
+        DUCTA_LOG_INFO("{} nodes created", static_cast<unsigned long long>(config.nodes.size()));
         return true;
     }
 

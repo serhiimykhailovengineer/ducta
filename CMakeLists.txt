@@ -11,7 +11,7 @@ project(Ducta
 
 # Backend: std (standard library, Boost, fmt) or etl (Embedded Template Library, no heap)
 set(DUCTA_BACKEND_DEFAULT "std")
-if (DEFINED USE_EMBEDDED_BACKEND) # former option
+if (DEFINED USE_EMBEDDED_BACKEND AND NOT DEFINED DUCTA_BACKEND) # former option
     message(DEPRECATION "USE_EMBEDDED_BACKEND is replaced by DUCTA_BACKEND=std|etl")
     if (USE_EMBEDDED_BACKEND)
         set(DUCTA_BACKEND_DEFAULT "etl")

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/platformio/platformio-core/develop/platformio/assets/schema/library.json",
   "name": "ducta",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Modular C++17 data-flow framework: nodes with typed inputs, outputs and events, created and connected from a JSON configuration and run in a deterministic loop. Header-only, no heap with the embedded (ETL) backend.",
   "keywords": "dataflow, pipeline, nodes, robotics, embedded, etl, json, configuration",
   "homepage": "https://github.com/serhiimykhailovengineer/ducta",

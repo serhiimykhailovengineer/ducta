@@ -435,3 +435,56 @@ TEST(DecodeTest, embedded_long_source_name_keeps_its_end)
 }
 
 #endif
+
+namespace {
+/* As many fields as DEFINE_CONFIG accepts (25) */
+struct WideConfig
+{
+    int32_t f1{0};
+    int32_t f2{0};
+    int32_t f3{0};
+    int32_t f4{0};
+    int32_t f5{0};
+    int32_t f6{0};
+    int32_t f7{0};
+    int32_t f8{0};
+    int32_t f9{0};
+    int32_t f10{0};
+    int32_t f11{0};
+    int32_t f12{0};
+    int32_t f13{0};
+    int32_t f14{0};
+    int32_t f15{0};
+    int32_t f16{0};
+    int32_t f17{0};
+    int32_t f18{0};
+    int32_t f19{0};
+    int32_t f20{0};
+    int32_t f21{0};
+    int32_t f22{0};
+    int32_t f23{0};
+    int32_t f24{0};
+    int32_t f25{0};
+};
+} // namespace
+
+DEFINE_CONFIG(WideConfig, ("f1", f1), ("f2", f2), ("f3", f3), ("f4", f4), ("f5", f5), ("f6", f6), ("f7", f7), ("f8", f8), ("f9", f9), ("f10", f10), ("f11", f11), ("f12", f12), ("f13", f13), ("f14", f14), ("f15", f15), ("f16", f16), ("f17", f17), ("f18", f18), ("f19", f19), ("f20", f20), ("f21", f21), ("f22", f22), ("f23", f23), ("f24", f24), ("f25", f25));
+
+TEST(DecodeTest, config_with_the_maximum_number_of_fields)
+{
+    PropTree tree{SourceLocation{1, 1}};
+    NodeId root = tree.root().id();
+    tree.add_integer(root, "f1", 1, {2, 1});
+    tree.add_integer(root, "f11", 11, {3, 1});
+    tree.add_integer(root, "f25", 25, {4, 1});
+    Diagnostics diagnostics;
+
+    auto config = decode<WideConfig>(tree.root(), diagnostics);
+
+    ASSERT_TRUE(config);
+    EXPECT_TRUE(diagnostics.empty());
+    EXPECT_EQ(config->f1, 1);
+    EXPECT_EQ(config->f11, 11);
+    EXPECT_EQ(config->f24, 0);
+    EXPECT_EQ(config->f25, 25);
+}

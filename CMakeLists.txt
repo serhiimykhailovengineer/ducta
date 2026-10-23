@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(Ducta
-    VERSION 0.2.0
+    VERSION 0.2.1
     DESCRIPTION "Modular C++ data-flow framework for connecting and executing computational nodes"
     HOMEPAGE_URL "https://github.com/serhiimykhailovengineer/ducta"
     LANGUAGES CXX

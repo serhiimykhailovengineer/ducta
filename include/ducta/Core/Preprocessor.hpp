@@ -127,4 +127,49 @@
     M(node, 3, a4)                                                            \
     M(node, 4, a5) M(node, 5, a6) M(node, 6, a7) M(node, 7, a8) M(node, 8, a9) M(node, 9, a10)
 
+#define DUCTA_FOR_EACH_I_11(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) \
+    DUCTA_FOR_EACH_I_10(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) M(node, 10, a11)
+
+#define DUCTA_FOR_EACH_I_12(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) \
+    DUCTA_FOR_EACH_I_11(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) M(node, 11, a12)
+
+#define DUCTA_FOR_EACH_I_13(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) \
+    DUCTA_FOR_EACH_I_12(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) M(node, 12, a13)
+
+#define DUCTA_FOR_EACH_I_14(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) \
+    DUCTA_FOR_EACH_I_13(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) M(node, 13, a14)
+
+#define DUCTA_FOR_EACH_I_15(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) \
+    DUCTA_FOR_EACH_I_14(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) M(node, 14, a15)
+
+#define DUCTA_FOR_EACH_I_16(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) \
+    DUCTA_FOR_EACH_I_15(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) M(node, 15, a16)
+
+#define DUCTA_FOR_EACH_I_17(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) \
+    DUCTA_FOR_EACH_I_16(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) M(node, 16, a17)
+
+#define DUCTA_FOR_EACH_I_18(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) \
+    DUCTA_FOR_EACH_I_17(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) M(node, 17, a18)
+
+#define DUCTA_FOR_EACH_I_19(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) \
+    DUCTA_FOR_EACH_I_18(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) M(node, 18, a19)
+
+#define DUCTA_FOR_EACH_I_20(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) \
+    DUCTA_FOR_EACH_I_19(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) M(node, 19, a20)
+
+#define DUCTA_FOR_EACH_I_21(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) \
+    DUCTA_FOR_EACH_I_20(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) M(node, 20, a21)
+
+#define DUCTA_FOR_EACH_I_22(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) \
+    DUCTA_FOR_EACH_I_21(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) M(node, 21, a22)
+
+#define DUCTA_FOR_EACH_I_23(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) \
+    DUCTA_FOR_EACH_I_22(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) M(node, 22, a23)
+
+#define DUCTA_FOR_EACH_I_24(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) \
+    DUCTA_FOR_EACH_I_23(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23) M(node, 23, a24)
+
+#define DUCTA_FOR_EACH_I_25(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25) \
+    DUCTA_FOR_EACH_I_24(M, node, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24) M(node, 24, a25)
+
 #endif // DUCTA_CORE_PREPROCESSOR_HPP
